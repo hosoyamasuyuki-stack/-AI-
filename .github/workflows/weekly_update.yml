@@ -1,0 +1,28 @@
+name: Weekly Investment Update
+
+on:
+  schedule:
+    - cron: '0 23 * * 0'  # 毎週日曜23時UTC = 月曜8時JST
+  workflow_dispatch:  # 手動実行ボタンも有効
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance gspread google-auth requests pandas numpy
+
+      - name: Run weekly update
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python weekly_update.py
