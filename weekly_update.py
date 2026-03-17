@@ -97,22 +97,12 @@ FRED_INDICATORS = {
 
 # 業種別営業利益率基準
 SECTOR_BENCHMARKS = {
-    "鉱業":         (30, 0,  5),
-    "建設業":       (5,  5,  5),
-    "食料品":       (5,  3,  5),
-    "化学":         (15, 5,  5),
-    "電気機器":     (10, 5, 10),
-    "精密機器":     (15, 8, 10),
-    "その他製品":   (10, 5,  5),
-    "卸売業":       (3,  5,  5),
-    "銀行業":       (25, 5,  5),
-    "保険業":       (10, 5,  5),
-    "その他金融業": (15, 10, 10),
-    "不動産業":     (15, 5,  5),
-    "情報通信業":   (15, 5,  8),
-    "陸運業":       (8,  3,  5),
-    "サービス業":   (15, 10, 15),
-    "その他":       (10, 5,  5),
+    "鉱業":(30,0,5),"建設業":(5,5,5),"食料品":(5,3,5),
+    "化学":(15,5,5),"電気機器":(10,5,10),"精密機器":(15,8,10),
+    "その他製品":(10,5,5),"卸売業":(3,5,5),"銀行業":(25,5,5),
+    "保険業":(10,5,5),"その他金融業":(15,10,10),"不動産業":(15,5,5),
+    "情報通信業":(15,5,8),"陸運業":(8,3,5),"サービス業":(15,10,15),
+    "その他":(10,5,5),
 }
 
 # ============================================================
@@ -143,7 +133,7 @@ class ThreeLayerScorer:
         return "🟢" if s>=60 else ("🟡" if s>=30 else ("⚪" if s>=-30 else ("🟠" if s>=-60 else "🔴")))
 
 # ============================================================
-# 経営品質スコア（業種別基準v2）
+# 経営品質スコア（業種別基準）
 # ============================================================
 def get_sector_benchmark(sector):
     for key in SECTOR_BENCHMARKS:
@@ -152,52 +142,88 @@ def get_sector_benchmark(sector):
     return SECTOR_BENCHMARKS["その他"]
 
 def calc_mq_score(code, sector):
-    """経営品質スコアをyfinanceで計算（業種別基準）"""
     try:
         info = yf.Ticker(f"{code}.T").info
         op_thr, rev_thr, eps_thr = get_sector_benchmark(sector)
         scores = {}
-
-        rev_growth = info.get("revenueGrowth")
-        if rev_growth:
-            rg = rev_growth * 100
-            if rg > rev_thr*2:   scores["sales"] = +25
-            elif rg > rev_thr:    scores["sales"] = +15
-            elif rg > 0:          scores["sales"] = +5
-            elif rg > -rev_thr:   scores["sales"] = -5
-            else:                 scores["sales"] = -20
-
-        op_margin = info.get("operatingMargins")
-        if op_margin:
-            om = op_margin * 100
-            if om > op_thr*1.5:   scores["margin"] = +20
-            elif om > op_thr:      scores["margin"] = +10
-            elif om > op_thr*0.7:  scores["margin"] = 0
-            elif om > 0:           scores["margin"] = -10
-            else:                  scores["margin"] = -20
-
-        eps_growth = info.get("earningsGrowth")
-        if eps_growth:
-            eg = eps_growth * 100
-            if eg > eps_thr*2:   scores["eps"] = +20
-            elif eg > eps_thr:    scores["eps"] = +10
-            elif eg > 0:          scores["eps"] = +5
-            elif eg > -eps_thr:   scores["eps"] = -5
-            else:                 scores["eps"] = -15
-
+        rg = info.get("revenueGrowth")
+        if rg:
+            rg*=100
+            if rg>rev_thr*2:   scores["sales"]=+25
+            elif rg>rev_thr:    scores["sales"]=+15
+            elif rg>0:          scores["sales"]=+5
+            elif rg>-rev_thr:   scores["sales"]=-5
+            else:               scores["sales"]=-20
+        om = info.get("operatingMargins")
+        if om:
+            om*=100
+            if om>op_thr*1.5:   scores["margin"]=+20
+            elif om>op_thr:      scores["margin"]=+10
+            elif om>op_thr*0.7:  scores["margin"]=0
+            elif om>0:           scores["margin"]=-10
+            else:                scores["margin"]=-20
+        eg = info.get("earningsGrowth")
+        if eg:
+            eg*=100
+            if eg>eps_thr*2:   scores["eps"]=+20
+            elif eg>eps_thr:    scores["eps"]=+10
+            elif eg>0:          scores["eps"]=+5
+            elif eg>-eps_thr:   scores["eps"]=-5
+            else:               scores["eps"]=-15
         roe = info.get("returnOnEquity")
         if roe:
-            rp = roe * 100
-            is_fin = any(x in sector for x in ["銀行","保険","金融"])
-            roe_thr = 8 if is_fin else 12
-            if rp > roe_thr*1.5:  scores["roe"] = +15
-            elif rp > roe_thr:     scores["roe"] = +5
-            elif rp > 0:           scores["roe"] = 0
-            else:                  scores["roe"] = -15
+            rp=roe*100
+            roe_thr=8 if any(x in sector for x in ["銀行","保険","金融"]) else 12
+            if rp>roe_thr*1.5:  scores["roe"]=+15
+            elif rp>roe_thr:     scores["roe"]=+5
+            elif rp>0:           scores["roe"]=0
+            else:                scores["roe"]=-15
+        return max(-100,min(100,sum(scores.values()))) if scores else 0
+    except: return 0
 
-        return max(-100, min(100, sum(scores.values()))) if scores else 0
+# ============================================================
+# PEG・バリュー成長スコア
+# ============================================================
+def calc_peg_score(code, sector, new_comp, theme):
+    try:
+        info    = yf.Ticker(f"{code}.T").info
+        per     = info.get("trailingPE") or info.get("forwardPE")
+        eps_g   = info.get("earningsGrowth")
+        roe     = info.get("returnOnEquity")
+        pbr     = info.get("priceToBook")
+
+        peg = round(per/(eps_g*100),2) if per and eps_g and eps_g>0 else None
+
+        if peg is not None:
+            if peg<0.5:   peg_label="超割安成長"; peg_score=+30
+            elif peg<1.0: peg_label="割安成長";   peg_score=+20
+            elif peg<1.5: peg_label="適正";       peg_score=+5
+            elif peg<2.0: peg_label="やや割高";   peg_score=-10
+            else:         peg_label="割高";        peg_score=-20
+        else:
+            if pbr and pbr<1.0:    peg_label="PBR割安"; peg_score=+15
+            elif roe and roe>0.15: peg_label="高ROE";   peg_score=+10
+            else:                  peg_label="データ不足"; peg_score=0
+
+        if new_comp>=30 and peg_score>=20:   final="強買い推奨"
+        elif new_comp>=20 and peg_score>=20: final="買い推奨"
+        elif new_comp>=20 and peg_score>=5:  final="候補"
+        elif new_comp>=30 and peg_score<5:   final="タイミング待ち"
+        elif peg_score>=20 and new_comp<20:  final="割安だが時期尚早"
+        else:                                final="様子見"
+
+        return [
+            code, "", sector,
+            round(per,1) if per else "",
+            round(eps_g*100,1) if eps_g else "",
+            peg or "",
+            peg_label, new_comp, final,
+            round(pbr,2) if pbr else "",
+            round(roe*100,1) if roe else "",
+            theme
+        ]
     except:
-        return 0
+        return [code,"",sector,"","","","データ不足",new_comp,"様子見","","",theme]
 
 # ============================================================
 # 株価取得（並列）
@@ -208,8 +234,7 @@ def fetch_stock(code, days=90):
                          start=datetime.today()-timedelta(days=days),
                          end=datetime.today(),
                          progress=False, auto_adjust=True, timeout=10)
-        if df is None or df.empty or len(df)<5:
-            return code, None
+        if df is None or df.empty or len(df)<5: return code, None
         df.columns = [c[0] if isinstance(c,tuple) else c for c in df.columns]
         close = df["Close"].dropna()
         cur   = float(close.iloc[-1])
@@ -229,8 +254,7 @@ def fetch_stock(code, days=90):
         except: vol=2.0
         sc["vol"] = +10 if vol<1 else (+5 if vol<2 else (0 if vol<3.5 else -10))
         return code, {"score":max(-100,min(100,sum(sc.values()))),"price":cur,"ret_1m":ret}
-    except:
-        return code, None
+    except: return code, None
 
 def fetch_all_stocks_parallel(holdings, max_workers=8):
     results = {}
@@ -241,8 +265,7 @@ def fetch_all_stocks_parallel(holdings, max_workers=8):
             try:
                 code, result = future.result(timeout=15)
                 results[code] = result
-            except:
-                results[code] = None
+            except: results[code] = None
     return results
 
 def calc_sector_score(ticker):
@@ -254,9 +277,9 @@ def calc_sector_score(ticker):
         if df.empty or len(df)<20: return 0
         df.columns = [c[0] if isinstance(c,tuple) else c for c in df.columns]
         close = df["Close"].dropna()
-        cur  = float(close.iloc[-1])
-        ma25 = float(close.rolling(min(25,len(close))).mean().iloc[-1])
-        ma75 = float(close.rolling(min(75,len(close))).mean().iloc[-1])
+        cur   = float(close.iloc[-1])
+        ma25  = float(close.rolling(min(25,len(close))).mean().iloc[-1])
+        ma75  = float(close.rolling(min(75,len(close))).mean().iloc[-1])
         sc = 0
         if cur>ma25>ma75: sc+=30
         elif cur>ma25:     sc+=15
@@ -271,8 +294,8 @@ def calc_sector_score(ticker):
 # メイン処理
 # ============================================================
 print(f"\n{'='*55}")
-print(f"🔄 週次更新開始（統合スコア版）: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-print(f"   マクロ30%・業種25%・銘柄25%・経営品質20%")
+print(f"🔄 週次更新開始（統合スコア+PEG版）: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+print(f"   マクロ35%・業種30%・テクニカル25%・経営品質10%")
 print(f"{'='*55}\n")
 
 # Step1: マクロ指標取得
@@ -309,7 +332,7 @@ for sector, ticker in SECTOR_PROXIES.items():
 avg_sec = sum(sector_scores.values())/len(sector_scores)
 print(f"  ✅ 33業種 平均{avg_sec:+.1f}")
 
-# Step3: 全銘柄株価を並列取得
+# Step3: 全銘柄株価並列取得
 print("📡 Step3: 全銘柄株価取得中（並列）...")
 stock_results = fetch_all_stocks_parallel(HOLDINGS, max_workers=8)
 success = sum(1 for v in stock_results.values() if v)
@@ -339,67 +362,94 @@ for code, name, sector, cost, qty, theme in HOLDINGS:
         stock_s = stock["score"]
         mq_s    = mq_scores.get(code, 0)
         p       = stock.get("price", 0)
-        if not p or np.isnan(float(p)): p = 0
+        if not p or np.isnan(float(p)): p=0
 
-        # 統合スコア：マクロ30%・業種25%・銘柄25%・経営品質20%
-        integrated = round(macro_s*0.30 + sec_s*0.25 + stock_s*0.25 + mq_s*0.20, 1)
-
-        # 旧スコア（参考）
-        old_comp = round(macro_s*0.40 + sec_s*0.30 + stock_s*0.30, 1)
+        # 統合スコア：マクロ35%・業種30%・テクニカル25%・経営品質10%
+        integrated = round(macro_s*0.35 + sec_s*0.30 + stock_s*0.25 + mq_s*0.10, 1)
+        old_comp   = round(macro_s*0.40 + sec_s*0.30 + stock_s*0.30, 1)
 
         upside    = 1.10 if integrated>50 else (1.05 if integrated>20 else 1.02)
         target    = int(round(p*upside)) if p>0 else 0
         stop      = int(round(p*0.93))   if p>0 else 0
         direction = "上昇" if integrated>20 else ("下落" if integrated<-20 else "中立")
 
-        # 判定ラベル
-        if integrated>=60:    label="🟢 強買い"
-        elif integrated>=30:  label="🟡 買い検討"
-        elif integrated>=-30: label="⚪ 中立"
-        elif integrated>=-60: label="🟠 様子見"
-        else:                 label="🔴 売り検討"
+        if integrated>=60:    label="強買い"
+        elif integrated>=30:  label="買い検討"
+        elif integrated>=-30: label="中立"
+        elif integrated>=-60: label="様子見"
+        else:                 label="売り検討"
 
         ws_pred.append_row([
             today, code, name,
             float(p) if p>0 else "",
             macro_s, round(sec_s,1), stock_s, integrated,
             label, direction, target, stop,
-            f"テーマ:{theme}・MQ:{mq_s:+.0f}", "", "", "", "", ""
+            f"テーマ:{theme} MQ:{mq_s:+.0f}", "", "", "", "", ""
         ])
         results.append((code, name, integrated, mq_s))
-        print(f"  ✅ {code} {name}: 統合{integrated:+.1f} (旧{old_comp:+.1f}) MQ:{mq_s:+.0f}")
-
+        print(f"  ✅ {code} {name}: 統合{integrated:+.1f} MQ:{mq_s:+.0f}")
     except Exception as e:
         print(f"  ❌ {code} {name}: {e}")
     time.sleep(0.1)
 
 bull = sum(1 for _,_,s,_ in results if s>=30)
-print(f"\n  📊 買い検討: {bull}銘柄")
+print(f"\n  📊 統合買い検討: {bull}銘柄")
 
-# Step6: 業種スコアシート更新
+# Step6: バリュー成長スコア（PEG）自動更新
+print("\n📡 Step6: バリュー成長スコア（PEG）更新中...")
+peg_rows = []
+for code, name, sector, cost, qty, theme in HOLDINGS:
+    int_r    = next((r for r in results if r[0]==code), None)
+    new_comp = int_r[2] if int_r else 0
+    row = calc_peg_score(code, sector, new_comp, theme)
+    row[1] = name  # 銘柄名をセット
+    peg_rows.append(row)
+    time.sleep(0.2)
+
+# バリュー成長スコアシート更新
+try:
+    ws_vg = ss.worksheet("バリュー成長スコア")
+    ss.del_worksheet(ws_vg)
+except: pass
+ws_vg = ss.add_worksheet(title="バリュー成長スコア", rows=200, cols=12)
+priority_map = {"強買い推奨":0,"買い推奨":1,"候補":2,"タイミング待ち":3,"割安だが時期尚早":4,"様子見":5}
+sorted_peg = sorted(peg_rows, key=lambda x: (priority_map.get(x[8],9), -(x[7] or 0)))
+ws_vg.update(range_name="A1", values=[
+    ["コード","銘柄名","業種","PER","EPS成長率%","PEG",
+     "PEG判定","統合スコア","最終判定","PBR","ROE%","テーマ"]
+] + sorted_peg)
+
+buy_peg  = sum(1 for r in peg_rows if r[8] in ["強買い推奨","買い推奨"])
+print(f"  ✅ バリュー成長スコア更新完了 / 買い推奨:{buy_peg}銘柄")
+
+# Step7: 業種スコアシート更新
 ws_sec = ss.worksheet("業種スコア")
 ws_sec.clear()
 ws_sec.update(range_name="A1", values=[["業種","スコア","判定","更新日時"]]+[
     [sec, sc,
-     "🟢 強気" if sc>=30 else ("🟡 中立強" if sc>=0 else ("🟠 中立弱" if sc>=-30 else "🔴 弱気")),
+     "強気" if sc>=30 else ("中立強" if sc>=0 else ("中立弱" if sc>=-30 else "弱気")),
      today]
     for sec,sc in sorted(sector_scores.items(),key=lambda x:-x[1])
 ])
 print("  ✅ 業種スコアシート更新完了")
 
-# Step7: ログ追記
+# Step8: ログ追記
 ws_log   = ss.worksheet("作業ログ")
 existing = ws_log.get_all_values()
 ws_log.update(existing + [
     ["",""],
-    [f"★週次自動更新（統合スコア版） {today}",""],
+    [f"★週次自動更新（統合+PEG版） {today}",""],
     ["マクロスコア",f"{macro_s:+.0f}"],
     ["業種平均",f"{avg_sec:+.1f}"],
-    ["買い検討銘柄数",f"{bull}銘柄"],
-    ["実行方法","GitHub Actions自動実行（統合スコア版）"],
+    ["統合買い検討",f"{bull}銘柄"],
+    ["PEG買い推奨",f"{buy_peg}銘柄"],
+    ["実行方法","GitHub Actions自動実行（統合スコア+PEG版）"],
 ])
 
 print(f"\n{'='*55}")
-print(f"✅ 週次更新完了（統合スコア版）: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-print(f"   マクロ: {macro_s:+.0f} / 業種: {avg_sec:+.1f} / 買い検討: {bull}銘柄")
+print(f"✅ 週次更新完了（統合+PEG版）: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+print(f"   マクロ:     {macro_s:+.0f}")
+print(f"   業種平均:   {avg_sec:+.1f}")
+print(f"   統合買い検討: {bull}銘柄")
+print(f"   PEG買い推奨: {buy_peg}銘柄")
 print(f"{'='*55}")
