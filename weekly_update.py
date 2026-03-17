@@ -6,23 +6,24 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 import gspread
 from google.oauth2.service_account import Credentials
 
 # ============================================================
 # 認証
 # ============================================================
-FRED_API_KEY    = os.environ["FRED_API_KEY"]
-SPREADSHEET_ID  = os.environ["SPREADSHEET_ID"]
-creds_json      = os.environ["GOOGLE_CREDENTIALS"]
-creds_dict      = json.loads(creds_json)
+FRED_API_KEY   = os.environ["FRED_API_KEY"]
+SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
+creds_json     = os.environ["GOOGLE_CREDENTIALS"]
+creds_dict     = json.loads(creds_json)
 scopes = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
-creds  = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-gc     = gspread.authorize(creds)
-ss     = gc.open_by_key(SPREADSHEET_ID)
+creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+gc    = gspread.authorize(creds)
+ss    = gc.open_by_key(SPREADSHEET_ID)
 print("✅ 認証完了")
 
 # ============================================================
@@ -95,8 +96,72 @@ FRED_INDICATORS = {
 }
 
 # ============================================================
+# 株価取得（並列・タイムアウト付き）
+# ============================================================
+
+def fetch_stock(code, days=90):
+    """1銘柄の株価を取得（タイムアウト対策済み）"""
+    try:
+        ticker = f"{code}.T"
+        df = yf.download(ticker,
+                         start=datetime.today()-timedelta(days=days),
+                         end=datetime.today(),
+                         progress=False, auto_adjust=True,
+                         timeout=10)
+        if df is None or df.empty or len(df) < 5:
+            return code, None
+        df.columns = [c[0] if isinstance(c,tuple) else c for c in df.columns]
+        close = df["Close"].dropna()
+        cur = float(close.iloc[-1])
+        if np.isnan(cur) or cur <= 0:
+            return code, None
+        ma25 = float(close.rolling(min(25,len(close))).mean().iloc[-1])
+        ma75 = float(close.rolling(min(75,len(close))).mean().iloc[-1])
+        sc = {}
+        if cur>ma25>ma75:    sc["trend"]=+25
+        elif cur>ma25:        sc["trend"]=+15
+        elif cur<ma25<ma75:   sc["trend"]=-20
+        else:                 sc["trend"]=0
+        ret = (cur-float(close.iloc[-22]))/float(close.iloc[-22])*100 if len(close)>=22 else 0
+        sc["mom"] = +20 if ret>10 else (+10 if ret>3 else (0 if ret>-3 else (-10 if ret>-10 else -20)))
+        try:
+            vol = float(close.pct_change().rolling(20).std().iloc[-1])*100
+            if np.isnan(vol): vol = 2.0
+        except:
+            vol = 2.0
+        sc["vol"] = +10 if vol<1 else (+5 if vol<2 else (0 if vol<3.5 else -10))
+        score = max(-100, min(100, sum(sc.values())))
+        return code, {"score": score, "latest_price": cur, "ret_1m": ret}
+    except Exception as e:
+        print(f"  ⚠️ {code} 取得失敗: {e}")
+        return code, None
+
+
+def fetch_all_stocks_parallel(holdings, max_workers=8):
+    """全銘柄を並列取得（8スレッド同時）"""
+    print(f"  📡 {len(holdings)}銘柄を並列取得中（{max_workers}スレッド）...")
+    results = {}
+    codes = [h[0] for h in holdings]
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(fetch_stock, code): code for code in codes}
+        for future in as_completed(futures, timeout=120):
+            code = futures[future]
+            try:
+                code, result = future.result(timeout=15)
+                results[code] = result
+                status = f"✅ {result['latest_price']:.0f}円" if result else "❌ 失敗"
+                print(f"    {code}: {status}")
+            except Exception as e:
+                results[code] = None
+                print(f"    {code}: ❌ {e}")
+    success = sum(1 for v in results.values() if v)
+    print(f"  ✅ 取得完了: {success}/{len(codes)}銘柄")
+    return results
+
+# ============================================================
 # スコアリングクラス
 # ============================================================
+
 class ThreeLayerScorer:
     def __init__(self, macro_data):
         self.macro = macro_data
@@ -117,41 +182,17 @@ class ThreeLayerScorer:
             hy = self.macro["BAMLH0A0HYM2"]["value"]
             scores["hy"] = +10 if hy<3.5 else (0 if hy<5.0 else -15)
         total = max(-100, min(100, sum(scores.values())))
-        return {"score":total,"label":self._label(total)}
-    def calc_stock_score(self, code):
-        try:
-            df = yf.download(f"{code}.T",
-                             start=datetime.today()-timedelta(days=180),
-                             end=datetime.today(), progress=False, auto_adjust=True)
-            if df.empty or len(df)<30:
-                return {"score":0,"latest_price":0,"ret_1m":0}
-            df.columns = [c[0] if isinstance(c,tuple) else c for c in df.columns]
-            close = df["Close"]
-            cur   = float(close.iloc[-1])
-            if np.isnan(cur): return {"score":0,"latest_price":0,"ret_1m":0}
-            ma25  = float(close.rolling(25).mean().iloc[-1])
-            ma75  = float(close.rolling(min(75,len(close))).mean().iloc[-1])
-            sc = {}
-            if cur>ma25>ma75:    sc["trend"]=+25
-            elif cur>ma25:        sc["trend"]=+15
-            elif cur<ma25<ma75:   sc["trend"]=-20
-            else:                 sc["trend"]=0
-            ret = (cur-float(close.iloc[-22]))/float(close.iloc[-22])*100 if len(close)>=22 else 0
-            sc["mom"] = +20 if ret>10 else (+10 if ret>3 else (0 if ret>-3 else (-10 if ret>-10 else -20)))
-            vol = float(close.pct_change().rolling(20).std().iloc[-1])*100
-            if np.isnan(vol): vol = 2.0
-            sc["vol"] = +10 if vol<1 else (+5 if vol<2 else (0 if vol<3.5 else -10))
-            return {"score":max(-100,min(100,sum(sc.values()))),"latest_price":cur,"ret_1m":ret}
-        except:
-            return {"score":0,"latest_price":0,"ret_1m":0}
-    def _label(self,s):
+        return {"score": total, "label": self._label(total)}
+    def _label(self, s):
         return "🟢" if s>=60 else ("🟡" if s>=30 else ("⚪" if s>=-30 else ("🟠" if s>=-60 else "🔴")))
 
 def calc_sector_score(ticker):
     try:
         df = yf.download(ticker,
                          start=datetime.today()-timedelta(days=100),
-                         end=datetime.today(), progress=False, auto_adjust=True)
+                         end=datetime.today(),
+                         progress=False, auto_adjust=True,
+                         timeout=10)
         if df.empty or len(df)<20: return 0
         df.columns = [c[0] if isinstance(c,tuple) else c for c in df.columns]
         close = df["Close"].dropna()
@@ -165,8 +206,9 @@ def calc_sector_score(ticker):
         if len(close)>=22:
             ret = (cur-float(close.iloc[-22]))/float(close.iloc[-22])*100
             sc += +20 if ret>5 else (+10 if ret>2 else (0 if ret>-2 else (-10 if ret>-5 else -20)))
-        return max(-100,min(100,sc))
-    except: return 0
+        return max(-100, min(100, sc))
+    except:
+        return 0
 
 # ============================================================
 # メイン処理
@@ -174,39 +216,47 @@ def calc_sector_score(ticker):
 print(f"\n🔄 週次更新開始: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
 # Step1: マクロ指標取得
-print("📡 マクロ指標取得中...")
+print("📡 Step1: マクロ指標取得中...")
 macro_data = {}
 for sid,(name,cat) in FRED_INDICATORS.items():
-    res = requests.get("https://api.stlouisfed.org/fred/series/observations",
-                       params={"series_id":sid,"api_key":FRED_API_KEY,
-                               "file_type":"json","sort_order":"asc"})
-    if res.status_code==200:
-        obs = res.json().get("observations",[])
-        if len(obs)>=2:
-            df = pd.DataFrame(obs)[["date","value"]]
-            df["value"] = pd.to_numeric(df["value"],errors="coerce")
-            df = df.dropna()
-            macro_data[sid] = {
-                "name":name,"category":cat,
-                "date":df.iloc[-1]["date"],
-                "value":float(df.iloc[-1]["value"]),
-                "prev":float(df.iloc[-2]["value"]),
-                "change":float(df.iloc[-1]["value"]-df.iloc[-2]["value"])
-            }
+    try:
+        res = requests.get("https://api.stlouisfed.org/fred/series/observations",
+                           params={"series_id":sid,"api_key":FRED_API_KEY,
+                                   "file_type":"json","sort_order":"asc"},
+                           timeout=10)
+        if res.status_code==200:
+            obs = res.json().get("observations",[])
+            if len(obs)>=2:
+                df = pd.DataFrame(obs)[["date","value"]]
+                df["value"] = pd.to_numeric(df["value"],errors="coerce")
+                df = df.dropna()
+                macro_data[sid] = {
+                    "name":name,"category":cat,
+                    "date":df.iloc[-1]["date"],
+                    "value":float(df.iloc[-1]["value"]),
+                    "prev":float(df.iloc[-2]["value"]),
+                    "change":float(df.iloc[-1]["value"]-df.iloc[-2]["value"])
+                }
+    except Exception as e:
+        print(f"  ⚠️ {sid} 取得失敗: {e}")
     time.sleep(0.3)
 print(f"  ✅ {len(macro_data)}指標")
 
 # Step2: 業種スコア取得
-print("📡 業種スコア計算中...")
+print("📡 Step2: 33業種体温計更新中...")
 sector_scores = {}
 for sector, ticker in SECTOR_PROXIES.items():
     sector_scores[sector] = calc_sector_score(ticker)
     time.sleep(0.2)
-avg_sec = sum(sector_scores.values())/len(sector_scores)
+avg_sec = sum(sector_scores.values()) / len(sector_scores)
 print(f"  ✅ 33業種 平均{avg_sec:+.1f}")
 
-# Step3: 銘柄スコアリング
-print("📡 銘柄スコアリング中...")
+# Step3: 全銘柄株価を並列取得
+print("📡 Step3: 全銘柄株価取得中（並列）...")
+stock_results = fetch_all_stocks_parallel(HOLDINGS, max_workers=8)
+
+# Step4: スコアリング
+print("📡 Step4: スコアリング中...")
 scorer       = ThreeLayerScorer(macro_data)
 macro_result = scorer.calc_macro_score()
 today        = datetime.now().strftime("%Y-%m-%d")
@@ -215,49 +265,58 @@ results      = []
 
 for code,name,sector,cost,qty,theme in HOLDINGS:
     try:
-        stock  = scorer.calc_stock_score(code)
+        stock  = stock_results.get(code) or {"score":0,"latest_price":0,"ret_1m":0}
         sec_sc = sector_scores.get(sector, avg_sec)
         comp   = round(macro_result["score"]*0.4 + sec_sc*0.3 + stock["score"]*0.3, 1)
         p      = stock["latest_price"]
-        # NaN・0対策
-        if not p or np.isnan(p): p = 0
+        if not p or np.isnan(float(p)): p = 0
         upside = 1.10 if comp>50 else (1.05 if comp>20 else 1.02)
         target = int(round(p*upside)) if p > 0 else 0
         stop   = int(round(p*0.93))   if p > 0 else 0
         direction = "上昇" if comp>20 else ("下落" if comp<-20 else "中立")
-        ws_pred.append_row([today,code,name,
-                            float(p) if p > 0 else "",
-                            macro_result["score"],round(sec_sc,1),stock["score"],comp,
-                            scorer._label(comp),direction,target,stop,
-                            f"テーマ:{theme}","","","","",""])
-        results.append((code,name,comp))
-        print(f"  ✅ {code} {name}: {comp:+.1f}")
+        ws_pred.append_row([
+            today, code, name,
+            float(p) if p > 0 else "",
+            macro_result["score"], round(sec_sc,1), stock["score"], comp,
+            scorer._label(comp), direction, target, stop,
+            f"テーマ:{theme}", "", "", "", "", ""
+        ])
+        results.append((code, name, comp))
     except Exception as e:
         print(f"  ❌ {code} {name}: {e}")
-    time.sleep(0.4)
+    time.sleep(0.1)
 
 bull = sum(1 for _,_,s in results if s>=30)
+print(f"  ✅ {len(results)}銘柄スコアリング完了 / 買い検討:{bull}銘柄")
 
-# Step4: 業種スコアシート更新
+# Step5: 業種スコアシート更新
+print("📡 Step5: 業種スコアシート更新中...")
 ws_sec = ss.worksheet("業種スコア")
 ws_sec.clear()
 ws_sec.update(range_name="A1", values=[["業種","スコア","判定","更新日時"]]+[
     [sec, sc,
      "🟢 強気" if sc>=30 else ("🟡 中立強" if sc>=0 else ("🟠 中立弱" if sc>=-30 else "🔴 弱気")),
      today]
-    for sec,sc in sorted(sector_scores.items(),key=lambda x:-x[1])
+    for sec,sc in sorted(sector_scores.items(), key=lambda x:-x[1])
 ])
+print("  ✅ 業種スコアシート更新完了")
 
-# Step5: ログ追記
+# Step6: ログ追記
+print("📡 Step6: 作業ログ追記中...")
 ws_log   = ss.worksheet("作業ログ")
 existing = ws_log.get_all_values()
 ws_log.update(existing + [
-    ["",""],[f"★週次自動更新 {today}",""],
-    ["マクロスコア",f"{macro_result['score']:+.0f}"],
-    ["業種平均",f"{avg_sec:+.1f}"],
-    ["買い検討銘柄数",f"{bull}銘柄"],
-    ["実行方法","GitHub Actions自動実行"],
+    ["", ""],
+    [f"★週次自動更新 {today}", ""],
+    ["マクロスコア", f"{macro_result['score']:+.0f}"],
+    ["業種平均",     f"{avg_sec:+.1f}"],
+    ["買い検討銘柄数", f"{bull}銘柄"],
+    ["実行方法", "GitHub Actions自動実行（並列取得版）"],
 ])
 
-print(f"\n✅ 週次更新完了")
-print(f"  マクロ:{macro_result['score']:+.0f} / 業種:{avg_sec:+.1f} / 買い検討:{bull}銘柄")
+print(f"\n{'='*50}")
+print(f"✅ 週次更新完了: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+print(f"   マクロ: {macro_result['score']:+.0f}")
+print(f"   業種平均: {avg_sec:+.1f}")
+print(f"   買い検討: {bull}銘柄")
+print(f"{'='*50}")
