@@ -128,6 +128,7 @@ class ThreeLayerScorer:
             df.columns = [c[0] if isinstance(c,tuple) else c for c in df.columns]
             close = df["Close"]
             cur   = float(close.iloc[-1])
+            if np.isnan(cur): return {"score":0,"latest_price":0,"ret_1m":0}
             ma25  = float(close.rolling(25).mean().iloc[-1])
             ma75  = float(close.rolling(min(75,len(close))).mean().iloc[-1])
             sc = {}
@@ -138,6 +139,7 @@ class ThreeLayerScorer:
             ret = (cur-float(close.iloc[-22]))/float(close.iloc[-22])*100 if len(close)>=22 else 0
             sc["mom"] = +20 if ret>10 else (+10 if ret>3 else (0 if ret>-3 else (-10 if ret>-10 else -20)))
             vol = float(close.pct_change().rolling(20).std().iloc[-1])*100
+            if np.isnan(vol): vol = 2.0
             sc["vol"] = +10 if vol<1 else (+5 if vol<2 else (0 if vol<3.5 else -10))
             return {"score":max(-100,min(100,sum(sc.values()))),"latest_price":cur,"ret_1m":ret}
         except:
@@ -212,19 +214,26 @@ ws_pred      = ss.worksheet("予測記録")
 results      = []
 
 for code,name,sector,cost,qty,theme in HOLDINGS:
-    stock  = scorer.calc_stock_score(code)
-    sec_sc = sector_scores.get(sector, avg_sec)
-    comp   = round(macro_result["score"]*0.4 + sec_sc*0.3 + stock["score"]*0.3, 1)
-    p      = stock["latest_price"]
-    upside = 1.10 if comp>50 else (1.05 if comp>20 else 1.02)
-    target = round(p*upside)
-    stop   = round(p*0.93)
-    direction = "上昇" if comp>20 else ("下落" if comp<-20 else "中立")
-    ws_pred.append_row([today,code,name,p,
-                        macro_result["score"],round(sec_sc,1),stock["score"],comp,
-                        scorer._label(comp),direction,target,stop,
-                        f"テーマ:{theme}","","","","",""])
-    results.append((code,name,comp))
+    try:
+        stock  = scorer.calc_stock_score(code)
+        sec_sc = sector_scores.get(sector, avg_sec)
+        comp   = round(macro_result["score"]*0.4 + sec_sc*0.3 + stock["score"]*0.3, 1)
+        p      = stock["latest_price"]
+        # NaN・0対策
+        if not p or np.isnan(p): p = 0
+        upside = 1.10 if comp>50 else (1.05 if comp>20 else 1.02)
+        target = int(round(p*upside)) if p > 0 else 0
+        stop   = int(round(p*0.93))   if p > 0 else 0
+        direction = "上昇" if comp>20 else ("下落" if comp<-20 else "中立")
+        ws_pred.append_row([today,code,name,
+                            float(p) if p > 0 else "",
+                            macro_result["score"],round(sec_sc,1),stock["score"],comp,
+                            scorer._label(comp),direction,target,stop,
+                            f"テーマ:{theme}","","","","",""])
+        results.append((code,name,comp))
+        print(f"  ✅ {code} {name}: {comp:+.1f}")
+    except Exception as e:
+        print(f"  ❌ {code} {name}: {e}")
     time.sleep(0.4)
 
 bull = sum(1 for _,_,s in results if s>=30)
