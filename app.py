@@ -21,7 +21,8 @@ def get_spreadsheet():
     ]
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     gc   = gspread.authorize(creds)
-    ss   = gc.open_by_key(os.environ.get("SPREADSHEET_ID", "1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE"))
+    ss   = gc.open_by_key(os.environ.get("SPREADSHEET_ID",
+           "1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE"))
     return ss
 
 # ============================================================
@@ -33,6 +34,7 @@ def load_data():
     if ss is None:
         return None, None, None
 
+    # 予測記録
     ws   = ss.worksheet("予測記録")
     rows = ws.get_all_values()
     if len(rows) < 2:
@@ -44,15 +46,16 @@ def load_data():
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # ★修正：株価が入っている行のみを対象に最新日付を取得
+    # 株価が入っている行のみで最新日付を取得
     df_valid = df[df["現在株価"].notna() & (df["現在株価"] > 0)]
-    if not df_valid.empty:
-        latest_date = df_valid["予測日"].max()
-    else:
-        latest_date = df["予測日"].max()
+    latest_date = df_valid["予測日"].max() if not df_valid.empty else df["予測日"].max()
+    df_latest   = df[df["予測日"] == latest_date].copy()
 
-    df_latest = df[df["予測日"] == latest_date].copy()
+    # 重複銘柄を除去（同日付で最新1行のみ）
+    if "銘柄コード" in df_latest.columns:
+        df_latest = df_latest.drop_duplicates(subset=["銘柄コード"], keep="last")
 
+    # 業種スコア
     try:
         ws_sec   = ss.worksheet("業種スコア")
         sec_rows = ws_sec.get_all_values()
@@ -62,68 +65,96 @@ def load_data():
     except:
         df_sec = pd.DataFrame()
 
-    return df_latest, df_sec, latest_date
+    # 経営品質スコアv2
+    try:
+        ws_mq   = ss.worksheet("経営品質スコアv2")
+        mq_rows = ws_mq.get_all_values()
+        df_mq   = pd.DataFrame(mq_rows[1:], columns=mq_rows[0]) if len(mq_rows)>1 else pd.DataFrame()
+        if "経営品質スコア" in df_mq.columns:
+            df_mq["経営品質スコア"] = pd.to_numeric(df_mq["経営品質スコア"], errors="coerce")
+    except:
+        df_mq = pd.DataFrame()
+
+    # 統合スコア
+    try:
+        ws_int   = ss.worksheet("統合スコア")
+        int_rows = ws_int.get_all_values()
+        df_int   = pd.DataFrame(int_rows[1:], columns=int_rows[0]) if len(int_rows)>1 else pd.DataFrame()
+        for col in ["旧スコア","新スコア","経営品質スコア"]:
+            if col in df_int.columns:
+                df_int[col] = pd.to_numeric(df_int[col], errors="coerce")
+    except:
+        df_int = pd.DataFrame()
+
+    return df_latest, df_sec, latest_date, df_mq, df_int
 
 # ============================================================
 # ページ設定
 # ============================================================
 st.set_page_config(page_title="AI投資判断システム", page_icon="📈", layout="wide")
 st.title("📈 AI投資判断システム")
-st.caption("毎週月曜自動更新 | 3層スコア（マクロ40%・業種30%・銘柄30%）")
+st.caption("毎週月曜自動更新 | 統合スコア（マクロ30%・業種25%・銘柄25%・経営品質20%）")
 
-df_latest, df_sec, latest_date = load_data()
-
-if df_latest is None:
+result = load_data()
+if result is None or result[0] is None:
     st.error("データの読み込みに失敗しました")
     st.stop()
 
-tab1, tab2, tab3 = st.tabs(["📊 銘柄スコア", "🌡️ 業種体温計", "📡 マクロ指標"])
+df_latest, df_sec, latest_date, df_mq, df_int = result
+
+tab1, tab2, tab3, tab4 = st.tabs(["📊 統合スコア", "🌡️ 業種体温計", "💹 経営品質", "📡 マクロ指標"])
 
 # ============================================================
-# Tab1: 銘柄スコア
+# Tab1: 統合スコア
 # ============================================================
 with tab1:
     st.caption(f"最終更新: {latest_date}")
 
     col1, col2, col3, col4 = st.columns(4)
     total_count = len(df_latest)
-    buy_count   = int((df_latest["総合スコア"] >= 30).sum()) if "総合スコア" in df_latest.columns else 0
     macro_score = df_latest["マクロスコア"].iloc[0] if "マクロスコア" in df_latest.columns and len(df_latest)>0 else 0
     sec_avg     = df_latest["業種スコア"].mean() if "業種スコア" in df_latest.columns else 0
 
+    # 統合スコアから買い検討を計算
+    if not df_int.empty and "新スコア" in df_int.columns:
+        buy_count = int((df_int["新スコア"] >= 30).sum())
+    else:
+        buy_count = int((df_latest["総合スコア"] >= 30).sum()) if "総合スコア" in df_latest.columns else 0
+
     with col1: st.metric("分析銘柄数", f"{total_count}銘柄")
-    with col2: st.metric("買い検討", f"{buy_count}銘柄")
+    with col2: st.metric("買い検討（統合）", f"{buy_count}銘柄")
     with col3: st.metric("マクロスコア", f"{int(macro_score) if pd.notna(macro_score) else 0}")
     with col4: st.metric("業種平均", f"{sec_avg:.1f}")
 
     st.divider()
 
-    if "シグナル" in df_latest.columns:
-        signal_options = ["全て"] + sorted(df_latest["シグナル"].dropna().unique().tolist())
+    # 統合スコアテーブル
+    if not df_int.empty:
+        st.subheader("🔮 統合スコア（マクロ30%・業種25%・銘柄25%・経営品質20%）")
+        df_int_view = df_int.sort_values("新スコア", ascending=False) if "新スコア" in df_int.columns else df_int
+
+        # 買い検討ハイライト
+        if "新スコア" in df_int_view.columns:
+            buy_df = df_int_view[df_int_view["新スコア"] >= 30]
+            if not buy_df.empty:
+                st.markdown(f"#### 🟡 買い検討銘柄（{len(buy_df)}銘柄）")
+                show_cols = [c for c in ["コード","銘柄名","業種","旧スコア","新スコア","差","経営品質スコア","経営品質判定"] if c in buy_df.columns]
+                st.dataframe(buy_df[show_cols], use_container_width=True, hide_index=True)
+                st.divider()
+
+        st.markdown("#### 全銘柄スコア一覧")
+        show_cols = [c for c in ["コード","銘柄名","業種","旧スコア","新スコア","差","経営品質スコア","経営品質判定"] if c in df_int_view.columns]
+        st.dataframe(df_int_view[show_cols], use_container_width=True, hide_index=True)
     else:
-        signal_options = ["全て"]
-    selected = st.selectbox("絞り込み", signal_options)
-
-    df_view = df_latest.copy()
-    if selected != "全て" and "シグナル" in df_view.columns:
-        df_view = df_view[df_view["シグナル"] == selected]
-
-    if "総合スコア" in df_view.columns:
-        df_view = df_view.sort_values("総合スコア", ascending=False)
-
-    display_cols = [c for c in ["銘柄コード","銘柄名","現在株価","マクロスコア","業種スコア","銘柄スコア","総合スコア","予測方向"] if c in df_view.columns]
-    df_display = df_view[display_cols].copy()
-    if "現在株価" in df_display.columns:
-        df_display["現在株価"] = df_display["現在株価"].apply(
-            lambda x: f"{int(x):,}" if pd.notna(x) and x > 0 else "取得中"
-        )
-    st.dataframe(df_display, use_container_width=True, hide_index=True)
-
-    if buy_count > 0 and "総合スコア" in df_latest.columns:
-        st.subheader(f"🟡 買い検討銘柄（{buy_count}銘柄）")
-        df_buy  = df_latest[df_latest["総合スコア"] >= 30].sort_values("総合スコア", ascending=False)
-        buy_cols = [c for c in ["銘柄コード","銘柄名","現在株価","総合スコア","予測方向","目標株価(3M)","損切り水準"] if c in df_buy.columns]
-        st.dataframe(df_buy[buy_cols], use_container_width=True, hide_index=True)
+        # フォールバック：予測記録から表示
+        display_cols = [c for c in ["銘柄コード","銘柄名","現在株価","マクロスコア","業種スコア","銘柄スコア","総合スコア","予測方向"] if c in df_latest.columns]
+        df_view = df_latest.sort_values("総合スコア", ascending=False) if "総合スコア" in df_latest.columns else df_latest
+        df_display = df_view[display_cols].copy()
+        if "現在株価" in df_display.columns:
+            df_display["現在株価"] = df_display["現在株価"].apply(
+                lambda x: f"{int(x):,}" if pd.notna(x) and x>0 else "取得中"
+            )
+        st.dataframe(df_display, use_container_width=True, hide_index=True)
 
 # ============================================================
 # Tab2: 業種体温計
@@ -152,9 +183,42 @@ with tab2:
         st.info("業種スコアデータがありません")
 
 # ============================================================
-# Tab3: マクロ指標
+# Tab3: 経営品質スコア
 # ============================================================
 with tab3:
+    st.subheader("💹 経営品質スコア（業種別基準）")
+    if df_mq is not None and not df_mq.empty:
+        df_mq_sorted = df_mq.sort_values("経営品質スコア", ascending=False) if "経営品質スコア" in df_mq.columns else df_mq
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("#### 🟢 成長加速（上位）")
+            top5 = df_mq_sorted.head(5)
+            for _, row in top5.iterrows():
+                score = row.get("経営品質スコア","")
+                label = row.get("判定","")
+                name  = row.get("銘柄名","")
+                st.markdown(f"{label} **{name}** : {int(score):+d}点")
+        with col2:
+            st.markdown("#### 🔴 要注意（下位）")
+            bot5 = df_mq_sorted.tail(5).iloc[::-1]
+            for _, row in bot5.iterrows():
+                score = row.get("経営品質スコア","")
+                label = row.get("判定","")
+                name  = row.get("銘柄名","")
+                st.markdown(f"{label} **{name}** : {int(score):+d}点")
+
+        st.divider()
+        show_cols = [c for c in ["証券コード","銘柄名","業種","経営品質スコア","判定",
+                                  "売上高成長率%","営業利益率%","EPS成長率%","主な根拠"] if c in df_mq_sorted.columns]
+        st.dataframe(df_mq_sorted[show_cols], use_container_width=True, hide_index=True)
+    else:
+        st.info("経営品質スコアデータがありません")
+
+# ============================================================
+# Tab4: マクロ指標
+# ============================================================
+with tab4:
     st.subheader("📡 マクロ指標")
     if len(df_latest) > 0:
         macro_val = df_latest["マクロスコア"].iloc[0] if "マクロスコア" in df_latest.columns else 0
@@ -166,8 +230,12 @@ with tab3:
         st.metric("マクロスコア", f"{int(macro_val) if pd.notna(macro_val) else 0}", delta=macro_label)
         st.divider()
         st.markdown("""
-**指標の見方：**
+**現在の市場環境：**
 - マクロスコア +45 → 買い検討水準
+- 3シナリオ：🟢 強気65% / 中立23% / 弱気12%
+- 現在フェーズ：減速期（VIX=27.3・HY=3.17%）
+
+**指標の見方：**
 - VIX < 20 → 市場安定
 - HYスプレッド < 4% → リスクオン
 - 逆イールド > 0 → 景気後退リスク低
@@ -181,4 +249,4 @@ with tab3:
         """)
 
 st.divider()
-st.caption("AI投資判断システム | 毎週月曜朝8時自動更新 | バックテスト：5Y勝率88%・日経超過+14%/年")
+st.caption("AI投資判断システム | daily自動更新（平日朝7時）+ weekly自動更新（月曜10時）| バックテスト：5Y勝率88%・日経超過+14%/年")
