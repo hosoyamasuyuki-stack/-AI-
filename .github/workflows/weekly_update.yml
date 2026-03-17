@@ -2,7 +2,7 @@ name: Weekly Investment Update
 
 on:
   schedule:
-    - cron: '0 23 * * 0'  # 毎週日曜23時UTC = 月曜8時JST
+    - cron: '0 1 * * 1'  # 毎週月曜1時UTC = 月曜10時JST（市場開場後）
   workflow_dispatch:  # 手動実行ボタンも有効
 
 jobs:
