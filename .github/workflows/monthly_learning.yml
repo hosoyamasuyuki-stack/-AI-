@@ -1,0 +1,32 @@
+name: Monthly Learning Batch
+
+on:
+  schedule:
+    # 毎月1日 9:00 JST（00:00 UTC）
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+    # 手動実行ボタン（テスト用）
+
+jobs:
+  learning-batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v3
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 依存パッケージをインストール
+        run: |
+          pip install yfinance gspread google-auth pandas numpy scipy
+
+      - name: 月次学習バッチを実行
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: |
+          python learning_batch_monthly.py
