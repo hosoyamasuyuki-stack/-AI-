@@ -42,7 +42,7 @@ ss         = gc.open_by_key(SPREADSHEET_ID)
 NOW   = datetime.now().strftime('%Y/%m/%d %H:%M')
 TODAY = datetime.now()
 
-print(f"✅ 接続完了: {ss.title}")
+print(f"$2705 接続完了: {ss.title}")
 print(f"実行日時: {NOW}")
 print(f"\n{'='*60}")
 print("日次 変数3（価格）更新スクリプト")
@@ -235,10 +235,10 @@ try:
     df_v43 = pd.DataFrame(ws_v43.get_all_records())
     df_v43['コード'] = df_v43['コード'].astype(str)
     has_existing = True
-    print(f"✅ 既存v4.3スコア読み込み：{len(df_v43)}銘柄")
+    print(f"$2705 既存v4.3スコア読み込み：{len(df_v43)}銘柄")
 except:
     has_existing = False
-    print("⚠️ 既存v4.3スコアが見つかりません。変数1・2はデフォルト値を使用")
+    print("$26A0$FE0F 既存v4.3スコアが見つかりません。変数1・2はデフォルト値を使用")
 
 daily_results = []
 alerts        = []  # 暴落・急騰アラート
@@ -291,7 +291,7 @@ for s in STOCKS:
     # 暴落・急騰検知（±5%以上）
     alert_msg = ''
     if change_pct is not None and abs(change_pct) >= 5.0:
-        direction = '📈急騰' if change_pct > 0 else '📉急落'
+        direction = '$D83D$DCC8急騰' if change_pct > 0 else '$D83D$DCC9急落'
         if change_pct < -5:
             # 暴落時：割安度が上がることを記録
             alert_msg = (f"{direction} {change_pct:+.1f}% | "
@@ -307,7 +307,7 @@ for s in STOCKS:
     if change_pct is not None:
         status += f" [{change_pct:+.1f}%]"
     if alert_msg:
-        status += " ⚠️"
+        status += " $26A0$FE0F"
     print(status)
 
     daily_results.append({
@@ -331,15 +331,15 @@ ws_daily = ss.add_worksheet(title=SHEET_DAILY, rows=len(df_daily)+5, cols=16)
 h_daily  = list(df_daily.columns)
 rows_d   = [h_daily] + [
     ['' if (v is None or (isinstance(v,float) and np.isnan(v))) else v
-     for v in r.values()]
+     for v in list(r)]
     for _, r in df_daily.iterrows()
 ]
 ws_daily.update('A1', rows_d)
-print(f"\n✅ 日次スコア保存：'{SHEET_DAILY}'（{len(df_daily)}銘柄）")
+print(f"\n$2705 日次スコア保存：'{SHEET_DAILY}'（{len(df_daily)}銘柄）")
 
 # ── 暴落・急騰アラートの記録 ─────────────────────────────────
 if alerts:
-    print(f"\n⚠️  暴落・急騰アラート（{len(alerts)}件）")
+    print(f"\n$26A0$FE0F  暴落・急騰アラート（{len(alerts)}件）")
     try:
         try:
             ws_alert = ss.worksheet('暴落急騰アラート')
@@ -354,11 +354,11 @@ if alerts:
                   f"{a['変化率']:+.1f}%", a['メッセージ']]])
             last_row += 1
             print(f"  {a['銘柄名']}：{a['メッセージ']}")
-        print(f"✅ アラート記録完了")
+        print(f"$2705 アラート記録完了")
     except Exception as e:
-        print(f"⚠️ アラート記録エラー: {e}")
+        print(f"$26A0$FE0F アラート記録エラー: {e}")
 else:
-    print(f"\n✅ 暴落・急騰なし（全銘柄±5%以内）")
+    print(f"\n$2705 暴落・急騰なし（全銘柄±5%以内）")
 
 # ── 作業ログ ─────────────────────────────────────────────────
 try:
@@ -366,7 +366,7 @@ try:
     last = len(wl.get_all_values()) + 1
     wl.update(f'A{last}', [[NOW, '日次価格更新',
                              f'変数3を最新株価で再計算・時価総額ベース',
-                             f'アラート{len(alerts)}件', '✅完了']])
+                             f'アラート{len(alerts)}件', '$2705完了']])
 except: pass
 
 # ── 最終サマリー ─────────────────────────────────────────────
@@ -377,4 +377,4 @@ print(f"  更新銘柄数：{len(df_daily)}銘柄")
 print(f"  暴落急騰アラート：{len(alerts)}件")
 print(f"  FCF利回り計算：時価総額ベース（株価連動）")
 print(f"  暴落時動作：株価下落→PER低下→PEG低下→変数3上昇→スコア上昇→割安度増加")
-print(f"\n✅ 全処理完了：{NOW}")
+print(f"\n$2705 全処理完了：{NOW}")
