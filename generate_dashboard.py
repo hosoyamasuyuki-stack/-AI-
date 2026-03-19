@@ -378,30 +378,15 @@ VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs �
           <div class="vi"><div class="vi-l">総合判定</div><div class="{vd_cls}" style="font-size:11px;font-weight:900;margin-top:3px;">{VAL['verdict']}</div><div class="cr" style="font-size:8px;font-weight:800;margin-top:2px;">{VAL['verdict_us']}</div><span style="font-size:7px;color:#475569;margin-top:2px;display:block;">¥{VAL['usdjpy']:.1f} 金利差{VAL['rate_diff']:.1f}%</span></div>
         </div>"""
 
-# バリュエーションセクションをHTMLに埋め込む（入れ子div対応）
-start_marker = '<div class="sl">バリュエーション'
-start_idx = src.find(start_marker)
-if start_idx >= 0:
-    vg_start = src.find('<div class="vg"', start_idx)
-    if vg_start >= 0:
-        depth = 0
-        i = vg_start
-        end_idx = vg_start
-        while i < len(src):
-            if src[i:i+4] == '<div':
-                depth += 1
-            elif src[i:i+6] == '</div>':
-                depth -= 1
-                if depth == 0:
-                    end_idx = i + 6
-                    break
-            i += 1
-        src = src[:start_idx] + VAL_HTML + src[end_idx:]
-        print("OK: バリュエーション置換")
-    else:
-        print("WARN: vg div not found")
+# バリュエーションセクションをHTMLに埋め込む
+# <div id="body"> を終端アンカーとして使用（確実・シンプル）
+val_start = src.find('<div class="sl">バリュエーション')
+val_end   = src.find('<div id="body">')
+if val_start >= 0 and val_end >= 0:
+    src = src[:val_start] + VAL_HTML + '\n    ' + src[val_end:]
+    print("OK: バリュエーション置換")
 else:
-    print("WARN: バリュエーションセクション not found")
+    print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
 
 out = 'ai_dashboard_v11_fixed.html'
 with open(out, 'w', encoding='utf-8') as f:
