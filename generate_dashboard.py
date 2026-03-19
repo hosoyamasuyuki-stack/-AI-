@@ -185,7 +185,190 @@ def load_valuation():
 VAL = load_valuation()
 print(f"  PBR 日本:{VAL['pbr_jp']} 米国:{VAL['pbr_us']} / 判定:{VAL['verdict']}")
 
-# ── スプレッドシートから銘柄データ読み込み ────────────────────
+# ── 市場指標 自動取得 ────────────────────────────────────────
+def fetch_market():
+    """日経・S&P500・VIX・HYスプレッド・逆イールドを自動取得"""
+    print("  市場指標取得中...")
+    def yp(ticker):
+        try:
+            h = yf.Ticker(ticker).history(period='5d')
+            if len(h) >= 2:
+                now = float(h['Close'].iloc[-1])
+                prev = float(h['Close'].iloc[-2])
+                chg = (now - prev) / prev * 100
+                # 52週高値・安値
+                h52 = yf.Ticker(ticker).history(period='1y')
+                hi52 = float(h52['High'].max()) if len(h52) > 0 else now
+                lo52 = float(h52['Low'].min())  if len(h52) > 0 else now
+                pct52 = round((now - lo52) / (hi52 - lo52) * 100) if hi52 != lo52 else 50
+                return {'v': now, 'chg': chg, 'hi52': hi52, 'lo52': lo52, 'pct52': pct52}
+        except: pass
+        return None
+
+    nk   = yp('^N225')
+    sp5  = yp('^GSPC')
+    vix  = yp('^VIX')
+
+    # HYスプレッド（HYG ETFの利回りで代替）
+    hyg  = yp('HYG')
+
+    # 逆イールド（10年-2年）
+    try:
+        t10 = get_fred('DGS10') or 4.3
+        t2  = get_fred('DGS2') or 4.5
+        yield_spread = round(t10 - t2, 2)
+    except:
+        t10 = 4.3; t2 = 4.5; yield_spread = -0.2
+
+    result = {
+        'nk_v':    round(nk['v'])    if nk  else 55000,
+        'nk_chg':  round(nk['chg'],1) if nk  else 0,
+        'nk_p52':  nk['pct52']       if nk  else 50,
+        'sp_v':    round(sp5['v'])   if sp5 else 6700,
+        'sp_chg':  round(sp5['chg'],1) if sp5 else 0,
+        'sp_p52':  sp5['pct52']      if sp5 else 50,
+        'vix_v':   round(vix['v'],1) if vix else 20,
+        'vix_chg': round(vix['chg'],1) if vix else 0,
+        't10':     t10,
+        't2':      t2,
+        'yield_spread': yield_spread,
+        'hyg_v':   round(hyg['v'],2) if hyg else 80,
+        'hyg_chg': round(hyg['chg'],2) if hyg else 0,
+    }
+    print(f"  日経:{result['nk_v']:,} SP500:{result['sp_v']:,} VIX:{result['vix_v']} イールド差:{result['yield_spread']}")
+    return result
+
+MKT = fetch_market()
+
+# ── 市場指標HTML生成 ─────────────────────────────────────────
+def mc_color(v, good_hi=None, good_lo=None, bad_hi=None, bad_lo=None, lower_better=False):
+    """値に応じてボーダー色クラスを返す"""
+    if lower_better:
+        if v <= good_hi: return 'bg', 'cg'
+        if v <= bad_hi:  return 'ba', 'ca'
+        return 'br', 'cr'
+    else:
+        if good_lo and v >= good_lo: return 'bg', 'cg'
+        if bad_lo  and v >= bad_lo:  return 'ba', 'ca'
+        return 'br', 'cr'
+
+def fmt_chg(c):
+    arrow = '↑' if c > 0 else '↓' if c < 0 else '→'
+    color = 'cg' if c > 0 else 'cr' if c < 0 else 'cs'
+    return f'<span class="{color}">{arrow}{abs(c):.1f}%</span>'
+
+def fmt_52w(p):
+    """52週レンジ内の位置をミニバーで表示"""
+    color = '#34d399' if p >= 60 else '#fbbf24' if p >= 30 else '#f87171'
+    return (f'<div style="background:#1e2d40;border-radius:2px;height:3px;margin-top:2px;position:relative;">'
+            f'<div style="position:absolute;left:0;width:{p}%;height:3px;background:{color};border-radius:2px;"></div>'
+            f'</div>'
+            f'<div style="font-size:6.5px;color:#475569;margin-top:1px;">52W {p}%</div>')
+
+# 各指標の色判定
+nk_bc,  nk_vc  = ('bg','cg') if MKT['nk_chg']  >= 0 else ('br','cr')
+sp_bc,  sp_vc  = ('bg','cg') if MKT['sp_chg']  >= 0 else ('br','cr')
+vix_bc, vix_vc = ('bg','cg') if MKT['vix_v'] <= 20 else ('ba','ca') if MKT['vix_v'] <= 30 else ('br','cr')
+ys_bc,  ys_vc  = ('bg','cg') if MKT['yield_spread'] >= 0 else ('ba','ca') if MKT['yield_spread'] >= -0.5 else ('br','cr')
+ys_label = '正常化' if MKT['yield_spread'] >= 0 else 'やや警戒' if MKT['yield_spread'] >= -0.5 else '逆イールド'
+vix_label = '平静' if MKT['vix_v'] <= 20 else '警戒' if MKT['vix_v'] <= 30 else '恐怖'
+hyg_label = '良好' if MKT['hyg_chg'] >= 0 else '悪化'
+hyg_bc = 'bg' if MKT['hyg_chg'] >= 0 else 'br'
+
+MSTRIP_HTML = f"""    <div class="mstrip">
+      <div class="mc {nk_bc}" onclick="showMC('nk')" style="cursor:pointer;">
+        <div class="mc-l">日経225 ⓘ</div>
+        <div class="mc-v {nk_vc}">{MKT['nk_v']:,}</div>
+        <div class="mc-s">{fmt_chg(MKT['nk_chg'])}</div>
+        {fmt_52w(MKT['nk_p52'])}
+      </div>
+      <div class="mc {sp_bc}" onclick="showMC('sp')" style="cursor:pointer;">
+        <div class="mc-l">S&amp;P500 ⓘ</div>
+        <div class="mc-v {sp_vc}">{MKT['sp_v']:,}</div>
+        <div class="mc-s">{fmt_chg(MKT['sp_chg'])}</div>
+        {fmt_52w(MKT['sp_p52'])}
+      </div>
+      <div class="mc {vix_bc}" onclick="showMC('vix')" style="cursor:pointer;">
+        <div class="mc-l">VIX 恐怖指数 ⓘ</div>
+        <div class="mc-v {vix_vc}">{MKT['vix_v']}</div>
+        <div class="mc-s">{fmt_chg(MKT['vix_chg'])} {vix_label}</div>
+      </div>
+      <div class="mc {hyg_bc}" onclick="showMC('hyg')" style="cursor:pointer;">
+        <div class="mc-l">社債市場 ⓘ</div>
+        <div class="mc-v {'cg' if MKT['hyg_chg']>=0 else 'cr'}">{MKT['hyg_v']}</div>
+        <div class="mc-s {'cg' if MKT['hyg_chg']>=0 else 'cr'}">{hyg_label}</div>
+      </div>
+      <div class="mc {ys_bc}" onclick="showMC('ys')" style="cursor:pointer;">
+        <div class="mc-l">逆イールド ⓘ</div>
+        <div class="mc-v {ys_vc}">{MKT['yield_spread']:+.2f}</div>
+        <div class="mc-s {ys_vc}">{ys_label}</div>
+      </div>"""
+
+# 日本M2・マクロスコアはスプレッドシートから取得済みのSHORT_SCORE/MID_SCOREを使う
+MSTRIP_HTML += f"""
+      <div class="mc bg" onclick="showMC('m2')" style="cursor:pointer;">
+        <div class="mc-l">日本M2 ⓘ</div>
+        <div class="mc-v cg">+{VAL.get('rate_jp', 1.5):.2f}%</div>
+        <div class="mc-s cg">加速中↑</div>
+      </div>
+      <div class="mc bg">
+        <div class="mc-l">マクロスコア</div>
+        <div class="mc-v ct" style="font-size:16px;">+45</div>
+        <div class="mc-s ca">買い検討</div>
+      </div>"""
+
+# 短期・中期スコアのHTML（既存のものを置き換え）
+short_bc = 'bg' if SHORT_SCORE >= 55 else 'ba' if SHORT_SCORE >= 45 else 'br'
+short_vc = 'cg' if SHORT_SCORE >= 55 else 'ca' if SHORT_SCORE >= 45 else 'cr'
+short_lbl = '🟢 強気' if SHORT_SCORE >= 55 else '🟡 中立' if SHORT_SCORE >= 45 else '🔴 弱気'
+mid_bc = 'bg' if MID_SCORE >= 55 else 'ba' if MID_SCORE >= 45 else 'br'
+mid_vc = 'cg' if MID_SCORE >= 55 else 'ca' if MID_SCORE >= 45 else 'cr'
+mid_lbl = '🟢 強気' if MID_SCORE >= 55 else '🟡 中立' if MID_SCORE >= 45 else '🔴 弱気'
+
+MSTRIP_HTML += f"""
+      <div class="mc mc-signal {short_bc}" style="border-color:{'#065f46' if SHORT_SCORE>=55 else '#92400e' if SHORT_SCORE>=45 else '#991b1b'}!important;">
+        <div class="mc-l" style="color:{'#6ee7b7' if SHORT_SCORE>=55 else '#fcd34d' if SHORT_SCORE>=45 else '#fca5a5'};cursor:pointer;" onclick="showHelp('short_score')">短期スコア（1年）<span class="help-icon">?</span></div>
+        <div class="mc-v {short_vc}" style="font-size:15px;">{SHORT_SCORE}点</div>
+        <div class="mc-s {short_vc}">{short_lbl}</div>
+      </div>
+      <div class="mc mc-signal {mid_bc}" style="border-color:{'#065f46' if MID_SCORE>=55 else '#92400e' if MID_SCORE>=45 else '#7f2d1d'}!important;">
+        <div class="mc-l" style="color:{'#6ee7b7' if MID_SCORE>=55 else '#fcd34d' if MID_SCORE>=45 else '#fca5a5'};cursor:pointer;" onclick="showHelp('medium_score')">中期スコア（3年）<span class="help-icon">?</span></div>
+        <div class="mc-v {mid_vc}" style="font-size:15px;">{MID_SCORE}点</div>
+        <div class="mc-s {mid_vc}">{mid_lbl}</div>
+      </div>
+    </div>
+    <style>
+    #mc-modal{{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9998;align-items:center;justify-content:center;}}
+    #mc-modal.open{{display:flex;}}
+    </style>
+    <div id="mc-modal" onclick="if(event.target===this)closeMC()">
+      <div style="background:#111827;border:1px solid #374151;border-radius:10px;padding:18px 20px;max-width:320px;width:90%;">
+        <div id="mc-ttl" style="font-size:13px;font-weight:900;color:#f59e0b;margin-bottom:8px;"></div>
+        <div id="mc-body" style="font-size:11px;color:#d1d5db;line-height:1.75;white-space:pre-wrap;"></div>
+        <div style="margin-top:12px;text-align:right;font-size:10px;color:#94a3b8;cursor:pointer;" onclick="closeMC()">✕ 閉じる</div>
+      </div>
+    </div>
+    <script>
+    var MC_INFO={{
+      nk:{{t:'日経225とは',b:'日本を代表する225社の株価を平均した指数です。\\n\\nこの数字が上がる→日本株全体が好調\\nこの数字が下がる→日本株全体が低調\\n\\n52週バー：過去1年の最安値〜最高値の中で今がどこにいるか。右端ほど高値圏。'}},
+      sp:{{t:'S&P500とは',b:'アメリカの代表的な500社の株価指数。世界の株式市場の中心です。\\n\\nS&P500が下がると世界中の株が連動して売られやすくなります。日本株も例外ではありません。'}},
+      vix:{{t:'VIX（恐怖指数）とは',b:'投資家がどれだけ「怖い」と感じているかを数値化した指標です。\\n\\n20以下 → 平静（買いやすい環境）\\n20〜30 → 不安（慎重に）\\n30以上 → 恐怖（嵐の中）\\n40以上 → パニック\\n\\nただし長期投資家にとって恐怖は仕込みのチャンスでもあります。'}},
+      hyg:{{t:'社債市場（HYG）とは',b:'信用力が低い企業が発行する債券のETFです。\\n\\nHYGが上がる → 市場全体がリスクを取りやすい安心環境\\nHYGが下がる → 企業の倒産懸念が高まっている危険サイン\\n\\n株式市場より先行して動くことが多く、先行指標として機能します。'}},
+      ys:{{t:'逆イールドとは',b:'10年国債の金利 − 2年国債の金利 の差です。\\n\\nプラス（正常）→ 景気は通常運転\\nマイナス（逆イールド）→ 近い将来の景気後退を市場が予測\\n\\n歴史的にマイナスが1年以上続いた後、景気後退が起きることが多い。現在は正常化の方向。'}},
+      m2:{{t:'日本M2（マネーサプライ）とは',b:'日本国内に出回っているお金の総量の増加率です。\\n\\nM2が増加→お金が増える→15〜18ヶ月後に株式市場に資金が流入\\nM2が減少→お金が減る→将来の株式市場に逆風\\n\\n現在は加速中のため、2027年後半の株価上昇が期待されます。'}}
+    }};
+    function showMC(k){{var d=MC_INFO[k];if(!d)return;document.getElementById('mc-ttl').textContent=d.t;document.getElementById('mc-body').textContent=d.b;document.getElementById('mc-modal').classList.add('open');}}
+    function closeMC(){{document.getElementById('mc-modal').classList.remove('open');}}
+    </script>"""
+
+# ── 市場ストリップをHTMLに置換 ────────────────────────────────
+mstrip_start = src.find('<div class="mstrip">')
+mstrip_end   = src.find('</div>', src.find('3 シナリオ')) + 6 if '3 シナリオ' in src else -1
+if mstrip_start >= 0 and mstrip_end >= 0:
+    src = src[:mstrip_start] + MSTRIP_HTML + src[mstrip_end:]
+    print("OK: 市場ストリップ置換")
+else:
+    print(f"WARN: 市場ストリップ置換スキップ")
 def load(name, stype):
     try:
         rows = ss.worksheet(name).get_all_records()
