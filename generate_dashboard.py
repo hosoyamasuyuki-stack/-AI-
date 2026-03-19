@@ -27,7 +27,7 @@ creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 gc = gspread.authorize(creds)
 ss = gc.open_by_key(SPREADSHEET_ID)
 NOW = datetime.now().strftime('%Y/%m/%d %H:%M')
-print(f"$2705 接続完了: {ss.title}  ({NOW})")
+print(f"✅ 接続完了: {ss.title}  ({NOW})")
 
 # ── 短期・中期スコアを週次シグナルシートから取得 ──────────────
 def get_latest_scores():
@@ -44,7 +44,7 @@ def get_latest_scores():
         print(f"  週次シグナル取得: 短期{short}点 / 中期{mid}点")
         return short, mid
     except Exception as e:
-        print(f"  $26A0$FE0F 週次シグナル取得失敗: {e} → デフォルト値使用")
+        print(f"  ⚠️ 週次シグナル取得失敗: {e} → デフォルト値使用")
         return 50, 50
 
 SHORT_SCORE, MID_SCORE = get_latest_scores()
@@ -177,9 +177,9 @@ def load_valuation():
         else:
             ws.update('A2', [row])
             ws.update(f'A{len(existing)+1}', [row])
-        print(f"  $2705 バリュエーション保存完了")
+        print(f"  ✅ バリュエーション保存完了")
     except Exception as e:
-        print(f"  $26A0$FE0F バリュエーション保存失敗: {e}")
+        print(f"  ⚠️ バリュエーション保存失敗: {e}")
     return result
 
 VAL = load_valuation()
@@ -368,26 +368,44 @@ yield_cls, yield_lbl = cmp(VAL['yield_jp'],  VAL['yield_us'], False)
 buf_cls,   buf_lbl   = cmp(VAL['buffett_jp'],VAL['buffett_us'],True)
 vd_cls = 'cg' if '日本' in VAL['verdict'] else 'ca' if '均衡' in VAL['verdict'] else 'cr'
 
-VAL_HTML = f"""        <div class="sl">バリュエーション $2014 日本 vs 米国<span style="font-size:7px;color:#475569;font-weight:400;margin-left:8px;">自動更新 {VAL['updated_at']}</span></div>
+VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs 米国<span style="font-size:7px;color:#475569;font-weight:400;margin-left:8px;">自動更新 {VAL['updated_at']}</span></div>
         <div class="vg" style="display:grid;grid-template-columns:repeat(6,1fr);gap:0;">
           <div class="vi"><div class="vi-l">シラーPER</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {cape_cls}">{VAL['cape_jp']:.0f}倍</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['cape_us']:.0f}倍</span></div><span class="vi-j {cape_cls}">{cape_lbl}</span></div>
           <div class="vi"><div class="vi-l">PBR</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {pbr_cls}">{VAL['pbr_jp']:.1f}倍</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['pbr_us']:.1f}倍</span></div><span class="vi-j {pbr_cls}">{pbr_lbl}</span></div>
           <div class="vi"><div class="vi-l">益回り</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {yield_cls}">{VAL['yield_jp']:.2f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n ca">{VAL['yield_us']:.2f}%</span></div><span class="vi-j {yield_cls}">{yield_lbl}</span></div>
           <div class="vi"><div class="vi-l">配当利回り</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {div_cls}">{VAL['div_jp']:.1f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n ca">{VAL['div_us']:.1f}%</span></div><span class="vi-j {div_cls}">{div_lbl}</span></div>
           <div class="vi"><div class="vi-l">バフェット指数</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {buf_cls}">{VAL['buffett_jp']:.0f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['buffett_us']:.0f}%</span></div><span class="vi-j {buf_cls}">{buf_lbl}</span></div>
-          <div class="vi"><div class="vi-l">総合判定</div><div class="{vd_cls}" style="font-size:11px;font-weight:900;margin-top:3px;">{VAL['verdict']}</div><div class="cr" style="font-size:8px;font-weight:800;margin-top:2px;">{VAL['verdict_us']}</div><span style="font-size:7px;color:#475569;margin-top:2px;display:block;">$00A5{VAL['usdjpy']:.1f} 金利差{VAL['rate_diff']:.1f}%</span></div>
+          <div class="vi"><div class="vi-l">総合判定</div><div class="{vd_cls}" style="font-size:11px;font-weight:900;margin-top:3px;">{VAL['verdict']}</div><div class="cr" style="font-size:8px;font-weight:800;margin-top:2px;">{VAL['verdict_us']}</div><span style="font-size:7px;color:#475569;margin-top:2px;display:block;">¥{VAL['usdjpy']:.1f} 金利差{VAL['rate_diff']:.1f}%</span></div>
         </div>"""
 
-# バリュエーションセクションをHTMLに埋め込む
-src = re.sub(
-    r'<div class="sl">バリュエーション.*?</div>\s*<div[^>]*class="vg"[^>]*>.*?</div>',
-    VAL_HTML, src, count=1, flags=re.DOTALL
-)
-print("OK: バリュエーション置換")
+# バリュエーションセクションをHTMLに埋め込む（入れ子div対応）
+start_marker = '<div class="sl">バリュエーション'
+start_idx = src.find(start_marker)
+if start_idx >= 0:
+    vg_start = src.find('<div class="vg"', start_idx)
+    if vg_start >= 0:
+        depth = 0
+        i = vg_start
+        end_idx = vg_start
+        while i < len(src):
+            if src[i:i+4] == '<div':
+                depth += 1
+            elif src[i:i+6] == '</div>':
+                depth -= 1
+                if depth == 0:
+                    end_idx = i + 6
+                    break
+            i += 1
+        src = src[:start_idx] + VAL_HTML + src[end_idx:]
+        print("OK: バリュエーション置換")
+    else:
+        print("WARN: vg div not found")
+else:
+    print("WARN: バリュエーションセクション not found")
 
-
+out = 'ai_dashboard_v11_fixed.html'
 with open(out, 'w', encoding='utf-8') as f:
     f.write(src)
-print(f"\n$2705 出力完了: {out}")
+print(f"\n✅ 出力完了: {out}")
 print(f"   保有:{len(rows_h)} 監視:{len(rows_w)} スコア:{len(SCORES)}")
 print(f"   短期:{SHORT_SCORE}点 / 中期:{MID_SCORE}点")
