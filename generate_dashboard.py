@@ -361,14 +361,6 @@ MSTRIP_HTML += f"""
     function closeMC(){{document.getElementById('mc-modal').classList.remove('open');}}
     </script>"""
 
-# ── 市場ストリップをHTMLに置換 ────────────────────────────────
-mstrip_start = src.find('<div class="mstrip">')
-mstrip_end   = src.find('</div>', src.find('3 シナリオ')) + 6 if '3 シナリオ' in src else -1
-if mstrip_start >= 0 and mstrip_end >= 0:
-    src = src[:mstrip_start] + MSTRIP_HTML + src[mstrip_end:]
-    print("OK: 市場ストリップ置換")
-else:
-    print(f"WARN: 市場ストリップ置換スキップ")
 def load(name, stype):
     try:
         rows = ss.worksheet(name).get_all_records()
@@ -491,6 +483,15 @@ resp = requests.get(BASE_URL, timeout=30)
 resp.raise_for_status()
 src = resp.text
 print(f"  OK: {len(src):,} bytes")
+
+# ── 市場ストリップ置換（src定義後に実行） ────────────────────
+mstrip_start = src.find('<div class="mstrip">')
+mstrip_end   = src.find('</div>', src.find('3 シナリオ')) + 6 if '3 シナリオ' in src else -1
+if mstrip_start >= 0 and mstrip_end >= 0:
+    src = src[:mstrip_start] + MSTRIP_HTML + src[mstrip_end:]
+    print("OK: 市場ストリップ置換")
+else:
+    print(f"WARN: 市場ストリップ置換スキップ")
 
 # ── STOCK_SCORES埋め込み ─────────────────────────────────────
 scores_js = ('const STOCK_SCORES=' +
