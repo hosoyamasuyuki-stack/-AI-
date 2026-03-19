@@ -220,8 +220,8 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
       </div>
       <div class="mc ba" onclick="showMC('vix')" style="cursor:pointer;">
         <div class="mc-l">VIX 恐怖指数 ⓘ</div>
-        <div class="mc-v ca">25.9</div>
-        <div class="mc-s"><span class="cg">↑3.0%</span> 警戒</div>
+        <div class="mc-v ca">25.8</div>
+        <div class="mc-s"><span class="cg">↑2.6%</span> 警戒</div>
       </div>
       <div class="mc br" onclick="showMC('hyg')" style="cursor:pointer;">
         <div class="mc-l">社債市場 ⓘ</div>
@@ -289,63 +289,6 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
           </div>
         </div>
         </div>
-        <style>
-        #vi-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9999;align-items:center;justify-content:center;}
-        #vi-modal.open{display:flex;}
-        #vi-box{background:#111827;border:1px solid #374151;border-radius:10px;padding:18px 20px;max-width:340px;width:90%;}
-        #vi-ttl{font-size:13px;font-weight:900;color:#f59e0b;margin-bottom:8px;}
-        #vi-body{font-size:11px;color:#d1d5db;line-height:1.75;white-space:pre-wrap;}
-        #vi-hist{margin-top:10px;padding-top:10px;border-top:1px solid #1e2d40;}
-        .vi-close{margin-top:12px;text-align:right;font-size:10px;color:#94a3b8;cursor:pointer;}
-        .vi-close:hover{color:#f59e0b;}
-        .mh-row{margin-bottom:10px;}
-        .mh-flag{font-size:8.5px;color:#94a3b8;margin-bottom:3px;font-weight:800;}
-        .mh-bg{background:#1e2d40;border-radius:4px;height:8px;position:relative;}
-        .mh-labels{display:flex;justify-content:space-between;font-size:7px;color:#475569;margin-top:3px;}
-        </style>
-        <div id="vi-modal" onclick="if(event.target===this)closeVI()">
-          <div id="vi-box">
-            <div id="vi-ttl"></div>
-            <div id="vi-body"></div>
-            <div id="vi-hist"></div>
-            <div class="vi-close" onclick="closeVI()">✕ 閉じる</div>
-          </div>
-        </div>
-        <script>
-        var VI_DATA={
-          cape:{ttl:'シラーPER（CAPE）とは',body:'過去10年の平均利益で計算した株価収益率です。\n景気の良い年・悪い年を平均するため、より正確に割高・割安を判断できます。\nノーベル賞を受賞したシラー教授が考案。\n\n目安：15倍以下→割安 / 22〜28倍→適正 / 30倍超→割高',jp:{min:15,max:35,now:29.0,g:22,w:28,flag:'🇯🇵 日本'},us:{min:22,max:40,now:34.1,g:27,w:32,flag:'🇺🇸 米国'}},
-          pbr:{ttl:'PBR（株価純資産倍率）とは',body:'会社の純資産と株価を比べた指標です。\n1倍＝今すぐ会社を解散したときの価値と同じ。\n日本は東証の改革でPBR改善が進んでいます。\n\n目安：1倍以下→超割安 / 1〜2倍→割安 / 3倍超→割高',jp:{min:0.9,max:2.4,now:1.24,g:1.4,w:2.0,flag:'🇯🇵 日本'},us:{min:2.5,max:5.5,now:1.54,g:3.2,w:4.2,flag:'🇺🇸 米国'}},
-          yield:{ttl:'益回り（株式益回り）とは',body:'PERの逆数（1÷PER×100）。\n株式投資をした場合の利回りに相当します。\n国債利回りより高ければ株式が有利。\n\n目安：6%超→株式有利 / 4〜6%→中立 / 4%未満→割高',jp:{min:3,max:9,now:6.25,g:6,w:4,flag:'🇯🇵 日本',inv:1},us:{min:2,max:7,now:3.81,g:5,w:3.5,flag:'🇺🇸 米国',inv:1}},
-          buffett:{ttl:'バフェット指数とは',body:'国の株式市場全体の時価総額をGDPで割った指標。\nバフェットが重視することで有名。\n数値が高いほど株式市場が割高です。\n\n目安：100%以下→割安 / 100〜150%→適正 / 150%超→割高',jp:{min:60,max:200,now:140,g:100,w:150,flag:'🇯🇵 日本'},us:{min:80,max:260,now:200,g:120,w:170,flag:'🇺🇸 米国'}},
-          verdict:{ttl:'総合判定の仕組み',body:'5指標（シラーPER・PBR・益回り・配当利回り・バフェット指数）を日米で比較し、日本が有利な指標の数で自動判定します。\n\n5指標中4つ以上→日本株フルポジ\n3つ→日本株優位\n2つ→均衡局面\n1つ以下→要検討',jp:null,us:null}
-        };
-        function pct(mn,mx,v){return Math.min(100,Math.max(0,Math.round((v-mn)/(mx-mn)*100)));}
-        function dc(p,gp,wp,inv){if(inv)return p>=gp?'#34d399':p>=wp?'#fbbf24':'#f87171';return p<=gp?'#34d399':p<=wp?'#fbbf24':'#f87171';}
-        function mhRow(d){
-          if(!d)return '';
-          var p=pct(d.min,d.max,d.now),gp=pct(d.min,d.max,d.g),wp=pct(d.min,d.max,d.w),inv=d.inv;
-          var dotC=dc(p,gp,wp,inv),r1=inv?'#7f1d1d':'#064e3b',r3=inv?'#064e3b':'#7f1d1d';
-          return '<div class="mh-row"><div class="mh-flag">'+d.flag+'</div>'
-            +'<div class="mh-bg">'
-            +'<div style="position:absolute;left:0;width:'+gp+'%;height:8px;background:'+r1+';border-radius:4px 0 0 4px;"></div>'
-            +'<div style="position:absolute;left:'+gp+'%;width:'+(wp-gp)+'%;height:8px;background:#92400e;"></div>'
-            +'<div style="position:absolute;left:'+wp+'%;width:'+(100-wp)+'%;height:8px;background:'+r3+';border-radius:0 4px 4px 0;"></div>'
-            +'<div style="position:absolute;left:calc('+p+'% - 9px);top:-5px;width:18px;height:18px;border-radius:50%;background:'+dotC+';border:2px solid #111827;"></div>'
-            +'</div>'
-            +'<div class="mh-labels"><span>'+d.min+'（過去最安）</span><span style="color:'+dotC+';font-weight:800;">現在：'+d.now+'</span><span>'+d.max+'（過去最高）</span></div>'
-            +'</div>';
-        }
-        function showVI(k){
-          var d=VI_DATA[k];if(!d)return;
-          document.getElementById('vi-ttl').textContent=d.ttl;
-          document.getElementById('vi-body').textContent=d.body;
-          var h=document.getElementById('vi-hist');
-          if(d.jp){h.style.display='block';h.innerHTML='<div style="font-size:9px;font-weight:800;color:#94a3b8;margin-bottom:6px;">過去10年レンジ（緑＝割安 / 黄＝普通 / 赤＝割高）</div>'+mhRow(d.jp)+mhRow(d.us);}
-          else h.style.display='none';
-          document.getElementById('vi-modal').classList.add('open');
-        }
-        function closeVI(){document.getElementById('vi-modal').classList.remove('open');}
-        </script>
     <div id="body">
 
   <!-- 列1：保有銘柄 -->
