@@ -486,12 +486,26 @@ print(f"  OK: {len(src):,} bytes")
 
 # ── 市場ストリップ置換（src定義後に実行） ────────────────────
 mstrip_start = src.find('<div class="mstrip">')
-mstrip_end   = src.find('</div>', src.find('3 シナリオ')) + 6 if '3 シナリオ' in src else -1
+# mstripの終わりは </div> が閉じた直後（mstrip divそのものの閉じタグ）
+if mstrip_start >= 0:
+    depth = 0
+    i = mstrip_start
+    mstrip_end = -1
+    while i < len(src):
+        if src[i:i+4] == '<div':
+            depth += 1
+        elif src[i:i+6] == '</div>':
+            depth -= 1
+            if depth == 0:
+                mstrip_end = i + 6
+                break
+        i += 1
+
 if mstrip_start >= 0 and mstrip_end >= 0:
     src = src[:mstrip_start] + MSTRIP_HTML + src[mstrip_end:]
     print("OK: 市場ストリップ置換")
 else:
-    print(f"WARN: 市場ストリップ置換スキップ")
+    print(f"WARN: 市場ストリップ置換スキップ (start={mstrip_start} end={mstrip_end})")
 
 # ── STOCK_SCORES埋め込み ─────────────────────────────────────
 scores_js = ('const STOCK_SCORES=' +
