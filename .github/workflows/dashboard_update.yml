@@ -38,7 +38,7 @@ jobs:
 
       - name: 依存パッケージをインストール
         run: |
-          pip install requests gspread google-auth
+          pip install requests gspread google-auth yfinance pandas numpy
 
       - name: ダッシュボードHTMLを生成
         env:
