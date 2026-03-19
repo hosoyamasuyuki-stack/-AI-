@@ -3,7 +3,7 @@ name: Dashboard Auto Update
 on:
   # weekly_update.yml完了後に自動実行
   workflow_run:
-    workflows: ["Weekly Update"]
+    workflows: ["Weekly Investment Update"]
     types:
       - completed
 
