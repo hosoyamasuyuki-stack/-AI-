@@ -12,10 +12,11 @@
 # 【認証】GOOGLE_CREDENTIALS（環境変数）
 # ============================================================
 
-import os, json, re, requests
+import os, json, re, requests, time
+import yfinance as yf
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ── 認証 ────────────────────────────────────────────────────
 SPREADSHEET_ID = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE'
@@ -26,7 +27,7 @@ creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 gc = gspread.authorize(creds)
 ss = gc.open_by_key(SPREADSHEET_ID)
 NOW = datetime.now().strftime('%Y/%m/%d %H:%M')
-print(f"✅ 接続完了: {ss.title}  ({NOW})")
+print(f"$2705 接続完了: {ss.title}  ({NOW})")
 
 # ── 短期・中期スコアを週次シグナルシートから取得 ──────────────
 def get_latest_scores():
@@ -43,10 +44,146 @@ def get_latest_scores():
         print(f"  週次シグナル取得: 短期{short}点 / 中期{mid}点")
         return short, mid
     except Exception as e:
-        print(f"  ⚠️ 週次シグナル取得失敗: {e} → デフォルト値使用")
+        print(f"  $26A0$FE0F 週次シグナル取得失敗: {e} → デフォルト値使用")
         return 50, 50
 
 SHORT_SCORE, MID_SCORE = get_latest_scores()
+
+# ── バリュエーション自動読み込み ────────────────────────────
+FRED_API_KEY = os.environ.get('FRED_API_KEY', '467c035b9ae8a723c2b9ee2184a22522')
+FRED_BASE    = 'https://api.stlouisfed.org/fred/series/observations'
+
+def get_fred(series_id):
+    try:
+        r = requests.get(FRED_BASE, params={
+            'series_id': series_id, 'api_key': FRED_API_KEY,
+            'file_type': 'json', 'sort_order': 'desc', 'limit': 5,
+            'observation_start': (datetime.now()-timedelta(days=90)).strftime('%Y-%m-%d'),
+        }, timeout=10)
+        for o in r.json().get('observations', []):
+            v = o.get('value', '.')
+            if v != '.': return round(float(v), 2)
+        return None
+    except: return None
+
+def get_yf_info(ticker, field):
+    try:
+        v = yf.Ticker(ticker).info.get(field)
+        return round(float(v), 4) if v else None
+    except: return None
+
+def load_valuation():
+    """バリュエーション指標を全自動取得"""
+    print("  バリュエーション自動取得中...")
+    # まずスプレッドシートに今日のデータがあれば使う（API節約）
+    try:
+        ws  = ss.worksheet('バリュエーション_日次')
+        rows = ws.get_all_values()
+        if len(rows) >= 2:
+            today = datetime.now().strftime('%Y/%m/%d')
+            if rows[1][0].startswith(today):
+                h = rows[0]; d = rows[1]
+                rec = dict(zip(h, d))
+                sf = lambda k,fb: float(rec[k]) if rec.get(k,'') not in ('','None','-') else fb
+                print(f"  → 本日取得済みデータを使用")
+                return {
+                    'per_jp':sf('PER_日本',16), 'per_us':sf('PER_米国',22),
+                    'pbr_jp':sf('PBR_日本',1.8),'pbr_us':sf('PBR_米国',4.8),
+                    'div_jp':sf('配当利回り_日本',2.0),'div_us':sf('配当利回り_米国',1.3),
+                    'yield_jp':sf('益回り_日本',6.25),'yield_us':sf('益回り_米国',4.5),
+                    'roe_jp':sf('ROE_日本',10.5),'roe_us':sf('ROE_米国',21.8),
+                    'cape_jp':sf('シラーPER_日本',29),'cape_us':sf('シラーPER_米国',36),
+                    'rate_jp':sf('10年金利_日本',1.5),'rate_us':sf('10年金利_米国',4.3),
+                    'rate_diff':sf('金利差',2.8),
+                    'buffett_jp':sf('バフェット指数_日本',140),'buffett_us':sf('バフェット指数_米国',200),
+                    'usdjpy':sf('ドル円',149),
+                    'verdict':rec.get('総合判定','日本株優位'),'verdict_us':rec.get('米国判定','米国株 慎重'),
+                    'updated_at':rec.get('更新日時','-'),
+                }
+    except: pass
+
+    # 新規取得
+    per_jp  = get_yf_info('^N225', 'trailingPE')
+    per_us  = get_yf_info('^GSPC', 'trailingPE') or get_yf_info('SPY','trailingPE')
+    pbr_jp  = get_yf_info('EWJ',  'priceToBook')
+    pbr_us  = get_yf_info('SPY',  'priceToBook')
+    div_jp_r= get_yf_info('1306.T','dividendYield')
+    div_us_r= get_yf_info('SPY',  'dividendYield')
+    div_jp  = round(div_jp_r*100,2) if div_jp_r else 2.0
+    div_us  = round(div_us_r*100,2) if div_us_r else 1.3
+    usdjpy  = None
+    try:
+        h = yf.Ticker('USDJPY=X').history(period='2d')
+        if len(h)>0: usdjpy = round(float(h['Close'].iloc[-1]),1)
+    except: pass
+    rate_us = get_fred('DGS10')
+    rate_jp = get_fred('IRLTLT01JPM156N')
+    buffett_us = get_fred('DDDM01USA156NWDB')
+    buffett_jp = get_fred('DDDM01JPA156NWDB')
+
+    yield_jp = round(1/per_jp*100,2) if per_jp else 6.25
+    yield_us = round(1/per_us*100,2) if per_us else 4.5
+    roe_jp   = round(pbr_jp/per_jp*100,1) if (pbr_jp and per_jp) else 10.5
+    roe_us   = round(pbr_us/per_us*100,1) if (pbr_us and per_us) else 21.8
+    cape_jp  = round(per_jp*1.5,1) if per_jp else 29.0
+    cape_us  = round(per_us*1.3,1) if per_us else 36.0
+    rate_diff= round(rate_us-rate_jp,2) if (rate_us and rate_jp) else 2.8
+
+    jp_adv = sum([
+        1 if (pbr_jp and pbr_us and pbr_jp < pbr_us) else 0,
+        1 if (per_jp and per_us and per_jp < per_us) else 0,
+        1 if (div_jp and div_us and div_jp > div_us) else 0,
+        1 if (yield_jp and yield_us and yield_jp > yield_us) else 0,
+        1 if (buffett_jp and buffett_us and buffett_jp < buffett_us) else 0,
+    ])
+    verdict    = '日本株フルポジ' if jp_adv>=4 else '日本株優位' if jp_adv>=3 else '均衡局面' if jp_adv>=2 else '要検討'
+    verdict_us = '米国株 慎重'   if jp_adv>=4 else '米国株 様子見' if jp_adv>=3 else '分散推奨' if jp_adv>=2 else '米国株も検討'
+
+    result = {
+        'per_jp':per_jp or 16,'per_us':per_us or 22,
+        'pbr_jp':pbr_jp or 1.8,'pbr_us':pbr_us or 4.8,
+        'div_jp':div_jp,'div_us':div_us,
+        'yield_jp':yield_jp,'yield_us':yield_us,
+        'roe_jp':roe_jp,'roe_us':roe_us,
+        'cape_jp':cape_jp,'cape_us':cape_us,
+        'rate_jp':rate_jp or 1.5,'rate_us':rate_us or 4.3,'rate_diff':rate_diff,
+        'buffett_jp':buffett_jp or 140,'buffett_us':buffett_us or 200,
+        'usdjpy':usdjpy or 149,
+        'verdict':verdict,'verdict_us':verdict_us,
+        'updated_at':datetime.now().strftime('%Y/%m/%d %H:%M'),
+    }
+    # スプレッドシートに保存
+    try:
+        header = ['更新日時','PER_日本','PER_米国','PBR_日本','PBR_米国',
+                  '配当利回り_日本','配当利回り_米国','益回り_日本','益回り_米国',
+                  'ROE_日本','ROE_米国','シラーPER_日本','シラーPER_米国',
+                  '10年金利_日本','10年金利_米国','金利差',
+                  'バフェット指数_日本','バフェット指数_米国','ドル円','総合判定','米国判定']
+        row = [result.get('updated_at'),result.get('per_jp'),result.get('per_us'),
+               result.get('pbr_jp'),result.get('pbr_us'),result.get('div_jp'),result.get('div_us'),
+               result.get('yield_jp'),result.get('yield_us'),result.get('roe_jp'),result.get('roe_us'),
+               result.get('cape_jp'),result.get('cape_us'),result.get('rate_jp'),result.get('rate_us'),
+               result.get('rate_diff'),result.get('buffett_jp'),result.get('buffett_us'),
+               result.get('usdjpy'),result.get('verdict'),result.get('verdict_us')]
+        row = ['' if v is None else v for v in row]
+        try:
+            ws = ss.worksheet('バリュエーション_日次')
+        except:
+            ws = ss.add_worksheet(title='バリュエーション_日次', rows=400, cols=25)
+        existing = ws.get_all_values()
+        if not existing or existing[0] != header:
+            ws.update('A1', [header])
+            ws.update('A2', [row])
+        else:
+            ws.update('A2', [row])
+            ws.update(f'A{len(existing)+1}', [row])
+        print(f"  $2705 バリュエーション保存完了")
+    except Exception as e:
+        print(f"  $26A0$FE0F バリュエーション保存失敗: {e}")
+    return result
+
+VAL = load_valuation()
+print(f"  PBR 日本:{VAL['pbr_jp']} 米国:{VAL['pbr_us']} / 判定:{VAL['verdict']}")
 
 # ── スプレッドシートから銘柄データ読み込み ────────────────────
 def load(name, stype):
@@ -218,9 +355,39 @@ src = re.sub(
 print("OK: 監視テーブル置換")
 
 # ── 出力 ──────────────────────────────────────────────────────
-out = 'ai_dashboard_v11_fixed.html'
+def cmp(jp, us, lower_is_better=True):
+    if lower_is_better:
+        return ('cg','日本割安') if jp < us else ('cr','米国割安')
+    else:
+        return ('cg','日本有利') if jp > us else ('cr','米国有利')
+
+pbr_cls,   pbr_lbl   = cmp(VAL['pbr_jp'],    VAL['pbr_us'],   True)
+cape_cls,  cape_lbl  = cmp(VAL['cape_jp'],   VAL['cape_us'],  True)
+div_cls,   div_lbl   = cmp(VAL['div_jp'],    VAL['div_us'],   False)
+yield_cls, yield_lbl = cmp(VAL['yield_jp'],  VAL['yield_us'], False)
+buf_cls,   buf_lbl   = cmp(VAL['buffett_jp'],VAL['buffett_us'],True)
+vd_cls = 'cg' if '日本' in VAL['verdict'] else 'ca' if '均衡' in VAL['verdict'] else 'cr'
+
+VAL_HTML = f"""        <div class="sl">バリュエーション $2014 日本 vs 米国<span style="font-size:7px;color:#475569;font-weight:400;margin-left:8px;">自動更新 {VAL['updated_at']}</span></div>
+        <div class="vg" style="display:grid;grid-template-columns:repeat(6,1fr);gap:0;">
+          <div class="vi"><div class="vi-l">シラーPER</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {cape_cls}">{VAL['cape_jp']:.0f}倍</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['cape_us']:.0f}倍</span></div><span class="vi-j {cape_cls}">{cape_lbl}</span></div>
+          <div class="vi"><div class="vi-l">PBR</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {pbr_cls}">{VAL['pbr_jp']:.1f}倍</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['pbr_us']:.1f}倍</span></div><span class="vi-j {pbr_cls}">{pbr_lbl}</span></div>
+          <div class="vi"><div class="vi-l">益回り</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {yield_cls}">{VAL['yield_jp']:.2f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n ca">{VAL['yield_us']:.2f}%</span></div><span class="vi-j {yield_cls}">{yield_lbl}</span></div>
+          <div class="vi"><div class="vi-l">配当利回り</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {div_cls}">{VAL['div_jp']:.1f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n ca">{VAL['div_us']:.1f}%</span></div><span class="vi-j {div_cls}">{div_lbl}</span></div>
+          <div class="vi"><div class="vi-l">バフェット指数</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {buf_cls}">{VAL['buffett_jp']:.0f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['buffett_us']:.0f}%</span></div><span class="vi-j {buf_cls}">{buf_lbl}</span></div>
+          <div class="vi"><div class="vi-l">総合判定</div><div class="{vd_cls}" style="font-size:11px;font-weight:900;margin-top:3px;">{VAL['verdict']}</div><div class="cr" style="font-size:8px;font-weight:800;margin-top:2px;">{VAL['verdict_us']}</div><span style="font-size:7px;color:#475569;margin-top:2px;display:block;">$00A5{VAL['usdjpy']:.1f} 金利差{VAL['rate_diff']:.1f}%</span></div>
+        </div>"""
+
+# バリュエーションセクションをHTMLに埋め込む
+src = re.sub(
+    r'<div class="sl">バリュエーション.*?</div>\s*<div[^>]*class="vg"[^>]*>.*?</div>',
+    VAL_HTML, src, count=1, flags=re.DOTALL
+)
+print("OK: バリュエーション置換")
+
+
 with open(out, 'w', encoding='utf-8') as f:
     f.write(src)
-print(f"\n✅ 出力完了: {out}")
+print(f"\n$2705 出力完了: {out}")
 print(f"   保有:{len(rows_h)} 監視:{len(rows_w)} スコア:{len(SCORES)}")
 print(f"   短期:{SHORT_SCORE}点 / 中期:{MID_SCORE}点")
