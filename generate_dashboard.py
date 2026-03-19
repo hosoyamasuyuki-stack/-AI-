@@ -386,7 +386,7 @@ src = re.sub(
 print("OK: バリュエーション置換")
 
 
-with open(out, 'w', encoding='utf-8') as f:
+out = 'ai_dashboard_v11_fixed.html'
     f.write(src)
 print(f"\n$2705 出力完了: {out}")
 print(f"   保有:{len(rows_h)} 監視:{len(rows_w)} スコア:{len(SCORES)}")
