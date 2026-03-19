@@ -726,12 +726,12 @@ val_end   = src.find('<div id="body">')
 if val_start >= 0 and val_end >= 0:
     src = src[:val_start] + VAL_HTML + '\n    ' + src[val_end:]
     print("OK: バリュエーション置換")
+else:
+    print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
 
 # ── 市場指標モーダルを </body> 直前に挿入 ─────────────────────
 src = src.replace('</body>', MC_MODAL_HTML + '</body>', 1)
 print("OK: 市場指標モーダル挿入")
-else:
-    print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
 
 out = 'ai_dashboard_v11_fixed.html'
 with open(out, 'w', encoding='utf-8') as f:
