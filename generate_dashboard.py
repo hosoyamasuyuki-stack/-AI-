@@ -336,30 +336,32 @@ MSTRIP_HTML += f"""
         <div class="mc-v {mid_vc}" style="font-size:15px;">{MID_SCORE}点</div>
         <div class="mc-s {mid_vc}">{mid_lbl}</div>
       </div>
-    </div>
-    <style>
-    #mc-modal{{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9998;align-items:center;justify-content:center;}}
-    #mc-modal.open{{display:flex;}}
-    </style>
-    <div id="mc-modal" onclick="if(event.target===this)closeMC()">
-      <div style="background:#111827;border:1px solid #374151;border-radius:10px;padding:18px 20px;max-width:320px;width:90%;">
-        <div id="mc-ttl" style="font-size:13px;font-weight:900;color:#f59e0b;margin-bottom:8px;"></div>
-        <div id="mc-body" style="font-size:11px;color:#d1d5db;line-height:1.75;white-space:pre-wrap;"></div>
-        <div style="margin-top:12px;text-align:right;font-size:10px;color:#94a3b8;cursor:pointer;" onclick="closeMC()">✕ 閉じる</div>
-      </div>
-    </div>
-    <script>
-    var MC_INFO={{
-      nk:{{t:'日経225とは',b:'日本を代表する225社の株価を平均した指数です。\\n\\nこの数字が上がる→日本株全体が好調\\nこの数字が下がる→日本株全体が低調\\n\\n52週バー：過去1年の最安値〜最高値の中で今がどこにいるか。右端ほど高値圏。'}},
-      sp:{{t:'S&P500とは',b:'アメリカの代表的な500社の株価指数。世界の株式市場の中心です。\\n\\nS&P500が下がると世界中の株が連動して売られやすくなります。日本株も例外ではありません。'}},
-      vix:{{t:'VIX（恐怖指数）とは',b:'投資家がどれだけ「怖い」と感じているかを数値化した指標です。\\n\\n20以下 → 平静（買いやすい環境）\\n20〜30 → 不安（慎重に）\\n30以上 → 恐怖（嵐の中）\\n40以上 → パニック\\n\\nただし長期投資家にとって恐怖は仕込みのチャンスでもあります。'}},
-      hyg:{{t:'社債市場（HYG）とは',b:'信用力が低い企業が発行する債券のETFです。\\n\\nHYGが上がる → 市場全体がリスクを取りやすい安心環境\\nHYGが下がる → 企業の倒産懸念が高まっている危険サイン\\n\\n株式市場より先行して動くことが多く、先行指標として機能します。'}},
-      ys:{{t:'逆イールドとは',b:'10年国債の金利 − 2年国債の金利 の差です。\\n\\nプラス（正常）→ 景気は通常運転\\nマイナス（逆イールド）→ 近い将来の景気後退を市場が予測\\n\\n歴史的にマイナスが1年以上続いた後、景気後退が起きることが多い。現在は正常化の方向。'}},
-      m2:{{t:'日本M2（マネーサプライ）とは',b:'日本国内に出回っているお金の総量の増加率です。\\n\\nM2が増加→お金が増える→15〜18ヶ月後に株式市場に資金が流入\\nM2が減少→お金が減る→将来の株式市場に逆風\\n\\n現在は加速中のため、2027年後半の株価上昇が期待されます。'}}
-    }};
-    function showMC(k){{var d=MC_INFO[k];if(!d)return;document.getElementById('mc-ttl').textContent=d.t;document.getElementById('mc-body').textContent=d.b;document.getElementById('mc-modal').classList.add('open');}}
-    function closeMC(){{document.getElementById('mc-modal').classList.remove('open');}}
-    </script>"""
+    </div>"""
+
+# モーダル・スタイル・スクリプトは </body> 直前に挿入する（別変数）
+MC_MODAL_HTML = f"""<style>
+#mc-modal{{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9998;align-items:center;justify-content:center;}}
+#mc-modal.open{{display:flex;}}
+</style>
+<div id="mc-modal" onclick="if(event.target===this)closeMC()">
+  <div style="background:#111827;border:1px solid #374151;border-radius:10px;padding:18px 20px;max-width:320px;width:90%;">
+    <div id="mc-ttl" style="font-size:13px;font-weight:900;color:#f59e0b;margin-bottom:8px;"></div>
+    <div id="mc-body" style="font-size:11px;color:#d1d5db;line-height:1.75;white-space:pre-wrap;"></div>
+    <div style="margin-top:12px;text-align:right;font-size:10px;color:#94a3b8;cursor:pointer;" onclick="closeMC()">✕ 閉じる</div>
+  </div>
+</div>
+<script>
+var MC_INFO={{
+  nk:{{t:'日経225とは',b:'日本を代表する225社の株価を平均した指数です。\\n\\nこの数字が上がる→日本株全体が好調\\nこの数字が下がる→日本株全体が低調\\n\\n52週バー：過去1年の最安値〜最高値の中で今がどこにいるか。右端ほど高値圏。'}},
+  sp:{{t:'S&P500とは',b:'アメリカの代表的な500社の株価指数。世界の株式市場の中心です。\\n\\nS&P500が下がると世界中の株が連動して売られやすくなります。日本株も例外ではありません。'}},
+  vix:{{t:'VIX（恐怖指数）とは',b:'投資家がどれだけ「怖い」と感じているかを数値化した指標です。\\n\\n20以下→平静（買いやすい環境）\\n20〜30→不安（慎重に）\\n30以上→恐怖（嵐の中）\\n\\nただし長期投資家にとって恐怖は仕込みのチャンスでもあります。'}},
+  hyg:{{t:'社債市場（HYG）とは',b:'信用力が低い企業が発行する債券のETFです。\\n\\nHYGが上がる→市場全体がリスクを取りやすい安心環境\\nHYGが下がる→企業の倒産懸念が高まっている危険サイン\\n\\n株式市場より先行して動くことが多く、先行指標として機能します。'}},
+  ys:{{t:'逆イールドとは',b:'10年国債の金利−2年国債の金利の差です。\\n\\nプラス（正常）→景気は通常運転\\nマイナス（逆イールド）→近い将来の景気後退を市場が予測\\n\\n歴史的にマイナスが1年以上続いた後、景気後退が起きることが多い。現在は正常化の方向。'}},
+  m2:{{t:'日本M2（マネーサプライ）とは',b:'日本国内に出回っているお金の総量の増加率です。\\n\\nM2が増加→15〜18ヶ月後に株式市場に資金が流入\\nM2が減少→将来の株式市場に逆風\\n\\n現在は加速中のため、2027年後半の株価上昇が期待されます。'}}
+}};
+function showMC(k){{var d=MC_INFO[k];if(!d)return;document.getElementById('mc-ttl').textContent=d.t;document.getElementById('mc-body').textContent=d.b;document.getElementById('mc-modal').classList.add('open');}}
+function closeMC(){{document.getElementById('mc-modal').classList.remove('open');}}
+</script>"""
 
 def load(name, stype):
     try:
@@ -724,6 +726,10 @@ val_end   = src.find('<div id="body">')
 if val_start >= 0 and val_end >= 0:
     src = src[:val_start] + VAL_HTML + '\n    ' + src[val_end:]
     print("OK: バリュエーション置換")
+
+# ── 市場指標モーダルを </body> 直前に挿入 ─────────────────────
+src = src.replace('</body>', MC_MODAL_HTML + '</body>', 1)
+print("OK: 市場指標モーダル挿入")
 else:
     print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
 
