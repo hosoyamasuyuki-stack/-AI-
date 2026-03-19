@@ -385,7 +385,7 @@ src = re.sub(
 )
 print("OK: バリュエーション置換")
 
-out = 'ai_dashboard_v11_fixed.html'
+
 with open(out, 'w', encoding='utf-8') as f:
     f.write(src)
 print(f"\n$2705 出力完了: {out}")
