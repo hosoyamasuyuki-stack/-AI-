@@ -354,29 +354,170 @@ src = re.sub(
     watch_open, src, count=1, flags=re.DOTALL)
 print("OK: 監視テーブル置換")
 
-# ── 出力 ──────────────────────────────────────────────────────
-def cmp(jp, us, lower_is_better=True):
-    if lower_is_better:
-        return ('cg','日本割安') if jp < us else ('cr','米国割安')
+# ── バリュエーション HTML生成（デュアルゲージ版） ────────────
+def gauge_pct(mn, mx, v):
+    return min(100, max(0, round((v - mn) / (mx - mn) * 100)))
+
+def gauge_dot_color(pct, g_pct, w_pct, invert=False):
+    if invert:
+        return '#34d399' if pct >= g_pct else '#fbbf24' if pct >= w_pct else '#f87171'
     else:
-        return ('cg','日本有利') if jp > us else ('cr','米国有利')
+        return '#34d399' if pct <= g_pct else '#fbbf24' if pct <= w_pct else '#f87171'
 
-pbr_cls,   pbr_lbl   = cmp(VAL['pbr_jp'],    VAL['pbr_us'],   True)
-cape_cls,  cape_lbl  = cmp(VAL['cape_jp'],   VAL['cape_us'],  True)
-div_cls,   div_lbl   = cmp(VAL['div_jp'],    VAL['div_us'],   False)
-yield_cls, yield_lbl = cmp(VAL['yield_jp'],  VAL['yield_us'], False)
-buf_cls,   buf_lbl   = cmp(VAL['buffett_jp'],VAL['buffett_us'],True)
-vd_cls = 'cg' if '日本' in VAL['verdict'] else 'ca' if '均衡' in VAL['verdict'] else 'cr'
+def badge(label, cls):
+    bg = {'g':'#064e3b;color:#34d399','y':'#92400e;color:#fbbf24','r':'#7f1d1d;color:#f87171'}.get(cls,'#1e2d40;color:#94a3b8')
+    return f'<span style="font-size:7px;font-weight:800;padding:1px 5px;border-radius:3px;background:{bg};">{label}</span>'
 
-VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs 米国<span style="font-size:7px;color:#475569;font-weight:400;margin-left:8px;">自動更新 {VAL['updated_at']}</span></div>
-        <div class="vg" style="display:grid;grid-template-columns:repeat(6,1fr);gap:0;">
-          <div class="vi"><div class="vi-l">シラーPER</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {cape_cls}">{VAL['cape_jp']:.0f}倍</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['cape_us']:.0f}倍</span></div><span class="vi-j {cape_cls}">{cape_lbl}</span></div>
-          <div class="vi"><div class="vi-l">PBR</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {pbr_cls}">{VAL['pbr_jp']:.1f}倍</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['pbr_us']:.1f}倍</span></div><span class="vi-j {pbr_cls}">{pbr_lbl}</span></div>
-          <div class="vi"><div class="vi-l">益回り</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {yield_cls}">{VAL['yield_jp']:.2f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n ca">{VAL['yield_us']:.2f}%</span></div><span class="vi-j {yield_cls}">{yield_lbl}</span></div>
-          <div class="vi"><div class="vi-l">配当利回り</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {div_cls}">{VAL['div_jp']:.1f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n ca">{VAL['div_us']:.1f}%</span></div><span class="vi-j {div_cls}">{div_lbl}</span></div>
-          <div class="vi"><div class="vi-l">バフェット指数</div><div class="vi-r"><span class="vi-c">日本</span><span class="vi-n {buf_cls}">{VAL['buffett_jp']:.0f}%</span></div><div class="vi-r"><span class="vi-c">米国</span><span class="vi-n cr">{VAL['buffett_us']:.0f}%</span></div><span class="vi-j {buf_cls}">{buf_lbl}</span></div>
-          <div class="vi"><div class="vi-l">総合判定</div><div class="{vd_cls}" style="font-size:11px;font-weight:900;margin-top:3px;">{VAL['verdict']}</div><div class="cr" style="font-size:8px;font-weight:800;margin-top:2px;">{VAL['verdict_us']}</div><span style="font-size:7px;color:#475569;margin-top:2px;display:block;">¥{VAL['usdjpy']:.1f} 金利差{VAL['rate_diff']:.1f}%</span></div>
-        </div>"""
+def make_gauge(mn, mx, v, g, w, invert=False):
+    p  = gauge_pct(mn, mx, v)
+    gp = gauge_pct(mn, mx, g)
+    wp = gauge_pct(mn, mx, w)
+    dc = gauge_dot_color(p, gp, wp, invert)
+    r1c = '#7f1d1d' if invert else '#064e3b'
+    r3c = '#064e3b' if invert else '#7f1d1d'
+    return (
+        f'<div style="background:#1e2d40;border-radius:3px;height:5px;position:relative;margin-top:2px;">'
+        f'<div style="position:absolute;left:0;width:{gp}%;height:5px;background:{r1c};border-radius:3px 0 0 3px;"></div>'
+        f'<div style="position:absolute;left:{gp}%;width:{wp-gp}%;height:5px;background:#92400e;"></div>'
+        f'<div style="position:absolute;left:{wp}%;width:{100-wp}%;height:5px;background:{r3c};border-radius:0 3px 3px 0;"></div>'
+        f'<div style="position:absolute;left:calc({p}% - 5px);top:-4px;width:13px;height:13px;border-radius:50%;background:{dc};border:2px solid #0d1117;"></div>'
+        f'</div>'
+    )
+
+cape_jp = VAL['cape_jp']; cape_us = VAL['cape_us']
+pbr_jp  = VAL['pbr_jp'];  pbr_us  = VAL['pbr_us']
+yld_jp  = VAL['yield_jp'];yld_us  = VAL['yield_us']
+buf_jp  = VAL['buffett_jp'];buf_us = VAL['buffett_us']
+vd_cls  = 'color:#34d399' if '日本' in VAL['verdict'] else 'color:#fbbf24' if '均衡' in VAL['verdict'] else 'color:#f87171'
+
+g_cape_jp = make_gauge(15,35,cape_jp,22,28)
+g_cape_us = make_gauge(22,40,cape_us,27,32)
+g_pbr_jp  = make_gauge(0.9,2.4,pbr_jp,1.4,2.0)
+g_pbr_us  = make_gauge(2.5,5.5,pbr_us,3.2,4.2)
+g_yld_jp  = make_gauge(3,9,yld_jp,6,4,invert=True)
+g_yld_us  = make_gauge(2,7,yld_us,5,3.5,invert=True)
+g_buf_jp  = make_gauge(60,200,buf_jp,100,150)
+g_buf_us  = make_gauge(80,260,buf_us,120,170)
+
+cape_jp_cls = 'g' if cape_jp<=22 else 'y' if cape_jp<=28 else 'r'
+cape_us_cls = 'g' if cape_us<=27 else 'y' if cape_us<=32 else 'r'
+pbr_jp_cls  = 'g' if pbr_jp<=1.4 else 'y' if pbr_jp<=2.0 else 'r'
+pbr_us_cls  = 'g' if pbr_us<=3.2 else 'y' if pbr_us<=4.2 else 'r'
+yld_jp_cls  = 'g' if yld_jp>=6 else 'y' if yld_jp>=4 else 'r'
+yld_us_cls  = 'g' if yld_us>=5 else 'y' if yld_us>=3.5 else 'r'
+buf_jp_cls  = 'g' if buf_jp<=100 else 'y' if buf_jp<=150 else 'r'
+buf_us_cls  = 'g' if buf_us<=120 else 'y' if buf_us<=170 else 'r'
+
+cape_jp_lbl = '割安圏' if cape_jp_cls=='g' else 'やや割高' if cape_jp_cls=='y' else '割高圏'
+cape_us_lbl = '割安圏' if cape_us_cls=='g' else 'やや割高' if cape_us_cls=='y' else '割高圏'
+pbr_jp_lbl  = '割安圏' if pbr_jp_cls=='g' else 'やや割高' if pbr_jp_cls=='y' else '割高警戒'
+pbr_us_lbl  = '割安圏' if pbr_us_cls=='g' else 'やや割高' if pbr_us_cls=='y' else '割高警戒'
+yld_jp_lbl  = '株式有利' if yld_jp_cls=='g' else '中立' if yld_jp_cls=='y' else '割高注意'
+yld_us_lbl  = '株式有利' if yld_us_cls=='g' else '中立' if yld_us_cls=='y' else '割高注意'
+buf_jp_lbl  = '割安圏' if buf_jp_cls=='g' else '割高圏注意' if buf_jp_cls=='y' else '割高警戒'
+buf_us_lbl  = '割安圏' if buf_us_cls=='g' else '割高圏注意' if buf_us_cls=='y' else '割高警戒'
+
+vi_style = 'padding:4px 8px;border-right:1px solid #1e2d40;cursor:pointer;'
+vn_style = 'font-size:8.5px;font-weight:800;color:#cbd5e1;margin-bottom:4px;text-decoration:underline dotted;text-underline-offset:2px;'
+row_style = 'display:flex;align-items:center;gap:5px;margin-bottom:1px;'
+flag_style = 'font-size:9px;min-width:14px;'
+val_style_g = 'font-size:12px;font-weight:900;font-family:monospace;color:#34d399;min-width:36px;'
+val_style_y = 'font-size:12px;font-weight:900;font-family:monospace;color:#fbbf24;min-width:36px;'
+val_style_r = 'font-size:12px;font-weight:900;font-family:monospace;color:#f87171;min-width:36px;'
+vc = {'g': val_style_g, 'y': val_style_y, 'r': val_style_r}
+
+VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs 米国（過去10年との比較）<span style="font-size:7px;color:#475569;font-weight:400;margin-left:8px;">自動更新 {VAL['updated_at']}</span></div>
+        <div style="background:#0f1420;border:1px solid #1e2d40;border-radius:6px;padding:6px 4px;">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;">
+          <div style="{vi_style}" onclick="showVI('cape')">
+            <div style="{vn_style}">シラーPER ⓘ</div>
+            <div style="{row_style}"><span style="{flag_style}">🇯🇵</span><span style="{vc[cape_jp_cls]}">{cape_jp:.0f}倍</span><div style="flex:1">{g_cape_jp}</div></div>
+            <div style="{row_style}"><span style="{flag_style}">🇺🇸</span><span style="{vc[cape_us_cls]}">{cape_us:.0f}倍</span><div style="flex:1">{g_cape_us}</div></div>
+            <div style="margin-top:4px;display:flex;justify-content:space-between;">{badge('日本 '+cape_jp_lbl,cape_jp_cls)}{badge('米国 '+cape_us_lbl,cape_us_cls)}</div>
+          </div>
+          <div style="{vi_style}" onclick="showVI('pbr')">
+            <div style="{vn_style}">PBR ⓘ</div>
+            <div style="{row_style}"><span style="{flag_style}">🇯🇵</span><span style="{vc[pbr_jp_cls]}">{pbr_jp:.1f}倍</span><div style="flex:1">{g_pbr_jp}</div></div>
+            <div style="{row_style}"><span style="{flag_style}">🇺🇸</span><span style="{vc[pbr_us_cls]}">{pbr_us:.1f}倍</span><div style="flex:1">{g_pbr_us}</div></div>
+            <div style="margin-top:4px;display:flex;justify-content:space-between;">{badge('日本 '+pbr_jp_lbl,pbr_jp_cls)}{badge('米国 '+pbr_us_lbl,pbr_us_cls)}</div>
+          </div>
+          <div style="{vi_style}" onclick="showVI('yield')">
+            <div style="{vn_style}">益回り ⓘ</div>
+            <div style="{row_style}"><span style="{flag_style}">🇯🇵</span><span style="{vc[yld_jp_cls]}">{yld_jp:.2f}%</span><div style="flex:1">{g_yld_jp}</div></div>
+            <div style="{row_style}"><span style="{flag_style}">🇺🇸</span><span style="{vc[yld_us_cls]}">{yld_us:.2f}%</span><div style="flex:1">{g_yld_us}</div></div>
+            <div style="margin-top:4px;display:flex;justify-content:space-between;">{badge('日本 '+yld_jp_lbl,yld_jp_cls)}{badge('米国 '+yld_us_lbl,yld_us_cls)}</div>
+          </div>
+          <div style="{vi_style}" onclick="showVI('buffett')">
+            <div style="{vn_style}">バフェット指数 ⓘ</div>
+            <div style="{row_style}"><span style="{flag_style}">🇯🇵</span><span style="{vc[buf_jp_cls]}">{buf_jp:.0f}%</span><div style="flex:1">{g_buf_jp}</div></div>
+            <div style="{row_style}"><span style="{flag_style}">🇺🇸</span><span style="{vc[buf_us_cls]}">{buf_us:.0f}%</span><div style="flex:1">{g_buf_us}</div></div>
+            <div style="margin-top:4px;display:flex;justify-content:space-between;">{badge('日本 '+buf_jp_lbl,buf_jp_cls)}{badge('米国 '+buf_us_lbl,buf_us_cls)}</div>
+          </div>
+          <div style="padding:4px 8px;cursor:pointer;" onclick="showVI('verdict')">
+            <div style="{vn_style}">総合判定 ⓘ</div>
+            <div style="font-size:14px;font-weight:900;{vd_cls};margin-top:4px;">{VAL['verdict']}</div>
+            <div style="font-size:9px;color:#f87171;font-weight:800;margin-top:2px;">{VAL['verdict_us']}</div>
+            <div style="font-size:7.5px;color:#475569;margin-top:5px;">¥{VAL['usdjpy']:.1f} | 金利差{VAL['rate_diff']:.1f}%</div>
+          </div>
+        </div>
+        </div>
+        <style>
+        #vi-modal{{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9999;align-items:center;justify-content:center;}}
+        #vi-modal.open{{display:flex;}}
+        #vi-box{{background:#111827;border:1px solid #374151;border-radius:10px;padding:18px 20px;max-width:340px;width:90%;}}
+        #vi-ttl{{font-size:13px;font-weight:900;color:#f59e0b;margin-bottom:8px;}}
+        #vi-body{{font-size:11px;color:#d1d5db;line-height:1.75;white-space:pre-wrap;}}
+        #vi-hist{{margin-top:10px;padding-top:10px;border-top:1px solid #1e2d40;}}
+        .vi-close{{margin-top:12px;text-align:right;font-size:10px;color:#94a3b8;cursor:pointer;}}
+        .vi-close:hover{{color:#f59e0b;}}
+        .mh-row{{margin-bottom:10px;}}
+        .mh-flag{{font-size:8.5px;color:#94a3b8;margin-bottom:3px;font-weight:800;}}
+        .mh-bg{{background:#1e2d40;border-radius:4px;height:8px;position:relative;}}
+        .mh-labels{{display:flex;justify-content:space-between;font-size:7px;color:#475569;margin-top:3px;}}
+        </style>
+        <div id="vi-modal" onclick="if(event.target===this)closeVI()">
+          <div id="vi-box">
+            <div id="vi-ttl"></div>
+            <div id="vi-body"></div>
+            <div id="vi-hist"></div>
+            <div class="vi-close" onclick="closeVI()">✕ 閉じる</div>
+          </div>
+        </div>
+        <script>
+        var VI_DATA={{
+          cape:{{ttl:'シラーPER（CAPE）とは',body:'過去10年の平均利益で計算した株価収益率です。\\n景気の良い年・悪い年を平均するため、より正確に割高・割安を判断できます。\\nノーベル賞を受賞したシラー教授が考案。\\n\\n目安：15倍以下→割安 / 22〜28倍→適正 / 30倍超→割高',jp:{{min:15,max:35,now:{cape_jp:.1f},g:22,w:28,flag:'🇯🇵 日本'}},us:{{min:22,max:40,now:{cape_us:.1f},g:27,w:32,flag:'🇺🇸 米国'}}}},
+          pbr:{{ttl:'PBR（株価純資産倍率）とは',body:'会社の純資産と株価を比べた指標です。\\n1倍＝今すぐ会社を解散したときの価値と同じ。\\n日本は東証の改革でPBR改善が進んでいます。\\n\\n目安：1倍以下→超割安 / 1〜2倍→割安 / 3倍超→割高',jp:{{min:0.9,max:2.4,now:{pbr_jp:.2f},g:1.4,w:2.0,flag:'🇯🇵 日本'}},us:{{min:2.5,max:5.5,now:{pbr_us:.2f},g:3.2,w:4.2,flag:'🇺🇸 米国'}}}},
+          yield:{{ttl:'益回り（株式益回り）とは',body:'PERの逆数（1÷PER×100）。\\n株式投資をした場合の利回りに相当します。\\n国債利回りより高ければ株式が有利。\\n\\n目安：6%超→株式有利 / 4〜6%→中立 / 4%未満→割高',jp:{{min:3,max:9,now:{yld_jp:.2f},g:6,w:4,flag:'🇯🇵 日本',inv:1}},us:{{min:2,max:7,now:{yld_us:.2f},g:5,w:3.5,flag:'🇺🇸 米国',inv:1}}}},
+          buffett:{{ttl:'バフェット指数とは',body:'国の株式市場全体の時価総額をGDPで割った指標。\\nバフェットが重視することで有名。\\n数値が高いほど株式市場が割高です。\\n\\n目安：100%以下→割安 / 100〜150%→適正 / 150%超→割高',jp:{{min:60,max:200,now:{buf_jp:.0f},g:100,w:150,flag:'🇯🇵 日本'}},us:{{min:80,max:260,now:{buf_us:.0f},g:120,w:170,flag:'🇺🇸 米国'}}}},
+          verdict:{{ttl:'総合判定の仕組み',body:'5指標（シラーPER・PBR・益回り・配当利回り・バフェット指数）を日米で比較し、日本が有利な指標の数で自動判定します。\\n\\n5指標中4つ以上→日本株フルポジ\\n3つ→日本株優位\\n2つ→均衡局面\\n1つ以下→要検討',jp:null,us:null}}
+        }};
+        function pct(mn,mx,v){{return Math.min(100,Math.max(0,Math.round((v-mn)/(mx-mn)*100)));}}
+        function dc(p,gp,wp,inv){{if(inv)return p>=gp?'#34d399':p>=wp?'#fbbf24':'#f87171';return p<=gp?'#34d399':p<=wp?'#fbbf24':'#f87171';}}
+        function mhRow(d){{
+          if(!d)return '';
+          var p=pct(d.min,d.max,d.now),gp=pct(d.min,d.max,d.g),wp=pct(d.min,d.max,d.w),inv=d.inv;
+          var dotC=dc(p,gp,wp,inv),r1=inv?'#7f1d1d':'#064e3b',r3=inv?'#064e3b':'#7f1d1d';
+          return '<div class="mh-row"><div class="mh-flag">'+d.flag+'</div>'
+            +'<div class="mh-bg">'
+            +'<div style="position:absolute;left:0;width:'+gp+'%;height:8px;background:'+r1+';border-radius:4px 0 0 4px;"></div>'
+            +'<div style="position:absolute;left:'+gp+'%;width:'+(wp-gp)+'%;height:8px;background:#92400e;"></div>'
+            +'<div style="position:absolute;left:'+wp+'%;width:'+(100-wp)+'%;height:8px;background:'+r3+';border-radius:0 4px 4px 0;"></div>'
+            +'<div style="position:absolute;left:calc('+p+'% - 9px);top:-5px;width:18px;height:18px;border-radius:50%;background:'+dotC+';border:2px solid #111827;"></div>'
+            +'</div>'
+            +'<div class="mh-labels"><span>'+d.min+'（過去最安）</span><span style="color:'+dotC+';font-weight:800;">現在：'+d.now+'</span><span>'+d.max+'（過去最高）</span></div>'
+            +'</div>';
+        }}
+        function showVI(k){{
+          var d=VI_DATA[k];if(!d)return;
+          document.getElementById('vi-ttl').textContent=d.ttl;
+          document.getElementById('vi-body').textContent=d.body;
+          var h=document.getElementById('vi-hist');
+          if(d.jp){{h.style.display='block';h.innerHTML='<div style="font-size:9px;font-weight:800;color:#94a3b8;margin-bottom:6px;">過去10年レンジ（緑＝割安 / 黄＝普通 / 赤＝割高）</div>'+mhRow(d.jp)+mhRow(d.us);}}
+          else h.style.display='none';
+          document.getElementById('vi-modal').classList.add('open');
+        }}
+        function closeVI(){{document.getElementById('vi-modal').classList.remove('open');}}
+        </script>"""
 
 # バリュエーションセクションをHTMLに埋め込む
 # <div id="body"> を終端アンカーとして使用（確実・シンプル）
