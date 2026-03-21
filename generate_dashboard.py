@@ -121,8 +121,9 @@ def make_ticker_item(name, status_text, state):
     dot_c, bg_c = colors.get(state, colors['warn'])
     return (
         f'<span style="display:inline-flex;align-items:center;gap:5px;'
-        f'padding:0 14px;border-right:1px solid #1e2d40;font-size:9.5px;font-family:monospace;">'
-        f'<span style="width:6px;height:6px;border-radius:50%;background:{dot_c};flex-shrink:0;"></span>'
+        f'padding:0 12px;border-right:1px solid #1e2d40;'
+        f'font-size:9px;font-family:monospace;height:18px;flex-shrink:0;white-space:nowrap;">'
+        f'<span style="width:5px;height:5px;border-radius:50%;background:{dot_c};flex-shrink:0;"></span>'
         f'<span style="color:#94a3b8;font-weight:800;">{name}</span>'
         f'<span style="color:{dot_c};">{status_text}</span>'
         f'</span>'
@@ -148,8 +149,8 @@ ticker_items = (
     make_ticker_item('04/15検証',      '⚠ 準備中',   'warn')
 )
 
-TICKER_HTML = f"""    <div style="background:#060810;border-bottom:1px solid #1e2d40;padding:0;overflow:hidden;white-space:nowrap;width:100%;height:20px;line-height:20px;flex-shrink:0;">
-      <div id="sys-ticker" style="display:inline-flex;align-items:center;height:20px;width:max-content;animation:ticker_scroll 40s linear infinite;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'">
+TICKER_HTML = f"""    <div style="background:#060810;border-bottom:1px solid #1e2d40;height:18px;overflow:hidden;flex-shrink:0;">
+      <div id="sys-ticker" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;height:18px;width:max-content;animation:ticker_scroll 40s linear infinite;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'">
         {ticker_items}{ticker_items}
       </div>
     </div>"""
@@ -612,45 +613,39 @@ else:
 
 # ── ティッカーのCSSアニメーションを</body>直前に挿入 ──────────
 TICKER_CSS = """<style>
-@keyframes ticker_scroll{
-  0%{transform:translateX(0)}
-  100%{transform:translateX(-50%)}
-}
+@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 #sys-ticker{will-change:transform;}
-/* レイアウト修正：aspect-ratioを解除 */
-.db{
-  aspect-ratio:unset !important;
-  height:100vh !important;
-  overflow:hidden !important;
-}
-/* bodyエリアをスクロール可能に */
-#body{
-  overflow:visible !important;
-  flex:1;
-  min-height:0;
-}
-/* 保有・監視パネルのテーブルラッパーをスクロール可能に */
-.panel > div[style*="flex:1"][style*="overflow"]{
-  overflow-y:auto !important;
-  flex:1;
-  min-height:0;
-}
-/* 詳細パネル */
-#d-content{
-  overflow-y:auto !important;
-  flex:1;
-  min-height:0;
-}
-/* スクロールバーデザイン */
-.panel ::-webkit-scrollbar,
-#d-content::-webkit-scrollbar{width:3px;}
-.panel ::-webkit-scrollbar-track,
-#d-content::-webkit-scrollbar-track{background:#0a0d16;}
-.panel ::-webkit-scrollbar-thumb,
-#d-content::-webkit-scrollbar-thumb{background:#374151;border-radius:2px;}
-.panel ::-webkit-scrollbar-thumb:hover,
-#d-content::-webkit-scrollbar-thumb:hover{background:#4b5563;}
 </style>"""
+
+# ── ソースCSSを直接書き換え（aspect-ratio・overflow修正） ───
+# .db の aspect-ratio を削除・overflow を変更
+src = re.sub(
+    r'(\.db\{[^}]*)aspect-ratio:[^;]+;',
+    r'\1',
+    src
+)
+src = re.sub(
+    r'(\.db\{[^}]*)overflow:hidden',
+    r'\1overflow:visible',
+    src
+)
+print("OK: .db CSS修正")
+
+# #body の overflow を visible に変更
+src = re.sub(
+    r'(#body\{[^}]*)overflow:hidden',
+    r'\1overflow:visible',
+    src
+)
+print("OK: #body CSS修正")
+
+# .panel の overflow を変更してスクロール有効化
+src = re.sub(
+    r'(\.panel\{[^}]*)overflow:hidden',
+    r'\1overflow:visible',
+    src
+)
+print("OK: .panel CSS修正")
 
 # ── STOCK_SCORES埋め込み ─────────────────────────────────────
 scores_js = ('const STOCK_SCORES=' +
