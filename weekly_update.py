@@ -1,14 +1,12 @@
 # ============================================================
-# weekly_update.py v4.0
+# weekly_update.py v4.1
 # AI投資判断システム 週次自動更新
 #
-# v3.0からの変更点：
-# ・Part1のデータソースをyfinance→J-Quants V2（v4.3）に変更
-# ・財務データを10年分（過去10年）で計算
-# ・FCFをCFO+CFIで直接取得（精度向上）
-# ・ROEトレンドを最大8期分で計算
-# ・FCF利回りを時価総額ベースに変更（株価連動）
-# ・FCR異常値を±300%でクリップ
+# v4.0からの変更点：
+# ・Part5.5 追加：週次因子劣化チェック（5項目自動アラート）
+#   ①短期3週連続低下 ②短期4週比-20pt ③中期3週連続低下
+#   ④ダブル弱気警報（短期・中期ともに30点未満）⑤VIX急騰
+# ・結果を「因子劣化チェック」シートに蓄積
 #
 # 【実行タイミング】毎週月曜 10:00 JST（GitHub Actions）
 # 【認証】JQUANTS_API_KEY・GOOGLE_CREDENTIALS（環境変数）
@@ -42,7 +40,7 @@ TODAY      = datetime.now()
 DATA_YEARS = 10  # 過去10年分のデータを使用
 CUTOFF     = (TODAY - timedelta(days=365 * DATA_YEARS)).strftime('%Y-%m-%d')
 
-print(f"$2705 接続完了: {ss.title}")
+print(f"✅ 接続完了: {ss.title}")
 print(f"実行日時: {NOW}")
 print(f"データ期間: 過去{DATA_YEARS}年分（{CUTOFF[:7]}以降）")
 
@@ -395,7 +393,7 @@ h_scan    = list(df_scan.columns)
 rows_scan = [h_scan] + [safe_list([r[c] for c in h_scan])
                         for _, r in df_scan.iterrows()]
 ws_scan.update('A1', rows_scan)
-print(f"\n$2705 コアスキャン保存: '{SHEET_SCAN}'（{len(df_scan)}銘柄）")
+print(f"\n✅ コアスキャン保存: '{SHEET_SCAN}'（{len(df_scan)}銘柄）")
 for rk in ['S','A','B','C','D']:
     n = len(df_scan[df_scan['ランク']==rk])
     if n > 0:
@@ -428,8 +426,8 @@ vix_s = thr_low( vix_ret, VIX_THR)  # VIXは低いほど良い
 short_score = round(sox_s*0.30 + sp5_s*0.25 + hyg_s*0.25 + vix_s*0.20)
 
 def sig_s(s):
-    return ('$D83D$DFE2$D83D$DFE2強気' if s>=70 else '$D83D$DFE2やや強気' if s>=55 else
-            '$D83D$DFE1中立'   if s>=45 else '$D83D$DD34やや弱気' if s>=30 else '$D83D$DD34$D83D$DD34弱気')
+    return ('🟢🟢強気' if s>=70 else '🟢やや強気' if s>=55 else
+            '🟡中立'   if s>=45 else '🔴やや弱気' if s>=30 else '🔴🔴弱気')
 
 fmt_r = lambda v: f"{v:+.2%}" if v is not None else "取得失敗"
 print(f"  SOX:{fmt_r(sox_ret)}→{sox_s}pt / SP500:{fmt_r(sp5_ret)}→{sp5_s}pt")
@@ -458,8 +456,8 @@ wti_s  = thr_low( wti_accel,  WTI_ACCEL_THR)
 medium_score = round(m2jp_s*0.50 + gdp_s*0.30 + wti_s*0.20)
 
 def sig_m(s):
-    return ('$D83D$DFE2$D83D$DFE2強気' if s>=70 else '$D83D$DFE2やや強気' if s>=55 else
-            '$D83D$DFE1中立'   if s>=45 else '$D83D$DD34やや弱気' if s>=30 else '$D83D$DD34$D83D$DD34弱気')
+    return ('🟢🟢強気' if s>=70 else '🟢やや強気' if s>=55 else
+            '🟡中立'   if s>=45 else '🔴やや弱気' if s>=30 else '🔴🔴弱気')
 
 print(f"  日本M2加速(15Mラグ):{m2jp_accel}→{m2jp_s}pt")
 print(f"  米GDP加速(12Mラグ): {gdp_accel}→{gdp_s}pt")
@@ -495,7 +493,7 @@ ws_intg = ss.add_worksheet(title=SHEET_INTG, rows=len(df_intg)+5, cols=12)
 h_intg  = list(df_intg.columns)
 ws_intg.update('A1', [h_intg] + [safe_list([r[c] for c in h_intg])
                                    for _, r in df_intg.iterrows()])
-print(f"$2705 統合スコア保存: '{SHEET_INTG}'（{len(df_intg)}銘柄）")
+print(f"✅ 統合スコア保存: '{SHEET_INTG}'（{len(df_intg)}銘柄）")
 print(f"  統合スコア上位5：")
 for _, r in df_intg.head(5).iterrows():
     print(f"    {r['銘柄名']}：{r['統合スコア']}点（長期{r['長期ランク']}・短期{short_score}・中期{medium_score}）")
@@ -515,20 +513,119 @@ try:
                m2jp_accel, gdp_accel, wti_accel]
     last    = len(ws_sig.get_all_values()) + 1
     ws_sig.update(f'A{last}', [safe_list(sig_row)])
-    print(f"$2705 週次シグナル記録：行{last}")
+    print(f"✅ 週次シグナル記録：行{last}")
 except Exception as e:
-    print(f"$26A0$FE0F 週次シグナル記録失敗: {e}")
+    print(f"⚠️ 週次シグナル記録失敗: {e}")
+
 
 # ============================================================
-# Part6: 作業ログ記録
+# Part5.5: 週次因子劣化チェック（自動アラート）
 # ============================================================
+print(f"\n{'='*60}")
+print("Part5.5: 週次因子劣化チェック")
+print('='*60)
+
+try:
+    # 週次シグナル履歴を読み込み
+    ws_sig_data = ws_sig.get_all_values()
+    if len(ws_sig_data) >= 5:
+        # 直近5週分を取得（ヘッダーなし想定）
+        recent = ws_sig_data[-5:]
+        
+        # 短期スコアの推移（列B=index1）
+        short_history = []
+        for row in recent:
+            try: short_history.append(float(row[1]))
+            except: pass
+        
+        # 中期スコアの推移（列D=index3）
+        medium_history = []
+        for row in recent:
+            try: medium_history.append(float(row[3]))
+            except: pass
+
+        decay_alerts = []
+
+        # ① 短期スコアが3週連続低下
+        if len(short_history) >= 3:
+            if short_history[-1] < short_history[-2] < short_history[-3]:
+                decay_alerts.append(
+                    f"⚠️ 短期スコア3週連続低下："
+                    f"{short_history[-3]:.0f}→{short_history[-2]:.0f}→{short_history[-1]:.0f}点"
+                )
+
+        # ② 短期スコアが4週前比-20pt以上
+        if len(short_history) >= 4:
+            drop = short_history[-1] - short_history[-4]
+            if drop <= -20:
+                decay_alerts.append(
+                    f"⚠️ 短期スコア急落（4週比）：{short_history[-4]:.0f}→{short_history[-1]:.0f}点（{drop:+.0f}）"
+                )
+
+        # ③ 中期スコアが3週連続低下
+        if len(medium_history) >= 3:
+            if medium_history[-1] < medium_history[-2] < medium_history[-3]:
+                decay_alerts.append(
+                    f"⚠️ 中期スコア3週連続低下："
+                    f"{medium_history[-3]:.0f}→{medium_history[-2]:.0f}→{medium_history[-1]:.0f}点"
+                )
+
+        # ④ 短期・中期ともに30点未満（ダブル弱気）
+        if short_score < 30 and medium_score < 30:
+            decay_alerts.append(
+                f"🔴🔴 ダブル弱気警報：短期{short_score}点・中期{medium_score}点"
+                f" → 現金比率引き上げを強く推奨"
+            )
+
+        # ⑤ VIX急騰（今週の変化率）
+        try:
+            vix_this = float(recent[-1][7]) if len(recent[-1]) > 7 else None
+            vix_prev = float(recent[-2][7]) if len(recent) >= 2 and len(recent[-2]) > 7 else None
+            if vix_this and vix_prev and vix_this > 0.15:
+                decay_alerts.append(
+                    f"⚠️ VIX急騰：{vix_this*100:+.1f}%（恐怖指数上昇中）"
+                )
+        except: pass
+
+        # 結果表示
+        if decay_alerts:
+            print(f"  ⚠️ 因子劣化アラート {len(decay_alerts)}件：")
+            for a in decay_alerts:
+                print(f"    {a}")
+        else:
+            print(f"  ✅ 因子劣化なし（直近5週正常範囲内）")
+
+        # スプレッドシートに記録
+        SHEET_DECAY = '因子劣化チェック'
+        try:
+            ws_decay = ss.worksheet(SHEET_DECAY)
+        except:
+            ws_decay = ss.add_worksheet(title=SHEET_DECAY, rows=500, cols=6)
+            ws_decay.update('A1', [['実行日時','短期スコア','中期スコア','アラート件数','アラート内容','判定']])
+
+        alert_text = ' / '.join(decay_alerts) if decay_alerts else 'なし'
+        judgment   = '⚠️要注意' if len(decay_alerts) >= 2 else ('注意' if decay_alerts else '✅正常')
+        last_decay = len(ws_decay.get_all_values()) + 1
+        ws_decay.update(f'A{last_decay}', [[
+            NOW, short_score, medium_score,
+            len(decay_alerts), alert_text, judgment
+        ]])
+        print(f"  ✅ 因子劣化チェック記録：行{last_decay}（判定：{judgment}）")
+
+    else:
+        print(f"  ℹ️ 週次シグナル蓄積不足（{len(ws_sig_data)-1}週分）。5週分以上で劣化チェック開始。")
+
+except Exception as e:
+    print(f"⚠️ 因子劣化チェック失敗: {e}")
+
+
 try:
     wl   = ss.worksheet('作業ログ')
     last = len(wl.get_all_values()) + 1
-    wl.update(f'A{last}', [[NOW, 'weekly_update v4.0',
-                             f'v4.3スキャン56銘柄・短期{short_score}点・中期{medium_score}点',
-                             'J-Quants V2（10年分）', '$2705完了']])
-    print(f"\n$2705 作業ログ記録完了")
+    wl.update(f'A{last}', [[NOW, 'weekly_update v4.1',
+                             f'v4.3スキャン56銘柄・短期{short_score}点・中期{medium_score}点・因子劣化チェック追加',
+                             'J-Quants V2（10年分）', '✅完了']])
+    print(f"\n✅ 作業ログ記録完了")
 except: pass
 
 # ============================================================
@@ -543,4 +640,4 @@ print(f"  中期スコア: {medium_score}点 {sig_m(medium_score)}")
 for rk in ['S','A','B','C','D']:
     n = len(df_scan[df_scan['ランク']==rk])
     print(f"  {rk}ランク: {n}銘柄", end='')
-print(f"\n$2705 全処理完了: {NOW}")
+print(f"\n✅ 全処理完了: {NOW}")
