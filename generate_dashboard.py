@@ -148,8 +148,8 @@ ticker_items = (
     make_ticker_item('04/15検証',      '⚠ 準備中',   'warn')
 )
 
-TICKER_HTML = f"""    <div style="background:#060810;border-bottom:1px solid #1e2d40;padding:2px 0;overflow:hidden;white-space:nowrap;width:100%;">
-      <div id="sys-ticker" style="display:inline-block;width:max-content;animation:ticker_scroll 40s linear infinite;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'">
+TICKER_HTML = f"""    <div style="background:#060810;border-bottom:1px solid #1e2d40;padding:0;overflow:hidden;white-space:nowrap;width:100%;height:20px;line-height:20px;flex-shrink:0;">
+      <div id="sys-ticker" style="display:inline-flex;align-items:center;height:20px;width:max-content;animation:ticker_scroll 40s linear infinite;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'">
         {ticker_items}{ticker_items}
       </div>
     </div>"""
@@ -617,32 +617,39 @@ TICKER_CSS = """<style>
   100%{transform:translateX(-50%)}
 }
 #sys-ticker{will-change:transform;}
-/* aspect-ratio制約を解除してスクロール可能に */
-.db{aspect-ratio:unset !important;min-height:100vh;overflow:visible !important;}
-#body{overflow:visible !important;min-height:0;flex:1;}
-/* 保有・監視パネルのスクロールバー */
-.panel > div[style*="overflow-y"]{
-  overflow-y:auto !important;
-  max-height:calc(100vh - 300px);
-  scrollbar-width:thin;
-  scrollbar-color:#1e2d40 #0f1420;
+/* レイアウト修正：aspect-ratioを解除 */
+.db{
+  aspect-ratio:unset !important;
+  height:100vh !important;
+  overflow:hidden !important;
 }
-/* 詳細パネルのスクロールバー */
+/* bodyエリアをスクロール可能に */
+#body{
+  overflow:visible !important;
+  flex:1;
+  min-height:0;
+}
+/* 保有・監視パネルのテーブルラッパーをスクロール可能に */
+.panel > div[style*="flex:1"][style*="overflow"]{
+  overflow-y:auto !important;
+  flex:1;
+  min-height:0;
+}
+/* 詳細パネル */
 #d-content{
   overflow-y:auto !important;
-  max-height:calc(100vh - 300px);
-  scrollbar-width:thin;
-  scrollbar-color:#1e2d40 #0f1420;
+  flex:1;
+  min-height:0;
 }
-/* Webkit スクロールバースタイル */
+/* スクロールバーデザイン */
 .panel ::-webkit-scrollbar,
-#d-content::-webkit-scrollbar{width:4px;}
+#d-content::-webkit-scrollbar{width:3px;}
 .panel ::-webkit-scrollbar-track,
-#d-content::-webkit-scrollbar-track{background:#0f1420;}
+#d-content::-webkit-scrollbar-track{background:#0a0d16;}
 .panel ::-webkit-scrollbar-thumb,
-#d-content::-webkit-scrollbar-thumb{background:#1e2d40;border-radius:2px;}
+#d-content::-webkit-scrollbar-thumb{background:#374151;border-radius:2px;}
 .panel ::-webkit-scrollbar-thumb:hover,
-#d-content::-webkit-scrollbar-thumb:hover{background:#374151;}
+#d-content::-webkit-scrollbar-thumb:hover{background:#4b5563;}
 </style>"""
 
 # ── STOCK_SCORES埋め込み ─────────────────────────────────────
