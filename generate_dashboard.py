@@ -149,8 +149,8 @@ ticker_items = (
     make_ticker_item('04/15検証',      '⚠ 準備中',   'warn')
 )
 
-TICKER_HTML = f"""    <div style="background:#060810;border-bottom:1px solid #1e2d40;height:18px;overflow:hidden;flex-shrink:0;">
-      <div id="sys-ticker" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;height:18px;width:max-content;animation:ticker_scroll 40s linear infinite;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'">
+TICKER_HTML = f"""    <div id="sys-ticker-wrap" style="background:#060810;border-bottom:1px solid #1e2d40;height:18px;overflow:hidden;flex-shrink:0;">
+      <div id="sys-ticker" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;height:18px;width:max-content;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'">
         {ticker_items}{ticker_items}
       </div>
     </div>"""
@@ -602,8 +602,16 @@ if mstrip_start >= 0 and mstrip_end >= 0:
 else:
     print(f"WARN: 市場ストリップ置換スキップ (start={mstrip_start} end={mstrip_end})")
 
-# ── ティッカーをヘッダー直後に挿入 ──────────────────────────
-# ヘッダーの終わり（class="header"のdiv閉じタグ）の直後に挿入
+# ── ティッカーをmstrip直前に挿入（IDで既存を置換） ──────────
+import re as _re
+# 既存のsys-ticker-wrapがあれば削除
+src = _re.sub(
+    r'\s*<div id="sys-ticker-wrap"[^>]*>.*?</div>\s*',
+    '\n    ',
+    src,
+    flags=_re.DOTALL
+)
+# 新しいティッカーをmstrip直前に挿入
 ticker_anchor = src.find('<div class="mstrip">')
 if ticker_anchor >= 0:
     src = src[:ticker_anchor] + TICKER_HTML + '\n    ' + src[ticker_anchor:]
@@ -614,7 +622,10 @@ else:
 # ── ティッカーのCSSアニメーションを</body>直前に挿入 ──────────
 TICKER_CSS = """<style>
 @keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-#sys-ticker{will-change:transform;}
+#sys-ticker{
+  animation:ticker_scroll 45s linear infinite;
+  will-change:transform;
+}
 </style>"""
 
 # ── ソースCSSを直接書き換え（aspect-ratio・overflow修正） ───
