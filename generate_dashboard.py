@@ -49,6 +49,111 @@ def get_latest_scores():
 
 SHORT_SCORE, MID_SCORE = get_latest_scores()
 
+# ── 作業ログから各スクリプトの最終実行日時を取得 ──────────────
+def get_last_runs():
+    """作業ログシートから各スクリプトの最終実行日時を取得"""
+    defaults = {
+        'daily_update':    '未確認',
+        'daily_price':     '未確認',
+        'weekly_update':   '未確認',
+        'dashboard':       '未確認',
+        'learning_batch':  '未確認',
+    }
+    try:
+        ws   = ss.worksheet('作業ログ')
+        rows = ws.get_all_values()
+        if len(rows) < 2:
+            return defaults
+        # ヘッダー行を除いた全データをDataFrameに
+        import pandas as pd
+        df = pd.DataFrame(rows[1:], columns=rows[0] if rows else [])
+        result = dict(defaults)
+        keywords = {
+            'daily_update':   ['daily_update', '33マクロ', 'マクロ指標'],
+            'daily_price':    ['daily_price', '価格更新', '変数3'],
+            'weekly_update':  ['weekly_update', '週次', 'weekly'],
+            'dashboard':      ['dashboard', 'ダッシュボード', 'generate'],
+            'learning_batch': ['learning_batch', '学習バッチ', '月次'],
+        }
+        date_col = df.columns[0] if len(df.columns) > 0 else None
+        desc_col = df.columns[1] if len(df.columns) > 1 else None
+        if date_col and desc_col:
+            for key, kws in keywords.items():
+                for _, row in df.iloc[::-1].iterrows():
+                    desc = str(row.get(desc_col, '')).lower()
+                    if any(k.lower() in desc for k in kws):
+                        d = str(row.get(date_col, ''))
+                        if d and d not in ('', 'None'):
+                            result[key] = d[:10]
+                        break
+        return result
+    except Exception as e:
+        print(f"  ⚠ 作業ログ取得失敗: {e}")
+        return defaults
+
+LAST_RUNS = get_last_runs()
+
+def fmt_run(key):
+    """最終実行日時を短縮表示"""
+    v = LAST_RUNS.get(key, '未確認')
+    if v == '未確認':
+        return '未確認', 'warn'
+    try:
+        from datetime import date
+        d = datetime.strptime(v[:10], '%Y/%m/%d').date()
+        diff = (date.today() - d).days
+        if diff == 0:   return '今日', 'ok'
+        if diff == 1:   return '昨日', 'ok'
+        if diff <= 7:   return f'{diff}日前', 'ok'
+        if diff <= 30:  return f'{diff}日前', 'warn'
+        return f'{diff}日前', 'err'
+    except:
+        return v[:10], 'ok'
+
+# ── システムステータスティッカーHTML ─────────────────────────
+def make_ticker_item(name, status_text, state):
+    """ティッカーアイテム1個のHTML生成"""
+    colors = {
+        'ok':   ('#34d399', '#064e3b'),
+        'warn': ('#fbbf24', '#92400e'),
+        'err':  ('#f87171', '#7f1d1d'),
+    }
+    dot_c, bg_c = colors.get(state, colors['warn'])
+    return (
+        f'<span style="display:inline-flex;align-items:center;gap:5px;'
+        f'padding:0 14px;border-right:1px solid #1e2d40;font-size:9.5px;font-family:monospace;">'
+        f'<span style="width:6px;height:6px;border-radius:50%;background:{dot_c};flex-shrink:0;"></span>'
+        f'<span style="color:#94a3b8;font-weight:800;">{name}</span>'
+        f'<span style="color:{dot_c};">{status_text}</span>'
+        f'</span>'
+    )
+
+# 各アイテム生成
+du_txt,  du_s  = fmt_run('daily_update')
+dp_txt,  dp_s  = fmt_run('daily_price')
+wu_txt,  wu_s  = fmt_run('weekly_update')
+db_txt,  db_s  = fmt_run('dashboard')
+lb_txt,  lb_s  = fmt_run('learning_batch')
+
+ticker_items = (
+    make_ticker_item('daily_update',   f'✓ {du_txt}', du_s) +
+    make_ticker_item('daily_price',    f'✓ {dp_txt}', dp_s) +
+    make_ticker_item('weekly_update',  f'✓ {wu_txt}', wu_s) +
+    make_ticker_item('dashboard',      f'✓ {db_txt}', db_s) +
+    make_ticker_item('learning_batch', f'✓ {lb_txt}', lb_s) +
+    make_ticker_item('v4.3スコア',     f'✓ 119銘柄',  'ok') +
+    make_ticker_item('因子劣化チェック', '⚠ 未実装',   'warn') +
+    make_ticker_item('EDINET',         '✗ 未実装',    'err') +
+    make_ticker_item('感応度行列',      '✗ 6ヶ月後',  'err') +
+    make_ticker_item('04/15検証',      '⚠ 準備中',   'warn')
+)
+
+TICKER_HTML = f"""    <div style="background:#060810;border-bottom:1px solid #1e2d40;padding:2px 0;overflow:hidden;white-space:nowrap;">
+      <div style="display:inline-flex;animation:ticker 35s linear infinite;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'">
+        {ticker_items}{ticker_items}
+      </div>
+    </div>"""
+
 # ── バリュエーション自動読み込み ────────────────────────────
 FRED_API_KEY = os.environ.get('FRED_API_KEY', '467c035b9ae8a723c2b9ee2184a22522')
 FRED_BASE    = 'https://api.stlouisfed.org/fred/series/observations'
@@ -496,6 +601,20 @@ if mstrip_start >= 0 and mstrip_end >= 0:
 else:
     print(f"WARN: 市場ストリップ置換スキップ (start={mstrip_start} end={mstrip_end})")
 
+# ── ティッカーをヘッダー直後に挿入 ──────────────────────────
+# ヘッダーの終わり（class="header"のdiv閉じタグ）の直後に挿入
+ticker_anchor = src.find('<div class="mstrip">')
+if ticker_anchor >= 0:
+    src = src[:ticker_anchor] + TICKER_HTML + '\n    ' + src[ticker_anchor:]
+    print("OK: ティッカー挿入")
+else:
+    print("WARN: ティッカー挿入スキップ")
+
+# ── ティッカーのCSSアニメーションを</body>直前に挿入 ──────────
+TICKER_CSS = """<style>
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+</style>"""
+
 # ── STOCK_SCORES埋め込み ─────────────────────────────────────
 scores_js = ('const STOCK_SCORES=' +
              json.dumps(SCORES, ensure_ascii=False) + ';')
@@ -718,8 +837,8 @@ else:
     print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
 
 # ── 市場指標モーダルを </body> 直前に挿入 ─────────────────────
-src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
-print("OK: モーダル挿入")
+src = src.replace('</body>', TICKER_CSS + VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
+print("OK: モーダル・ティッカーCSS挿入")
 
 out = 'ai_dashboard_v11_fixed.html'
 with open(out, 'w', encoding='utf-8') as f:
