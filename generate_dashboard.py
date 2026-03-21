@@ -149,11 +149,19 @@ ticker_items = (
     make_ticker_item('04/15検証',      '⚠ 準備中',   'warn')
 )
 
-TICKER_HTML = f"""    <div id="sys-ticker-wrap" style="background:#060810;border-bottom:1px solid #1e2d40;height:18px;overflow:hidden;flex-shrink:0;">
-      <div id="sys-ticker" style="display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;height:18px;width:max-content;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'">
-        {ticker_items}{ticker_items}
-      </div>
-    </div>"""
+TICKER_HTML = (
+    f'<!-- TICKER_START -->'
+    f'<div id="sys-ticker-wrap" style="background:#060810;border-bottom:1px solid #1e2d40;'
+    f'height:18px;overflow:hidden;flex-shrink:0;">'
+    f'<div id="sys-ticker" style="display:inline-flex;flex-wrap:nowrap;align-items:center;'
+    f'height:18px;width:max-content;'
+    f'animation:ticker_scroll 45s linear infinite;"'
+    f' onmouseover="this.style.animationPlayState=\'paused\'"'
+    f' onmouseout="this.style.animationPlayState=\'running\'">'
+    f'{ticker_items}{ticker_items}'
+    f'</div></div>'
+    f'<!-- TICKER_END -->'
+)
 
 # ── バリュエーション自動読み込み ────────────────────────────
 FRED_API_KEY = os.environ.get('FRED_API_KEY', '467c035b9ae8a723c2b9ee2184a22522')
@@ -602,30 +610,26 @@ if mstrip_start >= 0 and mstrip_end >= 0:
 else:
     print(f"WARN: 市場ストリップ置換スキップ (start={mstrip_start} end={mstrip_end})")
 
-# ── ティッカーをmstrip直前に挿入（IDで既存を置換） ──────────
-import re as _re
-# 既存のsys-ticker-wrapがあれば削除
-src = _re.sub(
-    r'\s*<div id="sys-ticker-wrap"[^>]*>.*?</div>\s*',
-    '\n    ',
-    src,
-    flags=_re.DOTALL
-)
-# 新しいティッカーをmstrip直前に挿入
-ticker_anchor = src.find('<div class="mstrip">')
-if ticker_anchor >= 0:
-    src = src[:ticker_anchor] + TICKER_HTML + '\n    ' + src[ticker_anchor:]
-    print("OK: ティッカー挿入")
+# ── ティッカー挿入（核爆弾的クリーン：.slとmstripの間を丸ごと置換） ─
+# 蓄積された全ティッカーを一括削除して新しいものを1個だけ挿入
+SL_ANCHOR    = '<div class="sl">市場体温計 &amp; 短期・中期シグナル</div>'
+MSTRIP_ANCHOR = '<div class="mstrip">'
+sl_pos     = src.find(SL_ANCHOR)
+mstrip_pos = src.find(MSTRIP_ANCHOR)
+if sl_pos >= 0 and mstrip_pos >= 0 and mstrip_pos > sl_pos:
+    # .slの直後からmstripの直前までを丸ごとティッカー1個に置換
+    src = (src[:sl_pos + len(SL_ANCHOR)] +
+           '\n    ' + TICKER_HTML + '\n    ' +
+           src[mstrip_pos:])
+    print("OK: ティッカー置換（全蓄積クリア）")
 else:
-    print("WARN: ティッカー挿入スキップ")
+    print(f"WARN: ティッカー挿入スキップ (sl={sl_pos} mstrip={mstrip_pos})")
 
 # ── ティッカーのCSSアニメーションを</body>直前に挿入 ──────────
 TICKER_CSS = """<style>
 @keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-#sys-ticker{
-  animation:ticker_scroll 45s linear infinite;
-  will-change:transform;
-}
+#sys-ticker{animation:ticker_scroll 45s linear infinite;will-change:transform;}
+#sys-ticker:hover{animation-play-state:paused;}
 </style>"""
 
 # ── ソースCSSを直接書き換え（aspect-ratio・overflow修正） ───
