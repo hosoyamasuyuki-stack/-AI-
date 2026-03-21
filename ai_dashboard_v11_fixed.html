@@ -4,7 +4,7 @@
 .db{width:100%;background:#0b0f1a;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;color:#f1f5f9;overflow:visible;display:flex;flex-direction:column;}
 ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#1e2d40;border-radius:2px;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
 
 /* HEADER */
@@ -299,7 +299,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
       <span class="r"><span style="background:#f59e0b22;color:#f59e0b;padding:1px 6px;border-radius:6px;font-weight:800;">43銘柄</span><span style="color:#34d399;font-weight:800;">A以上 3</span></span>
     </div>
     <div style="flex:1;overflow-y:auto;">
-                                                                                                      <table id="tH">
+                                                                                                            <table id="tH">
         <tr>
           <th class="sh" onclick="srt('tH',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tH',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
@@ -781,7 +781,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
       <span class="r"><span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">14銘柄</span><span style="color:#34d399;font-weight:800;">購入候補 1</span></span>
     </div>
     <div style="flex:1;overflow-y:auto;">
-                                                                                                      <table id="tW">
+                                                                                                            <table id="tW">
         <tr>
           <th class="sh" onclick="srt('tW',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
@@ -2120,9 +2120,9 @@ function srt(id,col,th){
 // ── マトリックス★ ──────────────────────────────────
 function updMx(roe,fcr,rt,ft,peg,fy){
   roe=+roe||0;fcr=+fcr||0;rt=+rt||0;ft=+ft||0;peg=+peg||1;fy=+fy||0;
-  const mx1=[[1,2,2,3,3],[0,1,2,2,3],[0,0,1,2,2],[4,0,0,1,1],[4,4,0,0,1]];
-  const mx2=[[1,1,2,2,3],[0,1,1,2,2],[0,0,1,1,2],[4,0,0,1,1],[4,4,0,0,1]];
-  const mx3=[[2,2,3,3,3],[1,1,2,2,3],[0,0,1,2,2],[4,0,0,1,1],[4,4,0,0,1]];
+  const mx1=[[2,1,1,0,0],[3,2,1,1,0],[3,3,2,1,1],[4,3,3,2,2],[4,4,3,3,2]];
+  const mx2=[[2,2,1,1,0],[3,2,2,1,1],[3,3,2,2,1],[4,3,3,2,2],[4,4,3,3,2]];
+  const mx3=[[1,1,0,0,0],[2,2,1,1,0],[3,3,2,1,1],[4,3,3,2,2],[4,4,3,3,2]];
   const rks=['S','A','B','C','D'];
   const r1=roe>=25?0:roe>=15?1:roe>=10?2:roe>=5?3:4;
   const c1=fcr>=80?4:fcr>=60?3:fcr>=40?2:fcr>=20?1:0;
