@@ -625,12 +625,14 @@ if sl_pos >= 0 and mstrip_pos >= 0 and mstrip_pos > sl_pos:
 else:
     print(f"WARN: ティッカー挿入スキップ (sl={sl_pos} mstrip={mstrip_pos})")
 
-# ── ティッカーのCSSアニメーションを</body>直前に挿入 ──────────
-TICKER_CSS = """<style>
-@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-#sys-ticker{animation:ticker_scroll 45s linear infinite;will-change:transform;}
-#sys-ticker:hover{animation-play-state:paused;}
-</style>"""
+# ── ティッカーアニメーションを既存styleブロックに直接追記 ────
+src = src.replace(
+    '@keyframes fadeIn{',
+    '@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}'
+    '@keyframes fadeIn{',
+    1
+)
+print("OK: ticker_scroll keyframe追加")
 
 # ── ソースCSSを直接書き換え（aspect-ratio・overflow修正） ───
 # .db の aspect-ratio を削除・overflow を変更
@@ -884,8 +886,8 @@ else:
     print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
 
 # ── 市場指標モーダルを </body> 直前に挿入 ─────────────────────
-src = src.replace('</body>', TICKER_CSS + VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
-print("OK: モーダル・ティッカーCSS挿入")
+src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
+print("OK: モーダル挿入")
 
 out = 'ai_dashboard_v11_fixed.html'
 with open(out, 'w', encoding='utf-8') as f:
