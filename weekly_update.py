@@ -53,7 +53,7 @@ CUTOFF     = (TODAY - timedelta(days=365 * DATA_YEARS)).strftime('%Y-%m-%d')
 
 # ── フラグ管理 ───────────────────────────────────────────────
 # 修正①：v21でバリュエーション取得先修正後にTrueに変更
-LONG_TERM_ENABLED = False  # False=データ未整備でスキップ / True=CAPE計算を有効化
+LONG_TERM_ENABLED = True  # False=データ未整備でスキップ / True=CAPE計算を有効化
 
 print(f"✅ 接続完了: {ss.title}")
 print(f"実行日時: {NOW}")
