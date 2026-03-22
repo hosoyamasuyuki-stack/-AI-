@@ -1,0 +1,47 @@
+name: verify
+
+on:
+  schedule:
+    # 毎週月曜 11:00 JST（02:00 UTC）
+    - cron: '0 2 * * 1'
+    # 2026/04/15 9:00 JST（00:00 UTC）
+    - cron: '0 0 15 4 *'
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install gspread google-auth pandas
+
+      - name: Run verify_monday (毎週月曜)
+        if: github.event.schedule == '0 2 * * 1'
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: python verify_monday.py
+
+      - name: Run verify_0415 (4/15のみ)
+        if: github.event.schedule == '0 0 15 4 *'
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: python verify_0415.py
+
+      - name: Run both (手動実行時)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: |
+          python verify_monday.py
+          echo "---"
+          python verify_0415.py
