@@ -1,0 +1,28 @@
+name: Sheet Manager Monthly
+
+on:
+  schedule:
+    # 毎月1日 9:00 JST (= 00:00 UTC)
+    - cron: '0 0 1 * *'
+  workflow_dispatch:  # 手動実行も可能
+
+jobs:
+  sheet_manager:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install gspread google-auth
+
+      - name: Run sheet_manager.py
+        env:
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        run: python sheet_manager.py
