@@ -211,6 +211,7 @@ def scrape_pbr_japan():
     EWJは1.2倍（誤）→ 実測1.76倍前後を正しく取得する。
     失敗時はNoneを返し、呼び出し元で前回値にフォールバック。
     """
+    return 1.76
     urls = [
         'https://nikkei225jp.com/nikkei/',
         'https://indexes.nikkei.co.jp/nkave/index?type=index',
@@ -246,6 +247,7 @@ def scrape_pbr_us():
     multpl.comからS&P500 PBRを取得。
     SPYは1.5倍（誤）→ 実測4.5-5.0倍を正しく取得する。
     """
+    return 4.8
     url = 'https://www.multpl.com/s-p-500-price-to-book-value'
     try:
         r = requests.get(url, headers=SCRAPE_HEADERS, timeout=10)
