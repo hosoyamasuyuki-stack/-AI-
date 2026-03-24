@@ -50,7 +50,7 @@ html{height:100%;margin:0;padding:0;}body{height:100%;margin:0;padding:0;backgro
 .jg{background:#064e3b;color:#34d399;}.jr{background:#7f1d1d;color:#f87171;}
 
 /* BODY */
-#body{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1.05fr;gap:5px;padding:5px;overflow:hidden;}
+#body{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1.05fr;gap:5px;padding:5px;overflow:hidden;margin:0 -12px -5px;}
 .panel{background:#111827;border:1px solid #1e2d40;border-radius:7px;display:flex;flex-direction:column;overflow:hidden;min-height:0;height:100%;}
 .ph{padding:5px 10px;border-bottom:1px solid #1e2d40;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:#0a0d16;}
 .ph .t{font-size:10px;font-weight:800;color:#cbd5e1;}
@@ -302,7 +302,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
       <span class="r"><span style="background:#f59e0b22;color:#f59e0b;padding:1px 6px;border-radius:6px;font-weight:800;">43銘柄</span><span style="color:#34d399;font-weight:800;">A以上 3</span></span>
     </div>
     <div style="flex:1;overflow-y:auto;">
-                                                                                                                  <table id="tH" style="height:100%;overflow-y:auto;display:block;">
+                                                                                                                  <table id="tH" style="max-height:380px;overflow-y:auto;display:block;">
         <tr>
           <th class="sh" onclick="srt('tH',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tH',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
@@ -784,7 +784,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
       <span class="r"><span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">14銘柄</span><span style="color:#34d399;font-weight:800;">購入候補 1</span></span>
     </div>
     <div style="flex:1;overflow-y:auto;">
-                                                                                                                  <table id="tW" style="height:100%;overflow-y:auto;display:block;">
+                                                                                                                  <table id="tW" style="max-height:380px;overflow-y:auto;display:block;">
         <tr>
           <th class="sh" onclick="srt('tW',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
