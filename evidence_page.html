@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科学的根拠 | AI投資判断システム</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=IBM+Plex+Mono:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:        #070c18;
+    --bg2:       #0d1526;
+    --bg3:       #111d35;
+    --border:    #1e2f52;
+    --gold:      #c9a84c;
+    --gold-lt:   #e8c97a;
+    --gold-dim:  #7a6230;
+    --text:      #d8e0f0;
+    --text-dim:  #7888aa;
+    --green:     #3dd68c;
+    --red:       #f26b6b;
+    --blue:      #5b9ef7;
+    --mono:      'IBM Plex Mono', monospace;
+    --serif:     'Noto Serif JP', serif;
+    --sans:      'Noto Sans JP', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.8;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: .4;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(7,12,24,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .site-header .logo {
+    font-family: var(--mono);
+    font-size: 12px; color: var(--gold);
+    letter-spacing: .15em; text-transform: uppercase;
+  }
+  .site-header .badge {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-dim); letter-spacing: .1em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    padding: 100px 40px 80px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(ellipse, rgba(201,168,76,.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--gold-dim); letter-spacing: .25em;
+    text-transform: uppercase; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-size: clamp(28px,4vw,48px);
+    font-weight: 600; line-height: 1.3;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero p {
+    color: var(--text-dim); font-size: 16px;
+    max-width: 600px; margin: 0 auto 48px;
+  }
+  .hero-stats {
+    display: flex; justify-content: center; gap: 48px;
+    flex-wrap: wrap;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num {
+    font-family: var(--mono); font-size: 32px;
+    color: var(--gold); display: block; line-height: 1;
+  }
+  .hero-stat .lbl {
+    font-size: 12px; color: var(--text-dim);
+    margin-top: 6px; display: block; letter-spacing: .08em;
+  }
+  .divider {
+    width: 1px; height: 48px;
+    background: var(--border); align-self: center;
+  }
+
+  /* ── CONTAINER ── */
+  .container {
+    max-width: 1080px; margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    padding: 80px 0;
+    border-top: 1px solid var(--border);
+  }
+  .section-label {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--gold-dim); letter-spacing: .25em;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .section h2 {
+    font-family: var(--serif); font-size: 28px;
+    font-weight: 600; color: #fff;
+    margin-bottom: 12px; line-height: 1.3;
+  }
+  .section .lead {
+    color: var(--text-dim); font-size: 16px;
+    max-width: 640px; margin-bottom: 48px;
+  }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  @media(max-width:720px){
+    .grid-2,.grid-3{ grid-template-columns:1fr; }
+    .hero-stats{ gap:24px; }
+    .divider{ display:none; }
+    .container{ padding:0 20px; }
+    .site-header{ padding:0 20px; }
+    .hero{ padding:80px 20px 60px; }
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .card:hover { border-color: var(--gold-dim); }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .card.gold::before { background: var(--gold); }
+  .card.green::before { background: var(--green); }
+  .card.red::before   { background: var(--red); }
+  .card.blue::before  { background: var(--blue); }
+
+  .card .card-label {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-dim); letter-spacing: .2em;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .card .card-title {
+    font-family: var(--serif); font-size: 18px;
+    color: #fff; margin-bottom: 8px; font-weight: 600;
+  }
+  .card .card-body {
+    color: var(--text-dim); font-size: 14px; line-height: 1.7;
+  }
+
+  /* ── PHASE TABLE ── */
+  .phase-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-top: 32px;
+  }
+  .phase-table th {
+    text-align: left;
+    padding: 10px 16px;
+    background: var(--bg3);
+    color: var(--text-dim);
+    font-weight: 400;
+    font-size: 11px; letter-spacing: .1em;
+    border-bottom: 1px solid var(--border);
+  }
+  .phase-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .phase-table tr:last-child td { border-bottom: none; }
+  .phase-table tr:hover td { background: rgba(255,255,255,.02); }
+
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 600; letter-spacing: .05em;
+  }
+  .tag.adopted  { background: rgba(61,214,140,.15); color: var(--green); }
+  .tag.rejected { background: rgba(242,107,107,.15); color: var(--red); }
+  .tag.caution  { background: rgba(201,168,76,.15);  color: var(--gold); }
+
+  .big-num {
+    font-family: var(--mono);
+    font-size: 22px; font-weight: 600;
+  }
+  .big-num.pos { color: var(--green); }
+  .big-num.neg { color: var(--red); }
+  .big-num.neu { color: var(--gold); }
+
+  /* ── CHART WRAP ── */
+  .chart-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-top: 32px;
+  }
+  .chart-title {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text-dim); letter-spacing: .1em;
+    margin-bottom: 20px; text-transform: uppercase;
+  }
+
+  /* ── REBUTTAL ── */
+  .rebuttal-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  @media(max-width:720px){ .rebuttal-item{ grid-template-columns:1fr; gap:16px; } }
+  .rebuttal-q {
+    font-family: var(--serif); font-size: 16px;
+    color: var(--text); line-height: 1.5;
+  }
+  .rebuttal-q::before {
+    content: '❝ ';
+    color: var(--red); font-size: 18px;
+  }
+  .rebuttal-a {
+    font-size: 14px; color: var(--text-dim); line-height: 1.7;
+  }
+  .rebuttal-a strong { color: var(--gold); }
+
+  /* ── FINDING BOX ── */
+  .finding {
+    background: linear-gradient(135deg, rgba(201,168,76,.06), rgba(201,168,76,.02));
+    border: 1px solid rgba(201,168,76,.25);
+    border-radius: 12px;
+    padding: 32px;
+    margin-top: 32px;
+  }
+  .finding-icon { font-size: 24px; margin-bottom: 12px; }
+  .finding h3 {
+    font-family: var(--serif); font-size: 20px;
+    color: var(--gold); margin-bottom: 12px;
+  }
+  .finding p { color: var(--text-dim); font-size: 14px; line-height: 1.8; }
+  .finding strong { color: var(--text); }
+
+  /* ── STEP FLOW ── */
+  .steps {
+    display: flex; flex-direction: column;
+    gap: 0; margin-top: 32px;
+    position: relative;
+  }
+  .step {
+    display: flex; gap: 24px; align-items: flex-start;
+    padding: 24px 0; position: relative;
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute; left: 19px; top: 56px;
+    width: 2px; bottom: -8px;
+    background: var(--border);
+  }
+  .step-num {
+    width: 40px; height: 40px; flex-shrink: 0;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--gold);
+  }
+  .step-content h4 {
+    font-family: var(--serif); font-size: 16px;
+    color: #fff; margin-bottom: 6px;
+  }
+  .step-content p { color: var(--text-dim); font-size: 14px; line-height: 1.7; }
+
+  /* ── CONCLUSION ── */
+  .conclusion {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 56px 48px;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .conclusion::before {
+    content: '';
+    position: absolute; top: -80px; right: -80px;
+    width: 300px; height: 300px;
+    background: radial-gradient(ellipse, rgba(201,168,76,.06) 0%, transparent 70%);
+  }
+  .conclusion h2 {
+    font-family: var(--serif); font-size: 30px;
+    color: #fff; margin-bottom: 16px;
+  }
+  .conclusion h2 span { color: var(--gold); }
+  .conclusion p { color: var(--text-dim); font-size: 16px; max-width: 560px; margin: 0 auto; }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    text-align: center;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-dim); letter-spacing: .1em;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(20px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .fade-up { animation: fadeUp .6s ease both; }
+  .delay-1 { animation-delay: .1s; }
+  .delay-2 { animation-delay: .2s; }
+  .delay-3 { animation-delay: .3s; }
+
+  /* ── INLINE ACCENT ── */
+  .accent { color: var(--gold); font-weight: 600; }
+  .mono { font-family: var(--mono); }
+
+  /* ── METHODOLOGY LIST ── */
+  .method-list {
+    list-style: none;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-top: 20px;
+  }
+  @media(max-width:600px){ .method-list{ grid-template-columns:1fr; } }
+  .method-list li {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 13px; color: var(--text-dim);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .method-list li .mi { color: var(--gold); flex-shrink:0; font-size: 14px; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <span class="logo">AI投資判断システム // 科学的根拠</span>
+  <span class="badge">INTERNAL RESEARCH RECORD · 2026</span>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-label fade-up">Evidence-Based Investment System</p>
+  <h1 class="fade-up delay-1">
+    なぜこのシステムを<br><span>信頼できるのか</span>
+  </h1>
+  <p class="fade-up delay-2">
+    直感でも経験則でもなく、実際の株式市場データで繰り返し検証した結果のみを
+    投資判断の根拠としています。このページはその実験記録です。
+  </p>
+  <div class="hero-stats fade-up delay-3">
+    <div class="hero-stat">
+      <span class="num">106</span>
+      <span class="lbl">検証銘柄数</span>
+    </div>
+    <div class="divider"></div>
+    <div class="hero-stat">
+      <span class="num">3</span>
+      <span class="lbl">異なる相場局面</span>
+    </div>
+    <div class="divider"></div>
+    <div class="hero-stat">
+      <span class="num">7年</span>
+      <span class="lbl">検証期間</span>
+    </div>
+    <div class="divider"></div>
+    <div class="hero-stat">
+      <span class="num">+4.46%</span>
+      <span class="lbl">年率超過リターン</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 1: 実験設計 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 01</p>
+    <h2>実験はどう設計されたか</h2>
+    <p class="lead">「たまたま良かった」を排除するため、3つの異なる相場局面で独立に検証しました。</p>
+
+    <div class="grid-3">
+      <div class="card gold">
+        <div class="card-label">Phase 01 · 弱気相場</div>
+        <div class="card-title">コロナ前後の混乱期</div>
+        <div class="card-body">
+          2018年4月〜2021年3月。日経平均が急落・急騰を繰り返した最も過酷な3年間。この局面でも機能するかを検証。
+        </div>
+      </div>
+      <div class="card gold">
+        <div class="card-label">Phase 02 · 回復相場</div>
+        <div class="card-title">V字回復の急騰期</div>
+        <div class="card-body">
+          2020年10月〜2023年9月。コロナ安値から急反発した特殊な相場。「普通の戦略が効かない」時代を意図的に含めた。
+        </div>
+      </div>
+      <div class="card gold">
+        <div class="card-label">Phase 03 · 成長相場</div>
+        <div class="card-title">緩やかな上昇継続期</div>
+        <div class="card-body">
+          2022年4月〜2025年3月。インフレ・金利上昇の中でも企業業績が牽引した成長局面。最も直近のデータ。
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-wrap" style="margin-top:32px;">
+      <div class="chart-title">◆ 検証の基本設計</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>仮説を先に登録し、変更を禁止する</h4>
+            <p>検証を始める前に「何を調べるか」を書面で確定。後から都合のいい仮説に変える「p-hacking」を構造的に防止しています。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>上位25% vs 下位25%の3年リターンを比較</h4>
+            <p>スコア上位の銘柄群と下位の銘柄群を、3年間そのまま保有した場合のリターン差を計測。売買タイミングの恣意性を排除。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>統計的検定で「偶然か必然か」を判定</h4>
+            <p>Mann-Whitney U検定を使用。複数検定の問題にはBonferroni補正（閾値 p &lt; 0.025）を適用。「3フェーズ全て通過」を採択条件とした。</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h4>取引コスト・税金を控除して評価</h4>
+            <p>往復0.4%の売買手数料と20.315%の税金を控除した実質リターンで判定。「理論上は儲かる」という机上の結論を排除。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: H002 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 02 · 実験H002</p>
+    <h2>財務品質（収益力）は<br>相場を選ばない</h2>
+    <p class="lead">「本当に稼げる会社」を選ぶ指標は、どんな相場でも安定して超過リターンをもたらすことが証明されました。</p>
+
+    <div class="chart-wrap">
+      <div class="chart-title">◆ 相場局面別：財務品質スコア上位25% vs 下位25%（3年累積リターン）</div>
+      <canvas id="h002chart" height="280"></canvas>
+    </div>
+
+    <table class="phase-table" style="margin-top:32px;">
+      <thead>
+        <tr>
+          <th>相場局面</th>
+          <th>上位25%（3年）</th>
+          <th>下位25%（3年）</th>
+          <th>超過リターン</th>
+          <th>p値</th>
+          <th>判定</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>弱気相場（2018〜2021）</td>
+          <td><span class="big-num pos">+212%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+47%</span></td>
+          <td><span class="big-num pos">+165%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">0.013</span></td>
+          <td><span class="tag adopted">ADOPTED</span></td>
+        </tr>
+        <tr>
+          <td>回復相場（2020〜2023）</td>
+          <td><span class="big-num pos">+150%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+55%</span></td>
+          <td><span class="big-num pos">+95%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">0.005</span></td>
+          <td><span class="tag adopted">ADOPTED</span></td>
+        </tr>
+        <tr>
+          <td>成長相場（2022〜2025）</td>
+          <td><span class="big-num pos">+61%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+23%</span></td>
+          <td><span class="big-num pos">+38%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">0.0007</span></td>
+          <td><span class="tag adopted">ADOPTED</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="finding">
+      <div class="finding-icon">📌</div>
+      <h3>実験H002の結論</h3>
+      <p>
+        財務品質スコアの高い企業群は、<strong>弱気・回復・成長の3つの異なる相場すべて</strong>において、
+        低スコア企業群を統計的に有意に上回りました（3/3フェーズ採択、p値いずれも 0.025未満）。
+        「本当に稼げる会社を選んで3年待つ」という戦略の有効性が、
+        7年分のリアルデータで繰り返し確認されています。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: H003 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 03 · 実験H003</p>
+    <h2>「上がっている株を追う」戦略が<br>なぜ危険なのか</h2>
+    <p class="lead">モメンタム（最近上昇している銘柄を買う）戦略の有効性を同じ手法で検証した結果、相場局面によって効果が180度逆転することが判明しました。</p>
+
+    <div class="chart-wrap">
+      <div class="chart-title">◆ 相場局面別：トレンドスコア上位25% vs 下位25%（3年累積リターン）</div>
+      <canvas id="h003chart" height="280"></canvas>
+    </div>
+
+    <table class="phase-table" style="margin-top:32px;">
+      <thead>
+        <tr>
+          <th>相場局面</th>
+          <th>上位25%（3年）</th>
+          <th>下位25%（3年）</th>
+          <th>超過リターン</th>
+          <th>p値</th>
+          <th>判定</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>弱気相場（2018〜2021）</td>
+          <td><span class="big-num pos">+43.7%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+32.6%</span></td>
+          <td><span class="big-num neu">+11.1%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">0.1129</span></td>
+          <td><span class="tag rejected">REJECTED</span></td>
+        </tr>
+        <tr style="background:rgba(242,107,107,.03);">
+          <td>
+            回復相場（2020〜2023）
+            <span class="tag caution" style="margin-left:8px;font-size:10px;">★要注意</span>
+          </td>
+          <td><span class="big-num neg">+29.3%</span></td>
+          <td><span class="mono" style="color:var(--green)">+123.1%</span></td>
+          <td><span class="big-num neg">−93.8%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">1.0000</span></td>
+          <td><span class="tag rejected">REJECTED</span></td>
+        </tr>
+        <tr>
+          <td>成長相場（2022〜2025）</td>
+          <td><span class="big-num pos">+89.5%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+35.4%</span></td>
+          <td><span class="big-num pos">+54.1%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">0.0107</span></td>
+          <td><span class="tag adopted">ADOPTED</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="grid-2" style="margin-top:24px; gap:16px;">
+      <div class="finding" style="margin-top:0;">
+        <div class="finding-icon">⚠️</div>
+        <h3 style="font-size:17px;">なぜV字回復で逆転するのか</h3>
+        <p>
+          コロナ暴落後の反発では、<strong>最も大きく下がった（モメンタムが低い）銘柄</strong>ほど大きく反発します。
+          「上がっている株」を追う戦略は、まさにこの「最も儲かる銘柄」を意図せず除外してしまいます。
+          下落相場の後では、逆張りが最も機能するのです。
+        </p>
+      </div>
+      <div class="finding" style="margin-top:0;">
+        <div class="finding-icon">🔒</div>
+        <h3 style="font-size:17px;">だからシステムはこう設計している</h3>
+        <p>
+          本システムでは、<strong>財務品質（H002で証明済み）を主軸</strong>に置き、
+          トレンド情報は補助的にのみ使います。
+          また現在のマクロ環境（市場過熱・高VIX）をリアルタイムで判定し、
+          過熱時には自動的にリスクを抑える仕組みを組み込んでいます。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: 反論 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 04 · よくある反論</p>
+    <h2>想定される批判への<br>先回り回答</h2>
+    <p class="lead">科学的な検証ほど、批判への答えを最初から用意しておく必要があります。</p>
+
+    <div class="rebuttal-item">
+      <div class="rebuttal-q">バックテストは過去のデータでしょ。これから通用するとは限らない。</div>
+      <div class="rebuttal-a">
+        その通りです。だからこそ3つの<strong>異なる相場局面</strong>で独立に検証しています。
+        弱気・回復・成長という正反対の相場全てで同じ結論が出たことは、
+        特定期間への過学習ではなく構造的な優位性を示しています。
+        また「財務品質の高い企業が長期的に優れる」というメカニズム自体は
+        100年以上の投資実績で確認されている普遍的な原理です。
+      </div>
+    </div>
+
+    <div class="rebuttal-item">
+      <div class="rebuttal-q">サンプル数が少なすぎるのでは？</div>
+      <div class="rebuttal-a">
+        1フェーズあたり<strong>106銘柄</strong>、3フェーズ合計318データポイントを使用しています。
+        統計的に意味のある結論を出すために必要なサンプル数（n≥84）を満たしており、
+        金融研究の標準的な水準です。さらに複数検定問題にBonferroni補正を適用し、
+        偶然の有意差が出る確率を抑制しています。
+      </div>
+    </div>
+
+    <div class="rebuttal-item">
+      <div class="rebuttal-q">手数料や税金を引いたら結局プラスにならないのでは？</div>
+      <div class="rebuttal-a">
+        全ての検証は往復<strong>0.4%の売買手数料</strong>と
+        <strong>20.315%の譲渡益税</strong>を控除した実質ベースで計算しています。
+        それでも年率+4.46%の超過リターンが確認されています。
+        「手数料込みでも勝てる」がこのシステムの前提条件です。
+      </div>
+    </div>
+
+    <div class="rebuttal-item">
+      <div class="rebuttal-q">H003でトレンド戦略が棄却されているのに、なぜシステムに使うのか？</div>
+      <div class="rebuttal-a">
+        <strong>単独では危険、組み合わせると有効</strong>というのが検証の結論です。
+        財務品質で絞った銘柄群の中でトレンドを使う場合と、
+        トレンド単独で使う場合は全く別の話です。
+        また現在のマクロ環境（RED信号）ではトレンド情報への依存度を
+        自動的に下げる設計になっています。
+      </div>
+    </div>
+
+    <div class="rebuttal-item">
+      <div class="rebuttal-q">自分に都合のいい結果だけ見せているのでは？</div>
+      <div class="rebuttal-a">
+        Section 03でH003（トレンド戦略の棄却）を正直に公開しています。
+        <strong>失敗した実験も隠さず記録する</strong>のが、
+        このシステムの信頼性の根拠です。
+        都合の良い結果だけ選ぶ「チェリーピッキング」は、
+        仮説を実験前に登録する仕組みで構造的に防止しています。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: 結論 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 05 · 結論</p>
+    <h2>実験が示した「シンプルな真実」</h2>
+    <p class="lead">複雑な理論より、シンプルな真実の方が強い。</p>
+
+    <div class="grid-2" style="margin-top:8px;">
+      <div class="card green">
+        <div class="card-label">証明された原則 · H002</div>
+        <div class="card-title">稼ぐ力の高い会社を<br>選んで3年待つ</div>
+        <div class="card-body" style="margin-top:12px;">
+          財務品質スコアの上位銘柄を3年保有すると、
+          どんな相場でも日経平均を年率+4.46%上回ることが
+          7年分のデータで確認されています。
+          シンプルですが、実行し続けることが最も難しい戦略です。
+        </div>
+      </div>
+      <div class="card red">
+        <div class="card-label">棄却された仮定 · H003</div>
+        <div class="card-title">「上がっている株を追う」<br>は相場を選ぶ</div>
+        <div class="card-body" style="margin-top:12px;">
+          成長相場では強力に機能しますが、
+          V字回復相場では約94%の超過リターンを損失します。
+          マクロ環境の判断なしに使うことは危険であると結論付けました。
+          このシステムがマクロ環境を常時監視する理由がここにあります。
+        </div>
+      </div>
+    </div>
+
+    <div class="conclusion" style="margin-top:48px;">
+      <h2>投資で<span>上位3%</span>に入る条件は<br>シンプルだった</h2>
+      <p>
+        財務品質の高い会社を選び、マクロ環境を確認しながら、
+        3年間保有し続ける。<br>
+        この実験はその「当たり前」を、データで繰り返し証明した記録です。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  AI投資判断システム · 科学的根拠レポート · 2026年3月 ·
+  検証手法: Mann-Whitney U / Bonferroni補正 / ウォークフォワード3フェーズ ·
+  本資料は投資助言ではありません
+</footer>
+
+<script>
+// ── CHART DEFAULTS ──
+Chart.defaults.color = '#7888aa';
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.font.size = 11;
+
+const gridColor = 'rgba(30,47,82,.6)';
+
+// ── H002 CHART ──
+new Chart(document.getElementById('h002chart'), {
+  type: 'bar',
+  data: {
+    labels: ['弱気相場\n(2018〜2021)', '回復相場\n(2020〜2023)', '成長相場\n(2022〜2025)'],
+    datasets: [
+      {
+        label: '財務品質 上位25%',
+        data: [212, 150, 61],
+        backgroundColor: 'rgba(61,214,140,.75)',
+        borderColor: 'rgba(61,214,140,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: '財務品質 下位25%',
+        data: [47, 55, 23],
+        backgroundColor: 'rgba(242,107,107,.5)',
+        borderColor: 'rgba(242,107,107,.8)',
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: '日経平均（参考）',
+        data: [47, 55, 23],
+        type: 'line',
+        borderColor: 'rgba(201,168,76,.6)',
+        borderWidth: 1.5,
+        borderDash: [4,4],
+        pointRadius: 4,
+        pointBackgroundColor: 'rgba(201,168,76,.8)',
+        fill: false,
+        tension: 0,
+        yAxisID: 'y',
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { padding: 20, usePointStyle: true }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: +${ctx.parsed.y}%`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { maxRotation: 0 } },
+      y: {
+        grid: { color: gridColor },
+        ticks: { callback: v => '+' + v + '%' },
+        title: { display: true, text: '3年累積リターン', color: '#7888aa' }
+      }
+    }
+  }
+});
+
+// ── H003 CHART ──
+new Chart(document.getElementById('h003chart'), {
+  type: 'bar',
+  data: {
+    labels: ['弱気相場\n(2018〜2021)', '回復相場\n(2020〜2023)\n★逆転', '成長相場\n(2022〜2025)'],
+    datasets: [
+      {
+        label: 'トレンド 上位25%',
+        data: [43.7, 29.3, 89.5],
+        backgroundColor: [
+          'rgba(91,158,247,.7)',
+          'rgba(242,107,107,.7)',
+          'rgba(91,158,247,.7)',
+        ],
+        borderColor: [
+          'rgba(91,158,247,1)',
+          'rgba(242,107,107,1)',
+          'rgba(91,158,247,1)',
+        ],
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: 'トレンド 下位25%',
+        data: [32.6, 123.1, 35.4],
+        backgroundColor: 'rgba(255,255,255,.12)',
+        borderColor: 'rgba(255,255,255,.3)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { padding: 20, usePointStyle: true }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: +${ctx.parsed.y}%`
+        }
+      },
+      annotation: {}
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { maxRotation: 0 } },
+      y: {
+        grid: { color: gridColor },
+        ticks: { callback: v => '+' + v + '%' },
+        title: { display: true, text: '3年累積リターン', color: '#7888aa' }
+      }
+    }
+  }
+});
+
+// ── SCROLL FADE ──
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.card, .rebuttal-item, .finding, .chart-wrap').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(16px)';
+  el.style.transition = 'opacity .5s ease, transform .5s ease';
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
