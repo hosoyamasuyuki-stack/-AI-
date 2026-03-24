@@ -299,6 +299,148 @@ try:
 except Exception as e:
     print(f"  $274C 異常値スコア: {e}")
 
+
+
+# ============================================================
+# マクロフェーズ判定（4層100点）
+# ============================================================
+
+def get_latest_val(ss, sheet_name, col=1):
+    try:
+        ws = ss.worksheet(sheet_name)
+        vals = ws.col_values(col + 1)
+        for v in reversed(vals):
+            if v and str(v).strip():
+                try:
+                    return float(str(v).replace(',', ''))
+                except:
+                    pass
+    except Exception as e:
+        print(f"  WARN: {sheet_name} 取得失敗 -> {e}")
+    return None
+
+def calc_macro_phase(ss):
+    detail = {}
+    total = 0
+
+    # Layer A: リスク指標 (40点)
+    layer_a = 0
+    vix = get_latest_val(ss, 'VIX')
+    if vix is not None:
+        pts = 10 if vix < 18 else (5 if vix < 25 else 0)
+        layer_a += pts
+        detail['VIX'] = {'value': vix, 'pts': pts}
+
+    hy = get_latest_val(ss, 'HYスプレッド')
+    if hy is not None:
+        pts = 10 if hy < 3.5 else (5 if hy < 5.0 else 0)
+        layer_a += pts
+        detail['HYspread'] = {'value': hy, 'pts': pts}
+
+    ted = get_latest_val(ss, 'TEDスプレッド')
+    if ted is not None:
+        pts = 10 if ted < 0.3 else (5 if ted < 0.5 else 0)
+        layer_a += pts
+        detail['TEDspread'] = {'value': ted, 'pts': pts}
+
+    ls = get_latest_val(ss, '長短金利差')
+    if ls is not None:
+        pts = 10 if ls > 0.5 else (5 if ls > 0 else 0)
+        layer_a += pts
+        detail['LongShortSpread'] = {'value': ls, 'pts': pts}
+
+    total += layer_a
+    detail['LayerA'] = {'score': layer_a, 'max': 40}
+    print(f"  Layer A (リスク指標): {layer_a}/40点")
+
+    # Layer B: 金融政策 (30点)
+    layer_b = 0
+    m2 = get_latest_val(ss, '日本M2')
+    if m2 is not None:
+        pts = 15 if m2 > 3.0 else (8 if m2 > 1.0 else 0)
+        layer_b += pts
+        detail['JapanM2'] = {'value': m2, 'pts': pts}
+
+    frb = get_latest_val(ss, 'FRBバランスシート')
+    if frb is not None:
+        pts = 15 if frb > 1.0 else (8 if frb > -1.0 else 0)
+        layer_b += pts
+        detail['FRBbalance'] = {'value': frb, 'pts': pts}
+
+    total += layer_b
+    detail['LayerB'] = {'score': layer_b, 'max': 30}
+    print(f"  Layer B (金融政策): {layer_b}/30点")
+
+    # Layer C: 経済活動 (20点)
+    layer_c = 0
+    ism = get_latest_val(ss, 'ISM製造業PMI')
+    if ism is not None:
+        pts = 10 if ism >= 55 else (5 if ism >= 50 else 0)
+        layer_c += pts
+        detail['ISMPMI'] = {'value': ism, 'pts': pts}
+
+    unemp = get_latest_val(ss, '米失業率')
+    if unemp is not None:
+        pts = 10 if unemp < 4.0 else (5 if unemp < 5.0 else 0)
+        layer_c += pts
+        detail['USUnemployment'] = {'value': unemp, 'pts': pts}
+
+    total += layer_c
+    detail['LayerC'] = {'score': layer_c, 'max': 20}
+    print(f"  Layer C (経済活動): {layer_c}/20点")
+
+    # Layer D: バリュエーション (10点)
+    layer_d = 0
+    cape = get_latest_val(ss, 'シラーPER')
+    if cape is not None:
+        pts = 10 if cape < 20 else (5 if cape < 25 else 0)
+        layer_d += pts
+        detail['ShillerPER'] = {'value': cape, 'pts': pts}
+
+    total += layer_d
+    detail['LayerD'] = {'score': layer_d, 'max': 10}
+    print(f"  Layer D (バリュエーション): {layer_d}/10点")
+
+    label = 'GREEN' if total >= 60 else ('YELLOW' if total >= 30 else 'RED')
+    print(f"  ▶ マクロフェーズ: {label} ({total}/100点)")
+    return total, label, detail
+
+def save_macro_phase(ss, score, label, detail):
+    import datetime
+    now = datetime.datetime.now().strftime('%Y/%m/%d %H:%M')
+    try:
+        ws = ss.worksheet('MacroPhase')
+    except:
+        ws = ss.add_worksheet(title='MacroPhase', rows=500, cols=16)
+        ws.update('A1', [['日時','スコア','フェーズ','LayerA','LayerB','LayerC','LayerD',
+                          'VIX','HYspread','TEDspread','LongShortSpread',
+                          'JapanM2','FRBbalance','ISMPMI','失業率','ShillerPER']])
+        print("  OK: MacroPhase シート作成")
+    row = [
+        now, score, label,
+        detail.get('LayerA',{}).get('score',''),
+        detail.get('LayerB',{}).get('score',''),
+        detail.get('LayerC',{}).get('score',''),
+        detail.get('LayerD',{}).get('score',''),
+        detail.get('VIX',{}).get('value',''),
+        detail.get('HYspread',{}).get('value',''),
+        detail.get('TEDspread',{}).get('value',''),
+        detail.get('LongShortSpread',{}).get('value',''),
+        detail.get('JapanM2',{}).get('value',''),
+        detail.get('FRBbalance',{}).get('value',''),
+        detail.get('ISMPMI',{}).get('value',''),
+        detail.get('USUnemployment',{}).get('value',''),
+        detail.get('ShillerPER',{}).get('value',''),
+    ]
+    all_vals = ws.get_all_values()
+    next_row = len(all_vals) + 1
+    ws.update(f'A{next_row}', [row])
+    print(f"  OK: MacroPhase 保存 ({now} / {label} / {score}点)")
+
+# ── マクロフェーズ判定実行 ──
+print("\n【マクロフェーズ判定】")
+phase_score, phase_label, phase_detail = calc_macro_phase(ss)
+save_macro_phase(ss, phase_score, phase_label, phase_detail)
 # ── 完了 ──
 print(f"\n{'='*55}")
 print(f"$2705 毎日自動更新完了")
