@@ -32,6 +32,56 @@ creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 gc = gspread.authorize(creds)
 ss = gc.open_by_key(SPREADSHEET_ID)
 NOW = datetime.now().strftime('%Y/%m/%d %H:%M')
+
+
+# ── マクロフェーズゲージHTML生成 ──────────────────────────────
+def build_phase_gauge_html(ss):
+    score=0; label='RED'; la=0; lb=0; lc=0; ld=0; updated='---'
+    try:
+        ws=ss.worksheet('MacroPhase'); av=ws.get_all_values()
+        if len(av)>=2:
+            r=av[-1]
+            updated=r[0] if len(r)>0 else '---'
+            score=int(float(r[1])) if len(r)>1 and r[1] else 0
+            label=r[2] if len(r)>2 and r[2] else 'RED'
+            la=int(float(r[3])) if len(r)>3 and r[3] else 0
+            lb=int(float(r[4])) if len(r)>4 and r[4] else 0
+            lc=int(float(r[5])) if len(r)>5 and r[5] else 0
+            ld=int(float(r[6])) if len(r)>6 and r[6] else 0
+        print(f"  OK: MacroPhase取得 ({label}/{score}点)")
+    except Exception as e:
+        print(f"  WARN: MacroPhase未作成 -> {e}")
+    if label=='GREEN':   cm='#22c55e';cb='#052e16';cbr='#166534';st='買い検討';rt='マクロ環境は良好です。スコア上位銘柄への投資を検討してください。'
+    elif label=='YELLOW':cm='#f59e0b';cb='#1c1200';cbr='#92400e';st='慎重に';  rt='一部リスクが高まっています。ポジション規模を抑えて様子を見てください。'
+    else:                cm='#ef4444';cb='#1c0000';cbr='#991b1b';st='今は待て'; rt='リスク指標が警戒水準です。新規投資は見送り、相場回復を待ってください。'
+    pct=min(max(score,0),100)
+    def lbar(name,pts,mx,col):
+        p=int(pts/mx*100)
+        return f'<div style="margin-bottom:5px;"><div style="display:flex;justify-content:space-between;font-size:8px;color:#94a3b8;margin-bottom:2px;"><span>{name}</span><span>{pts}/{mx}点</span></div><div style="background:#1e2d40;border-radius:3px;height:4px;"><div style="width:{p}%;height:4px;border-radius:3px;background:{col};"></div></div></div>'
+    bars=lbar('Layer A — リスク指標',la,40,'#ef4444')+lbar('Layer B — 金融政策',lb,30,'#f59e0b')+lbar('Layer C — 経済活動',lc,20,'#3b82f6')+lbar('Layer D — バリュエーション',ld,10,'#10b981')
+    return f'''<div style="background:{cb};border:1px solid {cbr};border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:20px;color:{cm};line-height:1;">●</span>
+        <div><div style="font-size:13px;font-weight:900;color:{cm};">{st}</div><div style="font-size:8px;color:#94a3b8;">マクロフェーズ — {updated} 更新</div></div>
+        <div style="margin-left:auto;text-align:right;"><div style="font-size:20px;font-weight:900;font-family:monospace;color:{cm};">{score}<span style="font-size:10px;color:#64748b;">/100</span></div><div style="font-size:7px;color:#64748b;">4層スコア</div></div>
+      </div>
+      <div style="font-size:9px;color:#cbd5e1;margin-bottom:10px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:5px;border-left:2px solid {cm};">{rt}</div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:7px;color:#475569;margin-bottom:3px;"><span style="color:#ef4444;">RED</span><span style="color:#f59e0b;">YELLOW</span><span style="color:#22c55e;">GREEN</span></div>
+        <div style="background:#1e2d40;border-radius:5px;height:8px;position:relative;">
+          <div style="position:absolute;left:0;width:30%;height:8px;border-radius:5px 0 0 5px;background:#7f1d1d;opacity:.4;"></div>
+          <div style="position:absolute;left:30%;width:30%;height:8px;background:#92400e;opacity:.4;"></div>
+          <div style="position:absolute;left:60%;width:40%;height:8px;border-radius:0 5px 5px 0;background:#166534;opacity:.4;"></div>
+          <div style="position:absolute;left:0;width:{pct}%;height:8px;border-radius:5px;background:{cm};opacity:.9;"></div>
+          <div style="position:absolute;left:{pct}%;top:-3px;width:14px;height:14px;border-radius:50%;background:{cm};border:2px solid #0d1117;transform:translateX(-50%);"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:7px;color:#475569;margin-top:2px;"><span>0</span><span>30</span><span>60</span><span>100</span></div>
+      </div>
+      <details style="font-size:8px;color:#64748b;cursor:pointer;"><summary style="color:#475569;font-size:8px;margin-bottom:4px;">▶ 4層スコア内訳（32指標）</summary>{bars}</details>
+    </div>'''
+
+PHASE_HTML = build_phase_gauge_html(ss)
+print(f"  OK: マクロフェーズゲージ生成 完了")
 print(f"✅ 接続完了: {ss.title}  ({NOW})")
 
 # ── 短期・中期スコアを週次シグナルシートから取得 ──────────────
@@ -1069,7 +1119,9 @@ else:
     print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
 
 # モーダル挿入（</body>直前）
-src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
+src = src = src.replace('<!-- MACRO_PHASE_GAUGE -->', PHASE_HTML, 1)
+print('OK: マクロフェーズゲージ置換')
+src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
 print("OK: モーダル挿入")
 
 out = 'ai_dashboard_v11_fixed.html'
