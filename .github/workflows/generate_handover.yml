@@ -1,0 +1,42 @@
+name: Generate Handover
+
+on:
+  schedule:
+    # 毎週月曜日 8:00 JST (23:00 UTC日曜)
+    - cron: '0 23 * * 0'
+  workflow_dispatch:
+    # 手動実行も可能
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install gspread google-auth requests
+      
+      - name: Generate handover.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+        run: |
+          python generate_handover.py
+      
+      - name: Commit handover.txt
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add handover.txt
+          git diff --staged --quiet || git commit -m "Auto-update handover.txt [skip ci]"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
