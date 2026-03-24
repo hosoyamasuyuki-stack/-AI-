@@ -1,8 +1,8 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{background:#0b0f1a;min-height:100%;}
-.db{width:100%;background:#0b0f1a;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;color:#f1f5f9;overflow:visible;display:flex;flex-direction:column;}
+html,body{background:#0b0f1a;height:100%;}
+.db{width:100%;height:100vh;background:#0b0f1a;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;color:#f1f5f9;overflow:hidden;display:flex;flex-direction:column;}
 ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#1e2d40;border-radius:2px;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 @keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
@@ -49,8 +49,8 @@ html,body{background:#0b0f1a;min-height:100%;}
 .jg{background:#064e3b;color:#34d399;}.jr{background:#7f1d1d;color:#f87171;}
 
 /* BODY */
-#body{flex:1;display:grid;grid-template-columns:1fr 1fr 1.05fr;gap:5px;padding:5px;overflow:visible;}
-.panel{background:#111827;border:1px solid #1e2d40;border-radius:7px;display:flex;flex-direction:column;overflow:visible;}
+#body{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1.05fr;gap:5px;padding:5px;padding-bottom:60px;overflow:hidden;}
+.panel{background:#111827;border:1px solid #1e2d40;border-radius:7px;display:flex;flex-direction:column;overflow:hidden;}
 .ph{padding:5px 10px;border-bottom:1px solid #1e2d40;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:#0a0d16;}
 .ph .t{font-size:10px;font-weight:800;color:#cbd5e1;}
 .ph .r{font-size:8px;color:#475569;display:flex;align-items:center;gap:5px;}
@@ -2172,7 +2172,7 @@ function updMx(roe,fcr,rt,ft,peg,fy){
 [onclick]:hover { opacity: 0.85; }
 
 /* 暴落バー分のパディング */
-#body { padding-bottom: 60px !important; }
+
 
 /* 指標説明ヒント */
 .vi-hint {
