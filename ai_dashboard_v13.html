@@ -2360,4 +2360,25 @@ function _renderEdinetResult(d) {
     '<div class="edinet-grid">'+grid+'</div>' +
     '<button class="edinet-btn" style="margin-top:6px;" onclick="fetchEdinet()">🔄 再取得</button>';
 }
+
+
+// === UIレイアウト自動調整 ===
+function fixLayout() {
+  var bodyEl = document.getElementById('body');
+  var sbarEl = document.getElementById('sbar');
+  if (!bodyEl || !sbarEl) return;
+  var bodyTop = bodyEl.getBoundingClientRect().top;
+  var sbarH = sbarEl.offsetHeight;
+  var crashH = 50;
+  var available = window.innerHeight - bodyTop - sbarH - crashH;
+  if (available > 100) {
+    bodyEl.style.height = available + 'px';
+    bodyEl.style.maxHeight = available + 'px';
+    bodyEl.style.minHeight = available + 'px';
+  }
+}
+window.addEventListener('resize', fixLayout);
+window.addEventListener('load', function(){ setTimeout(fixLayout, 100); });
+setTimeout(fixLayout, 150);
+// ===========================
 </script>
