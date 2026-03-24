@@ -19,7 +19,8 @@ html{height:100%;margin:0;padding:0;}body{height:100%;margin:0;padding:0;backgro
 .livedot{width:5px;height:5px;background:#22c55e;border-radius:50%;animation:blink 1.8s ease infinite;display:inline-block;}
 
 /* TOP */
-#top{background:#0d1117;border-bottom:1px solid #1e2d40;padding:5px 12px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;}
+#top{background:#0d1117;border-bottom:1px solid #1e2d40;padding:5px 12px;flex:1;min-height:0;display:flex;flex-direction:column;gap:4px;overflow:hidden;}
+#top>div:first-child{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
 .sl{color:#f6ad55;font-size:8px;font-weight:800;letter-spacing:1.5px;display:flex;align-items:center;gap:5px;margin-bottom:3px;}
 .sl::after{content:'';flex:1;height:1px;background:#1e2d40;}
 
@@ -50,7 +51,7 @@ html{height:100%;margin:0;padding:0;}body{height:100%;margin:0;padding:0;backgro
 
 /* BODY */
 #body{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1.05fr;gap:5px;padding:5px;padding-bottom:50px;overflow:hidden;}
-.panel{background:#111827;border:1px solid #1e2d40;border-radius:7px;display:flex;flex-direction:column;overflow:hidden;}
+.panel{background:#111827;border:1px solid #1e2d40;border-radius:7px;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
 .ph{padding:5px 10px;border-bottom:1px solid #1e2d40;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:#0a0d16;}
 .ph .t{font-size:10px;font-weight:800;color:#cbd5e1;}
 .ph .r{font-size:8px;color:#475569;display:flex;align-items:center;gap:5px;}
@@ -98,7 +99,7 @@ tr.dr.sel td:first-child{border-left:2px solid #f59e0b;}
 
 /* DETAIL */
 #d-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
-#d-content{flex:1;overflow-y:auto;padding:9px;display:none;flex-direction:column;gap:5px;animation:fadeIn .25s ease;}
+#d-content{flex:1;min-height:0;overflow-y:auto;padding:9px;display:none;flex-direction:column;gap:5px;animation:fadeIn .25s ease;}
 .dh{background:#0d1117;border:1px solid #1e2d40;border-radius:6px;padding:8px 10px;}
 .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
 .sc{background:#0d1117;border:1px solid #1e2d40;border-radius:5px;padding:6px 7px;text-align:center;}
