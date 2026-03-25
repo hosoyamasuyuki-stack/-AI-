@@ -1855,6 +1855,8 @@ function showD(code,name,sector,v42,rk,sScore,sArr,mArr,lRk,sBody,mBody,lBody,no
   document.getElementById('d-sum-verdict').innerHTML=sum.verdict;
   document.getElementById('d-sum-body').innerHTML=sum.body;
 
+  // 賢者の審判用にスコア情報を保存
+  window._curV42=v42;window._curRank=rk;window._curShort=sScore;window._curMid=note;
   // 賢者の審判セクション（マトリックス描画後に呼ぶ）
   if(typeof updateDetailLinks==='function') updateDetailLinks(code,name);
 }
@@ -2183,7 +2185,9 @@ function updMx(roe,fcr,rt,ft,peg,fy){
   if(n3)n3.textContent='PEG:'+peg.toFixed(2)+' / FCF利回り:'+fy.toFixed(1)+'%';
 }
 
-// ── 賢者の審判（kenja.js統合） ──
+// ── 賢者の審判 v2（EDINET連携 + GASプロキシ） ──
+var KENJA_GAS_URL='https://script.google.com/macros/s/AKfycbwVDZ9IhuGEz7onU9uCvhSFd7N84cGQouIcnBMQO5iIlFwbNbVP4J8_tPtOj8X7yxAw/exec';
+
 function updateDetailLinks(c,n){
   window._curCode=c;window._curName=n;
   var old=document.getElementById('d-edinet-section');
@@ -2201,7 +2205,7 @@ function updateDetailLinks(c,n){
     +'<div style="margin-top:12px;border:1px solid #f59e0b;border-radius:8px;overflow:hidden;">'
     +'<div style="background:#1c1400;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">'
     +'<span style="color:#f59e0b;font-weight:800;font-size:11px;">Deep Insight Analysis</span>'
-    +'<button onclick="runKenja()" style="background:#f59e0b;color:#0d1117;border:none;border-radius:4px;padding:4px 12px;font-size:10px;font-weight:800;cursor:pointer;">Analyze</button>'
+    +'<button id="kenja-btn" onclick="runKenja()" style="background:#f59e0b;color:#0d1117;border:none;border-radius:4px;padding:4px 12px;font-size:10px;font-weight:800;cursor:pointer;">Analyze</button>'
     +'</div>'
     +'<div id="kenja-result" style="padding:10px 12px;min-height:40px;background:#0d1117;color:#94a3b8;font-size:9px;">'
     +'Click Analyze to start AI analysis.'
@@ -2210,48 +2214,74 @@ function updateDetailLinks(c,n){
   if(dc)dc.appendChild(s);
 }
 
-function kenjaPrompt(){
-  return 'You are a professional securities analyst. Analyze the financial reports of '
-    +window._curName+' (code: '+window._curCode+') based on public information.\n\n'
-    +'Output in Japanese with this format:\n\n'
-    +'[Part A] Visual Dashboard\n'
-    +'1.Business Results: revenue/profit change rate and reasons\n'
-    +'2.Growth Quality: operating margin change and reasons\n'
-    +'3.Sustainability: structural vs one-time factors\n'
-    +'4.Outlook: official forecasts, management tone\n'
-    +'5.Risks: high/medium/low level items\n'
-    +'6.Cash Flow: operating/investing/free CF\n'
-    +'7.Final Verdict: credibility level and 3 reasons\n\n'
-    +'[Part B] Detailed Report (3-5 sentences each)\n'
-    +'Overview/Growth/Sustainability/Future/Risks/CF/Conclusion';
-}
-
 function runKenja(){
   var code=window._curCode,name=window._curName;
   if(!code)return;
   var res=document.getElementById('kenja-result');
+  var btn=document.getElementById('kenja-btn');
   if(!res)return;
-  res.innerHTML='<div style="color:#f59e0b;text-align:center;padding:20px;">Analyzing... (30-60sec)<br>'
-    +'<div style="font-size:8px;color:#475569;margin-top:6px;">'+escH(name)+' ('+code+')</div></div>';
-  fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
-      max_tokens:3000,
-      messages:[{role:'user',content:[{type:'text',text:kenjaPrompt()}]}]
-    })
-  }).then(function(r){return r.json();}).then(function(api){
-    if(api.error)throw new Error(api.error.message||'API error');
-    var txt=api.content&&api.content[0]?api.content[0].text:'error';
-    var pA=txt.split('[Part B]')[0]||txt;
-    var pB=txt.split('[Part B]')[1]||'';
-    res.innerHTML='<div style="color:#e2e8f0;font-size:9px;line-height:1.7;white-space:pre-wrap;border-bottom:1px solid #374151;padding-bottom:10px;margin-bottom:8px;">'+escH(pA)+'</div>'
-      +(pB?'<details open><summary style="color:#f59e0b;cursor:pointer;font-size:10px;font-weight:700;padding:4px 0;">Detailed Report (Part B)</summary><div style="color:#cbd5e1;font-size:9px;line-height:1.7;white-space:pre-wrap;margin-top:6px;">'+escH('[Part B]'+pB)+'</div></details>':'');
+  if(btn){btn.disabled=true;btn.textContent='Analyzing...';}
+  res.innerHTML='<div style="text-align:center;padding:20px;">'
+    +'<div style="display:inline-block;width:28px;height:28px;border:3px solid #1e2d40;border-top-color:#f59e0b;border-radius:50%;animation:spin 1s linear infinite;"></div>'
+    +'<div style="color:#f59e0b;font-size:10px;font-weight:700;margin-top:8px;">EDINET + AI Analysis</div>'
+    +'<div style="font-size:8px;color:#475569;margin-top:4px;">'+escH(name)+' ('+code+') / 30-60sec</div>'
+    +'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+  var sc=STOCK_SCORES[code]||[0,0,0];
+  var payload={secCode:code,name:name,scores:{v42:window._curV42||'',rank:window._curRank||'',s1:sc[0],s2:sc[1],s3:sc[2],shortScore:window._curShort||'',midScore:window._curMid||''}};
+  fetch(KENJA_GAS_URL,{method:'POST',body:JSON.stringify(payload),redirect:'follow'})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(!data.ok)throw new Error(data.error||'GAS proxy error');
+    renderKenjaResult(res,data,code,name);
+    if(btn){btn.disabled=false;btn.textContent='Re-analyze';}
   }).catch(function(e){
-    res.innerHTML='<div style="color:#f87171;padding:10px;">Error: '+escH(e.message)+'<br>'
-      +'<a href="https://disclosure2.edinet-fsa.go.jp/WZEK0040.aspx?S1='+code+'" target="_blank" style="color:#60a5fa;font-size:9px;">Open EDINET</a></div>';
+    res.innerHTML='<div style="color:#f87171;padding:10px;font-size:9px;">Error: '+escH(e.message)+'</div>'
+      +'<div style="padding:0 10px 10px;"><a href="https://disclosure2.edinet-fsa.go.jp/WZEK0040.aspx?S1='+code+'" target="_blank" style="color:#60a5fa;font-size:9px;">EDINET</a></div>';
+    if(btn){btn.disabled=false;btn.textContent='Retry';}
   });
+}
+
+function renderKenjaResult(el,data,code,name){
+  var a=data.analysis;if(!a){el.innerHTML='<div style="color:#f87171;">No analysis data</div>';return;}
+  var ed=data.edinet||{};
+  var vc={S:'#34d399',A:'#5eead4',B:'#fbbf24',C:'#fb923c',D:'#f87171'};
+  var vCol=vc[a.verdict]||'#94a3b8';
+  var conf=a.confidence||0;
+  var rl={high:'#34d399',medium:'#fbbf24',low:'#f87171'};
+  function bar(sc){var w=Math.max(0,Math.min(5,sc||0))*20;var c=w>=80?'#34d399':w>=60?'#5eead4':w>=40?'#fbbf24':'#f87171';return '<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;background:#1e2d40;border-radius:2px;height:6px;"><div style="width:'+w+'%;height:6px;border-radius:2px;background:'+c+';"></div></div><span style="color:'+c+';font-size:8px;font-weight:800;min-width:20px;">'+sc+'/5</span></div>';}
+  function row(emoji,label,item){return '<div style="padding:6px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="font-size:11px;">'+emoji+'</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">'+escH(label)+'</span><span style="color:#475569;font-size:8px;margin-left:auto;">'+escH(item.title||'')+'</span></div>'+bar(item.score)+'<div style="color:#94a3b8;font-size:8px;margin-top:3px;line-height:1.5;">'+escH(item.summary||'')+'</div></div>';}
+  var pA=a.partA||{};
+  var html='';
+  // EDINET badge
+  if(ed.found){html+='<div style="display:flex;align-items:center;gap:5px;padding:5px 0;margin-bottom:4px;"><span style="background:#064e3b;color:#34d399;font-size:7px;font-weight:800;padding:2px 6px;border-radius:3px;">EDINET</span><span style="color:#475569;font-size:7.5px;">'+escH(ed.docType||'')+' '+escH((ed.submitDate||'').substring(0,10))+'</span></div>';}
+  else{html+='<div style="padding:4px 0;margin-bottom:4px;"><span style="background:#1e2d40;color:#94a3b8;font-size:7px;font-weight:800;padding:2px 6px;border-radius:3px;">EDINET: no recent filing</span></div>';}
+  // Verdict header
+  html+='<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#0a0d16;border-radius:6px;margin-bottom:8px;">'
+    +'<div style="background:'+vCol+'22;border:2px solid '+vCol+';border-radius:6px;padding:4px 10px;"><span style="color:'+vCol+';font-size:16px;font-weight:900;">'+escH(a.verdict)+'</span></div>'
+    +'<div style="flex:1;"><div style="color:#cbd5e1;font-size:9px;font-weight:800;margin-bottom:3px;">Confidence '+conf+'%</div>'
+    +'<div style="background:#1e2d40;border-radius:3px;height:5px;"><div style="width:'+conf+'%;height:5px;border-radius:3px;background:'+vCol+';"></div></div></div></div>';
+  // Part A rows
+  html+=row('📈','業績',pA.businessResults||{});
+  html+=row('📊','成長性',pA.growthQuality||{});
+  html+=row('🏗️','持続性',pA.sustainability||{});
+  html+=row('🔮','見通し',pA.outlook||{});
+  // Risks (special)
+  var rsk=pA.risks||{};var rLvl=rsk.level||'medium';
+  html+='<div style="padding:6px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="font-size:11px;">⚠️</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">リスク</span><span style="background:'+(rl[rLvl]||'#fbbf24')+'22;color:'+(rl[rLvl]||'#fbbf24')+';font-size:7px;font-weight:900;padding:1px 6px;border-radius:3px;margin-left:auto;">'+rLvl.toUpperCase()+'</span></div><div style="color:#94a3b8;font-size:8px;line-height:1.5;">'+escH(rsk.summary||'')+'</div></div>';
+  html+=row('💰','キャッシュフロー',pA.cashFlow||{});
+  // Final verdict
+  var fv=pA.finalVerdict||{};
+  html+='<div style="padding:8px;background:#0a0d16;border-radius:6px;margin-top:8px;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;"><span style="font-size:11px;">📋</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">最終判定</span><span style="background:'+(rl[fv.credibility]||'#fbbf24')+'22;color:'+(rl[fv.credibility]||'#fbbf24')+';font-size:7px;font-weight:900;padding:1px 6px;border-radius:3px;">'+escH((fv.credibility||'').toUpperCase())+'</span></div>';
+  var reasons=fv.reasons||[];for(var i=0;i<reasons.length;i++){html+='<div style="color:#94a3b8;font-size:8px;line-height:1.5;padding-left:8px;">✅ '+escH(reasons[i])+'</div>';}
+  html+='</div>';
+  // Beginner advice
+  if(a.beginnerAdvice){html+='<div style="margin-top:8px;padding:8px;background:#1c1400;border:1px solid #f59e0b44;border-radius:6px;"><div style="color:#f59e0b;font-size:9px;font-weight:800;margin-bottom:4px;">💡 初心者向けアドバイス</div><div style="color:#fbbf24;font-size:8.5px;line-height:1.6;">'+escH(a.beginnerAdvice)+'</div></div>';}
+  // Part B (collapsible)
+  var pB=a.partB||{};
+  var bKeys=[['overview','概要'],['growth','成長性'],['sustainability','持続性'],['future','将来展望'],['risks','リスク'],['cashflow','キャッシュフロー'],['conclusion','結論']];
+  var bHtml='';for(var j=0;j<bKeys.length;j++){var v=pB[bKeys[j][0]];if(v)bHtml+='<div style="margin-bottom:6px;"><div style="color:#5eead4;font-size:8px;font-weight:800;">'+bKeys[j][1]+'</div><div style="color:#94a3b8;font-size:8px;line-height:1.6;">'+escH(v)+'</div></div>';}
+  if(bHtml){html+='<details style="margin-top:8px;"><summary style="color:#f59e0b;cursor:pointer;font-size:9px;font-weight:700;padding:4px 0;">詳細レポート (Part B)</summary><div style="padding:6px 0;">'+bHtml+'</div></details>';}
+  el.innerHTML=html;
 }
 
 function escH(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
