@@ -185,51 +185,25 @@ J-Quants V2仕様：
 ## 現在の緊急課題
 ================================================================
 
-### Priority 1【最緊急】マトリックス図の枠・星が消えている
+### Priority 1【解決済み】マトリックス図の枠・星 + パネルスクロール
 
-症状：
-  詳細パネルのv4.3マトリックス評価（3つの表）で
-  「現在地→Sランク」のハイライト枠と「S★」の星が表示されない
+2026/03/26解決：
+  - kenja.jsをインラインscriptに統合（読み込み順序問題を解消）SHA:0ebb6bb
+  - showD内の二重updateDetailLinks呼び出しを削除
+  - パネルスクロール修正：#topのflex-shrink:0→flex:1 1 0に変更 SHA:d1eecb8
+  - 高さ制約チェーン：.db(100vh)→#top(flex:1)→無名div(flex:1)→#body(flex:1)→.panel→scrollDiv
 
-根本原因：
-  showD()内でupdateDetailLinks(code,name)を呼んでいるが
-  kenja.jsの読み込みが間に合わず ReferenceError でクラッシュ
-  → showD()全体がエラー中断 → マトリックスのハイライト描画まで到達しない
-
-現在のHTML状態（SHA: f9b5892b）：
-  - kenja.jsタグ: あり（<style>の前）
-  - updateDetailLinks: kenja.jsに外出し中（HTML内にない）
-  - showD内呼び出し: あり（← これが原因）
-  - runKenja: kenja.jsに外出し中
-
-解決手順（Claude Codeで実行）：
-  1. ai_dashboard_v13.html を Read で確認
-  2. <script src="kenja.js"></script> タグを削除
-  3. showD内の updateDetailLinks(code,name); を削除
-  4. kenja.jsの中身をインラインscriptの末尾（</script>の直前）に統合
-     ※バイト列(b"...")でJSを書く → エスケープ問題が発生しない
-  5. git add . && git commit -m "fix: マトリックス修正・賢者の審判インライン統合"
-  6. git push
-  7. ブラウザで確認：?v=fix1 を付けてキャッシュ回避
-
-動作確認コマンド（ブラウザコンソール）：
-  typeof showD            → "function"
-  typeof runKenja         → "function"
-  typeof updateDetailLinks → "function"
-  showD('6200','インソース','サービス','78.7','A',19,[],[],'A','','','','',1);
-  → マトリックスにS★が表示されること
-
-### Priority 2：賢者の審判ボタンの動作確認
+### Priority 1【新】賢者の審判ボタンの動作確認
 
 設計（合意済み）：
   銘柄クリック
-  → 詳細パネル下部に金色ボーダーの「賢者の審判 - DEEP INSIGHT」セクション
+  → 詳細パネル下部に金色ボーダーの「Deep Insight Analysis」セクション
   → 「Analyze」ボタンクリック
   → Claude API（claude-sonnet-4-20250514）に公開情報から分析させる
   → Part A（ビジュアルダッシュボード）+ Part B（詳細レポート・折りたたみ）表示
 
 プロンプト：「賢者の審判：ディープ・インサイト v2.txt」受領済み
-現状：kenja.jsにASCII-only版で実装済みだが動作未確認
+現状：インラインscriptに統合済み・UIは表示されるが動作未確認
 
 注意：GitHub PagesからClaude APIへの直接fetch()はCORSで失敗する可能性あり
   → 失敗した場合はGASをプロキシとして使う方式を検討
@@ -530,22 +504,21 @@ docs/フォルダ：ERR404問題で未完了
 4. git add CLAUDE.md && git commit -m "docs: CLAUDE.md更新" && git push
 
 ================================================================
-## 本日（2026/03/25）のコミット履歴
+## 本日（2026/03/26）のコミット履歴
 ================================================================
 
-e40f91d1 : fix: EDINETリンクをd-content内の正しい位置に移動
-c9f8e41d : fix: EDINET JS動的生成 d-content.appendChild方式に統一
-c54c1ee6 : feat: 賢者の審判ボタン実装（Claude API自動分析）
-4e5e5757 : fix: 賢者の審判 クリーンJS版（壊れたJS削除→再挿入）
-c68bbff0 : fix: 賢者の審判を外部JS(kenja.js)方式に変更
-e651bf0e : fix: kenja.jsタグを<style>の前に挿入
-f9b5892b : fix: kenja.js ASCII-only版（最新・現在問題あり）
-220db39  : docs: CLAUDE.md初期設定・チーム体制・緊急課題を記載
-9fbd420  : docs: CLAUDE.md完全版に更新
+0ebb6bb : fix: マトリックス修正・賢者の審判インライン統合
+0a3cfc1 : fix: 保有・監視・詳細パネルのスクロール復元
+d1eecb8 : fix: パネルスクロール修正（#top flex伸長+無名div flex伝播）
 
 ================================================================
 ## 変更履歴サマリー
 ================================================================
+
+2026/03/26：
+1. マトリックスS★表示修正（kenja.jsインライン統合） SHA:0ebb6bb
+2. パネルスクロール復元（flex高さ制約チェーン修正） SHA:d1eecb8
+3. CLAUDE.md緊急課題更新
 
 2026/03/25：
 1. verify_0415.py v3コミット（列バグ修正・APIキー更新）SHA:05ddf20e
