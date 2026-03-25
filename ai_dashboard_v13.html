@@ -1779,6 +1779,7 @@ function showD(code,name,sector,v42,rk,sScore,sArr,mArr,lRk,sBody,mBody,lBody,no
   document.getElementById('d-code').textContent=code;
   document.getElementById('d-name').textContent=name;
   document.getElementById('d-sector').textContent=sector;
+    updateDetailLinks(code, name);
 
   // スコアをルックアップ
   const sc = STOCK_SCORES[code] || [0,0,0];
