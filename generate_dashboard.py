@@ -36,352 +36,36 @@ NOW = datetime.now().strftime('%Y/%m/%d %H:%M')
 
 # ── マクロフェーズゲージHTML生成 ──────────────────────────────
 def build_phase_gauge_html(ss):
-    score=0; label='RED'; la=0; lb=0; lc=0; ld=0; updated='---'
+    score=0; label='RED'; updated='---'
     try:
         ws=ss.worksheet('MacroPhase'); av=ws.get_all_values()
         if len(av)>=2:
-            r=av[-1]
-            updated=r[0] if len(r)>0 else '---'
-            score=int(float(r[1])) if len(r)>1 and r[1] else 0
-            label=r[2] if len(r)>2 and r[2] else 'RED'
-            la=int(float(r[3])) if len(r)>3 and r[3] else 0
-            lb=int(float(r[4])) if len(r)>4 and r[4] else 0
-            lc=int(float(r[5])) if len(r)>5 and r[5] else 0
-            ld=int(float(r[6])) if len(r)>6 and r[6] else 0
-        print(f"  OK: MacroPhase取得 ({label}/{score}点)")
+            r2=av[-1]
+            updated=r2[0] if len(r2)>0 else '---'
+            score=int(float(r2[1])) if len(r2)>1 and r2[1] else 0
+            label=r2[2] if len(r2)>2 and r2[2] else 'RED'
+            print(f"  OK: MacroPhase ({label}/{score})")
     except Exception as e:
-        print(f"  WARN: MacroPhase未作成 -> {e}")
-    if label=='GREEN':   cm='#22c55e';cb='#052e16';cbr='#166534';st='買い検討';rt='マクロ環境は良好です。スコア上位銘柄への投資を検討してください。'
-    elif label=='YELLOW':cm='#f59e0b';cb='#1c1200';cbr='#92400e';st='慎重に';  rt='一部リスクが高まっています。ポジション規模を抑えて様子を見てください。'
-    else:                cm='#ef4444';cb='#1c0000';cbr='#991b1b';st='今は待て'; rt='リスク指標が警戒水準です。新規投資は見送り、相場回復を待ってください。'
+        print(f"  WARN: {e}")
+    if label=='GREEN':   cm='#22c55e';cbr='#166534';st='良好'
+    elif label=='YELLOW':cm='#f59e0b';cbr='#92400e';st='慎重に'
+    else:                cm='#ef4444';cbr='#991b1b';st='今は待て'
     pct=min(max(score,0),100)
-    def lbar(name,pts,mx,col):
-        p=int(pts/mx*100)
-        return f'<div style="margin-bottom:5px;"><div style="display:flex;justify-content:space-between;font-size:8px;color:#94a3b8;margin-bottom:2px;"><span>{name}</span><span>{pts}/{mx}点</span></div><div style="background:#1e2d40;border-radius:3px;height:4px;"><div style="width:{p}%;height:4px;border-radius:3px;background:{col};"></div></div></div>'
-    bars=lbar('Layer A — リスク指標',la,40,'#ef4444')+lbar('Layer B — 金融政策',lb,30,'#f59e0b')+lbar('Layer C — 経済活動',lc,20,'#3b82f6')+lbar('Layer D — バリュエーション',ld,10,'#10b981')
-    return f'''<div style="background:{cb};border:1px solid {cbr};border-radius:10px;padding:12px 14px;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <span style="font-size:20px;color:{cm};line-height:1;">●</span>
-        <div><div style="font-size:13px;font-weight:900;color:{cm};">{st}</div><div style="font-size:8px;color:#94a3b8;">マクロフェーズ — {updated} 更新</div></div>
-        <div style="margin-left:auto;text-align:right;"><div style="font-size:20px;font-weight:900;font-family:monospace;color:{cm};">{score}<span style="font-size:10px;color:#64748b;">/100</span></div><div style="font-size:7px;color:#64748b;">4層スコア</div></div>
-      </div>
-      <div style="font-size:9px;color:#cbd5e1;margin-bottom:10px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:5px;border-left:2px solid {cm};">{rt}</div>
-      <div style="margin-bottom:8px;">
-        <div style="display:flex;justify-content:space-between;font-size:7px;color:#475569;margin-bottom:3px;"><span style="color:#ef4444;">RED</span><span style="color:#f59e0b;">YELLOW</span><span style="color:#22c55e;">GREEN</span></div>
-        <div style="background:#1e2d40;border-radius:5px;height:8px;position:relative;">
-          <div style="position:absolute;left:0;width:30%;height:8px;border-radius:5px 0 0 5px;background:#7f1d1d;opacity:.4;"></div>
-          <div style="position:absolute;left:30%;width:30%;height:8px;background:#92400e;opacity:.4;"></div>
-          <div style="position:absolute;left:60%;width:40%;height:8px;border-radius:0 5px 5px 0;background:#166534;opacity:.4;"></div>
-          <div style="position:absolute;left:0;width:{pct}%;height:8px;border-radius:5px;background:{cm};opacity:.9;"></div>
-          <div style="position:absolute;left:{pct}%;top:-3px;width:14px;height:14px;border-radius:50%;background:{cm};border:2px solid #0d1117;transform:translateX(-50%);"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:7px;color:#475569;margin-top:2px;"><span>0</span><span>30</span><span>60</span><span>100</span></div>
-      </div>
-      <details style="font-size:8px;color:#64748b;cursor:pointer;"><summary style="color:#475569;font-size:8px;margin-bottom:4px;">▶ 4層スコア内訳（32指標）</summary>{bars}</details>
-    </div>'''
-
-PHASE_HTML = build_phase_gauge_html(ss)
-print(f"  OK: マクロフェーズゲージ生成 完了")
-print(f"✅ 接続完了: {ss.title}  ({NOW})")
-
-# ── 短期・中期スコアを週次シグナルシートから取得 ──────────────
-def get_latest_scores():
-    try:
-        ws = ss.worksheet('週次シグナル')
-        rows = ws.get_all_values()
-        if len(rows) < 2:
-            return 50, 50
-        last = rows[-1]
-        short = int(float(last[1])) if len(last) > 1 and last[1] else 50
-        mid   = int(float(last[3])) if len(last) > 3 and last[3] else 50
-        print(f"  週次シグナル取得: 短期{short}点 / 中期{mid}点")
-        return short, mid
-    except Exception as e:
-        print(f"  ⚠️ 週次シグナル取得失敗: {e} → デフォルト値使用")
-        return 50, 50
-
-SHORT_SCORE, MID_SCORE = get_latest_scores()
-
-# ── 作業ログから各スクリプトの最終実行日時を取得 ──────────────
-def get_last_runs():
-    defaults = {
-        'daily_update':    '未確認',
-        'daily_price':     '未確認',
-        'weekly_update':   '未確認',
-        'dashboard':       '未確認',
-        'learning_batch':  '未確認',
-    }
-    try:
-        ws   = ss.worksheet('作業ログ')
-        rows = ws.get_all_values()
-        if len(rows) < 2:
-            return defaults
-        import pandas as pd
-        df = pd.DataFrame(rows[1:], columns=rows[0] if rows else [])
-        result = dict(defaults)
-        keywords = {
-            'daily_update':   ['daily_update', '33マクロ', 'マクロ指標'],
-            'daily_price':    ['daily_price', '価格更新', '変数3'],
-            'weekly_update':  ['weekly_update', '週次', 'weekly'],
-            'dashboard':      ['dashboard', 'ダッシュボード', 'generate'],
-            'learning_batch': ['learning_batch', '学習バッチ', '月次'],
-        }
-        date_col = df.columns[0] if len(df.columns) > 0 else None
-        desc_col = df.columns[1] if len(df.columns) > 1 else None
-        if date_col and desc_col:
-            for key, kws in keywords.items():
-                for _, row in df.iloc[::-1].iterrows():
-                    desc = str(row.get(desc_col, '')).lower()
-                    if any(k.lower() in desc for k in kws):
-                        d = str(row.get(date_col, ''))
-                        if d and d not in ('', 'None'):
-                            result[key] = d[:10]
-                        break
-        return result
-    except Exception as e:
-        print(f"  ⚠ 作業ログ取得失敗: {e}")
-        return defaults
-
-LAST_RUNS = get_last_runs()
-
-def fmt_run(key):
-    v = LAST_RUNS.get(key, '未確認')
-    if v == '未確認':
-        return '未確認', 'warn'
-    try:
-        from datetime import date
-        d = datetime.strptime(v[:10], '%Y/%m/%d').date()
-        diff = (date.today() - d).days
-        if diff == 0:   return '今日', 'ok'
-        if diff == 1:   return '昨日', 'ok'
-        if diff <= 7:   return f'{diff}日前', 'ok'
-        if diff <= 30:  return f'{diff}日前', 'warn'
-        return f'{diff}日前', 'err'
-    except:
-        return v[:10], 'ok'
-
-# ── システムステータスティッカーHTML ─────────────────────────
-def make_ticker_item(name, status_text, state):
-    colors = {
-        'ok':   ('#34d399', '#064e3b'),
-        'warn': ('#fbbf24', '#92400e'),
-        'err':  ('#f87171', '#7f1d1d'),
-    }
-    dot_c, bg_c = colors.get(state, colors['warn'])
+    bar = f'<div style="flex:1;background:#1e293b;border-radius:3px;height:5px;position:relative;"><div style="position:absolute;left:30%;width:1px;height:5px;background:#374151;"></div><div style="position:absolute;left:60%;width:1px;height:5px;background:#374151;"></div><div style="width:{pct}%;height:5px;border-radius:3px;background:{cm};transition:width .3s;"></div></div>'
     return (
-        f'<span style="display:inline-flex;align-items:center;gap:5px;'
-        f'padding:0 12px;border-right:1px solid #1e2d40;'
-        f'font-size:9px;font-family:monospace;height:18px;flex-shrink:0;white-space:nowrap;">'
-        f'<span style="width:5px;height:5px;border-radius:50%;background:{dot_c};flex-shrink:0;"></span>'
-        f'<span style="color:#94a3b8;font-weight:800;">{name}</span>'
-        f'<span style="color:{dot_c};">{status_text}</span>'
-        f'</span>'
+        f'<div style="background:#0d1117;border:1px solid {cbr};border-radius:6px;'
+        f'padding:6px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">'
+        f'<span style="width:8px;height:8px;border-radius:50%;background:{cm};'
+        f'display:inline-block;flex-shrink:0;box-shadow:0 0 6px {cm};"></span>'
+        f'<span style="font-size:11px;font-weight:800;color:{cm};white-space:nowrap;">'
+        f'マクロ {st}</span>'
+        + bar +
+        f'<span style="font-size:12px;font-weight:900;color:{cm};font-family:monospace;'
+        f'white-space:nowrap;">{score}'
+        f'<span style="font-size:8px;color:#475569;">/100</span></span>'
+        f'<span style="font-size:8px;color:#475569;white-space:nowrap;">{updated}</span>'
+        f'</div>'
     )
-
-du_txt,  du_s  = fmt_run('daily_update')
-dp_txt,  dp_s  = fmt_run('daily_price')
-wu_txt,  wu_s  = fmt_run('weekly_update')
-db_txt,  db_s  = fmt_run('dashboard')
-lb_txt,  lb_s  = fmt_run('learning_batch')
-
-ticker_items = (
-    make_ticker_item('daily_update',   f'✓ {du_txt}', du_s) +
-    make_ticker_item('daily_price',    f'✓ {dp_txt}', dp_s) +
-    make_ticker_item('weekly_update',  f'✓ {wu_txt}', wu_s) +
-    make_ticker_item('dashboard',      f'✓ {db_txt}', db_s) +
-    make_ticker_item('learning_batch', f'✓ {lb_txt}', lb_s) +
-    make_ticker_item('v4.3スコア',     f'✓ 119銘柄',  'ok') +
-    make_ticker_item('因子劣化チェック', '✓ 稼働中',   'ok') +
-    make_ticker_item('EDINET',         '✗ 未実装',    'err') +
-    make_ticker_item('感応度行列',      '✗ 6ヶ月後',  'err') +
-    make_ticker_item('04/15検証',      '⚠ 準備中',   'warn')
-)
-
-TICKER_HTML = (
-    f'<!-- TICKER_START -->'
-    f'<div id="sys-ticker-wrap" style="background:#060810;border-bottom:1px solid #1e2d40;'
-    f'height:18px;overflow:hidden;flex-shrink:0;">'
-    f'<div id="sys-ticker" style="display:inline-flex;flex-wrap:nowrap;align-items:center;'
-    f'height:18px;width:max-content;'
-    f'animation:ticker_scroll 45s linear infinite;"'
-    f' onmouseover="this.style.animationPlayState=\'paused\'"'
-    f' onmouseout="this.style.animationPlayState=\'running\'">'
-    f'{ticker_items}{ticker_items}'
-    f'</div></div>'
-    f'<!-- TICKER_END -->'
-)
-
-# ── バリュエーション自動読み込み（v21修正版）────────────────
-# ============================================================
-# 【v21変更点】スクレイピング関数を3つ新設
-#   scrape_pbr_japan()   : 日経プロフィルから日本PBRを取得
-#   scrape_pbr_us()      : multpl.comから米国PBRを取得
-#   scrape_cape_us()     : multpl.comから米国シラーPERを取得
-# 全関数に:
-#   ・User-Agentヘッダー設定（ブロック対策）
-#   ・timeout=10（タイムアウト設定）
-#   ・取得失敗時はNoneを返す（呼び出し元でフォールバック）
-# ============================================================
-
-FRED_API_KEY = os.environ.get('FRED_API_KEY', '467c035b9ae8a723c2b9ee2184a22522')
-FRED_BASE    = 'https://api.stlouisfed.org/fred/series/observations'
-
-# User-Agentヘッダー（スクレイピングブロック対策）
-SCRAPE_HEADERS = {
-    'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                   'AppleWebKit/537.36 (KHTML, like Gecko) '
-                   'Chrome/120.0.0.0 Safari/537.36'),
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
-}
-
-def get_fred(series_id):
-    try:
-        r = requests.get(FRED_BASE, params={
-            'series_id': series_id, 'api_key': FRED_API_KEY,
-            'file_type': 'json', 'sort_order': 'desc', 'limit': 5,
-            'observation_start': (datetime.now()-timedelta(days=90)).strftime('%Y-%m-%d'),
-        }, timeout=10)
-        for o in r.json().get('observations', []):
-            v = o.get('value', '.')
-            if v != '.': return round(float(v), 2)
-        return None
-    except: return None
-
-def get_yf_info(ticker, field):
-    try:
-        v = yf.Ticker(ticker).info.get(field)
-        return round(float(v), 4) if v else None
-    except: return None
-
-# ── Phase 1-A: 日本PBR取得（日経プロフィルスクレイピング）──
-def scrape_pbr_japan():
-    """
-    日経プロフィルから日本株PBRを取得。
-    EWJは1.2倍（誤）→ 実測1.76倍前後を正しく取得する。
-    失敗時はNoneを返し、呼び出し元で前回値にフォールバック。
-    """
-    return 1.76
-    urls = [
-        'https://nikkei225jp.com/nikkei/',
-        'https://indexes.nikkei.co.jp/nkave/index?type=index',
-    ]
-    for url in urls:
-        try:
-            r = requests.get(url, headers=SCRAPE_HEADERS, timeout=10)
-            if r.status_code != 200:
-                continue
-            text = r.text
-            # PBR の数値を正規表現で抽出（1.xx倍 形式）
-            patterns = [
-                r'PBR[^0-9]*([1-9]\.\d{1,2})',
-                r'株価純資産倍率[^0-9]*([1-9]\.\d{1,2})',
-                r'>([1-9]\.\d{2})<[^>]*倍',
-            ]
-            for pat in patterns:
-                m = re.search(pat, text)
-                if m:
-                    val = round(float(m.group(1)), 2)
-                    if 0.5 <= val <= 5.0:  # 妥当な範囲チェック
-                        print(f"  ✅ 日本PBR取得成功: {val}倍（{url}）")
-                        return val
-        except Exception as e:
-            print(f"  ⚠️ 日本PBRスクレイピング失敗({url}): {e}")
-            continue
-    print(f"  ⚠️ 日本PBR全ソース失敗 → フォールバックへ")
-    return None
-
-# ── Phase 1-B: 米国PBR取得（multpl.comスクレイピング）──────
-def scrape_pbr_us():
-    """
-    multpl.comからS&P500 PBRを取得。
-    SPYは1.5倍（誤）→ 実測4.5-5.0倍を正しく取得する。
-    """
-    return 4.8
-    url = 'https://www.multpl.com/s-p-500-price-to-book-value'
-    try:
-        r = requests.get(url, headers=SCRAPE_HEADERS, timeout=10)
-        if r.status_code == 200:
-            # multpl.comの数値は <div id="current-value"> に含まれる
-            patterns = [
-                r'id="current-value"[^>]*>\s*([0-9]+\.?[0-9]*)',
-                r'<div[^>]*class="[^"]*current[^"]*"[^>]*>\s*([0-9]+\.?[0-9]*)',
-                r'S&amp;P 500 Price to Book.*?([3-9]\.\d{1,2})',
-            ]
-            for pat in patterns:
-                m = re.search(pat, r.text, re.DOTALL)
-                if m:
-                    val = round(float(m.group(1)), 2)
-                    if 2.0 <= val <= 8.0:  # 妥当な範囲チェック
-                        print(f"  ✅ 米国PBR取得成功: {val}倍")
-                        return val
-    except Exception as e:
-        print(f"  ⚠️ 米国PBRスクレイピング失敗: {e}")
-    print(f"  ⚠️ 米国PBR取得失敗 → フォールバックへ")
-    return None
-
-# ── Phase 1-B: 米国シラーPER取得（multpl.comスクレイピング）─
-def scrape_cape_us():
-    """
-    multpl.comからシラーPER（CAPE）を取得。
-    per×1.3=33倍（誤）→ 実測38倍前後を正しく取得する。
-    """
-    url = 'https://www.multpl.com/shiller-pe'
-    try:
-        r = requests.get(url, headers=SCRAPE_HEADERS, timeout=10)
-        if r.status_code == 200:
-            patterns = [
-                r'id="current-value"[^>]*>\s*([0-9]+\.?[0-9]*)',
-                r'<div[^>]*class="[^"]*current[^"]*"[^>]*>\s*([0-9]+\.?[0-9]*)',
-                r'Shiller PE Ratio.*?([2-9][0-9]\.\d{1,2})',
-            ]
-            for pat in patterns:
-                m = re.search(pat, r.text, re.DOTALL)
-                if m:
-                    val = round(float(m.group(1)), 1)
-                    if 10.0 <= val <= 60.0:  # 妥当な範囲チェック
-                        print(f"  ✅ シラーPER(米国)取得成功: {val}倍")
-                        return val
-    except Exception as e:
-        print(f"  ⚠️ シラーPERスクレイピング失敗: {e}")
-    print(f"  ⚠️ シラーPER取得失敗 → フォールバックへ")
-    return None
-
-# ── 前回値フォールバック（保守エンジニア設計）──────────────
-def get_prev_valuation():
-    """
-    バリュエーション_日次シートから直近の保存値を取得。
-    スクレイピング失敗時のフォールバック用。
-    Noneではなく実際の前回値を返すことで「取得失敗=0」を防ぐ。
-    """
-    defaults = {
-        'pbr_jp': 1.76, 'pbr_us': 4.8,
-        'cape_jp': 24.0, 'cape_us': 38.0,
-    }
-    try:
-        ws   = ss.worksheet('バリュエーション_日次')
-        rows = ws.get_all_values()
-        if len(rows) < 2:
-            return defaults
-        header = rows[0]
-        # 最新行（上から2行目 = 最新保存値）
-        data = rows[1]
-        rec  = dict(zip(header, data))
-        def sf(k, fb):
-            try:
-                v = rec.get(k, '')
-                return float(v) if v not in ('', 'None', '-') else fb
-            except:
-                return fb
-        return {
-            'pbr_jp':  sf('PBR_日本',  defaults['pbr_jp']),
-            'pbr_us':  sf('PBR_米国',  defaults['pbr_us']),
-            'cape_jp': sf('シラーPER_日本', defaults['cape_jp']),
-            'cape_us': sf('シラーPER_米国', defaults['cape_us']),
-        }
-    except Exception as e:
-        print(f"  ⚠️ 前回値取得失敗: {e} → ハードコードデフォルト使用")
-        return defaults
 
 def load_valuation():
     """
@@ -647,6 +331,25 @@ vix_label = '平静'   if MKT['vix_v'] <= 20 else '警戒' if MKT['vix_v'] <= 30
 hyg_label = '良好'   if MKT['hyg_chg'] >= 0 else '悪化'
 hyg_bc    = 'bg'     if MKT['hyg_chg'] >= 0 else 'br'
 
+short_bc  = 'bg' if SHORT_SCORE >= 55 else 'ba' if SHORT_SCORE >= 45 else 'br'
+short_vc  = 'cg' if SHORT_SCORE >= 55 else 'ca' if SHORT_SCORE >= 45 else 'cr'
+short_lbl = '🟢 強気' if SHORT_SCORE >= 55 else '🟡 中立' if SHORT_SCORE >= 45 else '🔴 弱気'
+mid_bc    = 'bg' if MID_SCORE >= 55 else 'ba' if MID_SCORE >= 45 else 'br'
+mid_vc    = 'cg' if MID_SCORE >= 55 else 'ca' if MID_SCORE >= 45 else 'cr'
+mid_lbl   = '🟢 強気' if MID_SCORE >= 55 else '🟡 中立' if MID_SCORE >= 45 else '🔴 弱気'
+try:
+    _mp_ws = ss.worksheet('MacroPhase'); _mp_row = _mp_ws.get_all_values()[-1]
+    _mp_score = int(float(_mp_row[1])); _mp_lbl = _mp_row[2]
+except: _mp_score = 45; _mp_lbl = 'YELLOW'
+_mp_bc = 'bg' if _mp_lbl=='GREEN' else 'ba' if _mp_lbl=='YELLOW' else 'br'
+_mp_vc = 'cg' if _mp_lbl=='GREEN' else 'ca' if _mp_lbl=='YELLOW' else 'cr'
+_mp_txt = '良好' if _mp_lbl=='GREEN' else '慎重に' if _mp_lbl=='YELLOW' else '今は待て'
+cape_jp = VAL.get('cape_jp', 20); pbr_jp = VAL.get('pbr_jp', 1.76)
+buf_jp  = VAL.get('buffett_jp', 140); yld_jp = VAL.get('yield_jp', 3.5)
+cape_bc = 'br' if cape_jp > 25 else 'ba' if cape_jp > 18 else 'bg'
+pbr_bc  = 'br' if pbr_jp > 2.0 else 'ba' if pbr_jp > 1.5 else 'bg'
+buf_bc  = 'br' if buf_jp > 160 else 'ba' if buf_jp > 130 else 'bg'
+yld_bc  = 'bg' if yld_jp > 4.0 else 'ba' if yld_jp > 2.5 else 'br'
 short_bc  = 'bg' if SHORT_SCORE >= 55 else 'ba' if SHORT_SCORE >= 45 else 'br'
 short_vc  = 'cg' if SHORT_SCORE >= 55 else 'ca' if SHORT_SCORE >= 45 else 'cr'
 short_lbl = '🟢 強気' if SHORT_SCORE >= 55 else '🟡 中立' if SHORT_SCORE >= 45 else '🔴 弱気'
@@ -1070,12 +773,7 @@ VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs �
             <div style="{row_style}"><span style="{flag_style}">🇺🇸</span><span style="{vc[buf_us_cls]}">{buf_us:.0f}%</span><div style="flex:1">{g_buf_us}</div></div>
             <div style="margin-top:4px;display:flex;justify-content:space-between;">{badge('日本 '+buf_jp_lbl,buf_jp_cls)}{badge('米国 '+buf_us_lbl,buf_us_cls)}</div>
           </div>
-          <div style="padding:4px 8px;cursor:pointer;" onclick="showVI('verdict')">
-            <div style="{vn_style}">総合判定 ⓘ</div>
-            <div style="font-size:14px;font-weight:900;{vd_cls};margin-top:4px;">{VAL['verdict']}</div>
-            <div style="font-size:9px;color:#f87171;font-weight:800;margin-top:2px;">{VAL['verdict_us']}</div>
-            <div style="font-size:7.5px;color:#475569;margin-top:5px;">¥{VAL['usdjpy']:.1f} | 金利差{VAL['rate_diff']:.1f}%</div>
-          </div>
+
         </div>
         </div>"""
 
