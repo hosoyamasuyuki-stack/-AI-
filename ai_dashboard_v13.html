@@ -1714,27 +1714,6 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
           <div class="lbs"><div class="lbs-v ca">未計測</div><div class="lbs-l">的中率</div></div>
         </div>
         <div style="font-size:8px;color:#374151;font-weight:700;margin-top:5px;">次回検証：2026/04/15（目先4週）</div>
-      <!-- EDINETリンクセクション -->
-      <div class="rb" id="d-edinet-section" style="margin-top:8px;">
-        <div class="rb-t" style="color:#475569;">📋 外部リンク</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
-          <a id="d-edinet-link" href="#" target="_blank"
-             style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
-                    background:#1e2d40;border:1px solid #3b82f6;border-radius:5px;
-                    color:#60a5fa;font-size:10px;font-weight:700;text-decoration:none;
-                    cursor:pointer;">
-            📄 EDINET（有報）
-          </a>
-          <a id="d-kabutan-link" href="#" target="_blank"
-             style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;
-                    background:#1e2d40;border:1px solid #374151;border-radius:5px;
-                    color:#94a3b8;font-size:10px;font-weight:700;text-decoration:none;
-                    cursor:pointer;">
-            📊 株探
-          </a>
-        </div>
-      </div>
-      </div>
     </div>
   </div>
 
@@ -2133,13 +2112,33 @@ function openEdinet(e){
   var url=el?el.href:'';
   if(url&&url!=='#'&&url!==location.href){window.open(url,'_blank');}
 }
-function updateDetailLinks(code,name){
-  window._curCode=code;
-  var base='https://disclosure2.edinet-fsa.go.jp/WZEK0040.aspx?S1=';
-  var el=document.getElementById('d-edinet-link');
-  if(el){el.href=base+code;}
-  var kl=document.getElementById('d-kabutan-link');
-  if(kl){kl.href='https://kabutan.jp/stock/?code='+code;}
+
+function updateDetailLinks(c,n){
+  window._curCode=c;
+  var old=document.getElementById('d-edinet-section');
+  if(old)old.remove();
+  var s=document.createElement('div');
+  s.id='d-edinet-section';
+  s.className='rb';
+  s.style.marginTop='8px';
+  var eu='https://disclosure2.edinet-fsa.go.jp/WZEK0040.aspx?S1='+c;
+  var ku='https://kabutan.jp/stock/?code='+c;
+  s.innerHTML='<div class="rb-t" style="color:#475569;">'
+    +String.fromCodePoint(0x1F4CB)+' 外部リンク</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">'
+    +'<a href="'+eu+'" target="_blank" id="d-edinet-link" '
+    +'style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;'
+    +'background:#1e2d40;border:1px solid #3b82f6;border-radius:5px;'
+    +'color:#60a5fa;font-size:10px;font-weight:700;text-decoration:none;">'
+    +String.fromCodePoint(0x1F4C4)+' EDINET（有報）</a>'
+    +'<a href="'+ku+'" target="_blank" id="d-kabutan-link" '
+    +'style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;'
+    +'background:#1e2d40;border:1px solid #374151;border-radius:5px;'
+    +'color:#94a3b8;font-size:10px;font-weight:700;text-decoration:none;">'
+    +String.fromCodePoint(0x1F4CA)+' 株探</a>'
+    +'</div>';
+  var dc=document.getElementById('d-content');
+  if(dc)dc.appendChild(s);
 }
 function closeModal(e){
   if(!e||e.target===document.getElementById('modal-overlay'))
