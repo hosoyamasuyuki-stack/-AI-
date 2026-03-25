@@ -647,53 +647,80 @@ vix_label = '平静'   if MKT['vix_v'] <= 20 else '警戒' if MKT['vix_v'] <= 30
 hyg_label = '良好'   if MKT['hyg_chg'] >= 0 else '悪化'
 hyg_bc    = 'bg'     if MKT['hyg_chg'] >= 0 else 'br'
 
-MSTRIP_HTML = f"""    <div class="mstrip">
-      <div class="mc {nk_bc}" onclick="showMC('nk')" style="cursor:pointer;">
-        <div class="mc-l">日経225 ⓘ</div>
-        <div class="mc-v {nk_vc}">{MKT['nk_v']:,}</div>
-        <div class="mc-s">{fmt_chg(MKT['nk_chg'])}</div>
-        {fmt_52w(MKT['nk_p52'])}
-      </div>
-      <div class="mc {sp_bc}" onclick="showMC('sp')" style="cursor:pointer;">
-        <div class="mc-l">S&amp;P500 ⓘ</div>
-        <div class="mc-v {sp_vc}">{MKT['sp_v']:,}</div>
-        <div class="mc-s">{fmt_chg(MKT['sp_chg'])}</div>
-        {fmt_52w(MKT['sp_p52'])}
-      </div>
-      <div class="mc {vix_bc}" onclick="showMC('vix')" style="cursor:pointer;">
-        <div class="mc-l">VIX 恐怖指数 ⓘ</div>
-        <div class="mc-v {vix_vc}">{MKT['vix_v']}</div>
-        <div class="mc-s">{fmt_chg(MKT['vix_chg'])} {vix_label}</div>
-      </div>
-      <div class="mc {hyg_bc}" onclick="showMC('hyg')" style="cursor:pointer;">
-        <div class="mc-l">社債市場 ⓘ</div>
-        <div class="mc-v {'cg' if MKT['hyg_chg']>=0 else 'cr'}">{MKT['hyg_v']}</div>
-        <div class="mc-s {'cg' if MKT['hyg_chg']>=0 else 'cr'}">{hyg_label}</div>
-      </div>
-      <div class="mc {ys_bc}" onclick="showMC('ys')" style="cursor:pointer;">
-        <div class="mc-l">逆イールド ⓘ</div>
-        <div class="mc-v {ys_vc}">{MKT['yield_spread']:+.2f}</div>
-        <div class="mc-s {ys_vc}">{ys_label}</div>
-      </div>
-      <div class="mc bg" onclick="showMC('m2')" style="cursor:pointer;">
-        <div class="mc-l">日本M2 ⓘ</div>
-        <div class="mc-v cg">+{VAL.get('rate_jp', 1.5):.2f}%</div>
-        <div class="mc-s cg">加速中↑</div>
-      </div>
-      <div class="mc bg">
-        <div class="mc-l">マクロスコア</div>
-        <div class="mc-v ct" style="font-size:16px;">+45</div>
-        <div class="mc-s ca">買い検討</div>
-      </div>"""
-
 short_bc  = 'bg' if SHORT_SCORE >= 55 else 'ba' if SHORT_SCORE >= 45 else 'br'
 short_vc  = 'cg' if SHORT_SCORE >= 55 else 'ca' if SHORT_SCORE >= 45 else 'cr'
 short_lbl = '🟢 強気' if SHORT_SCORE >= 55 else '🟡 中立' if SHORT_SCORE >= 45 else '🔴 弱気'
 mid_bc    = 'bg' if MID_SCORE >= 55 else 'ba' if MID_SCORE >= 45 else 'br'
 mid_vc    = 'cg' if MID_SCORE >= 55 else 'ca' if MID_SCORE >= 45 else 'cr'
 mid_lbl   = '🟢 強気' if MID_SCORE >= 55 else '🟡 中立' if MID_SCORE >= 45 else '🔴 弱気'
-
-MSTRIP_HTML += f"""
+try:
+    _mp_ws = ss.worksheet('MacroPhase'); _mp_row = _mp_ws.get_all_values()[-1]
+    _mp_score = int(float(_mp_row[1])); _mp_lbl = _mp_row[2]
+except: _mp_score = 45; _mp_lbl = 'YELLOW'
+_mp_bc = 'bg' if _mp_lbl=='GREEN' else 'ba' if _mp_lbl=='YELLOW' else 'br'
+_mp_vc = 'cg' if _mp_lbl=='GREEN' else 'ca' if _mp_lbl=='YELLOW' else 'cr'
+_mp_txt = '良好' if _mp_lbl=='GREEN' else '慎重に' if _mp_lbl=='YELLOW' else '今は待て'
+cape_jp = VAL.get('cape_jp', 20); pbr_jp = VAL.get('pbr_jp', 1.76)
+buf_jp  = VAL.get('buffett_jp', 140); yld_jp = VAL.get('yield_jp', 3.5)
+cape_bc = 'br' if cape_jp > 25 else 'ba' if cape_jp > 18 else 'bg'
+pbr_bc  = 'br' if pbr_jp > 2.0 else 'ba' if pbr_jp > 1.5 else 'bg'
+buf_bc  = 'br' if buf_jp > 160 else 'ba' if buf_jp > 130 else 'bg'
+yld_bc  = 'bg' if yld_jp > 4.0 else 'ba' if yld_jp > 2.5 else 'br'
+MSTRIP_HTML = f"""    <div class="mstrip">
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-right:1px solid #374151;min-width:24px;"><div style="font-size:8px;color:#ef4444;font-weight:700;writing-mode:vertical-rl;">🔴 リスク環境</div></div>
+      <div class="mc {vix_bc}" onclick="showMC('vix')" style="cursor:pointer;">
+        <div class="mc-l">VIX 恐怖指数 ⓘ</div>
+        <div class="mc-v {vix_vc}">{MKT['vix_v']}</div>
+        <div class="mc-s">{fmt_chg(MKT['vix_chg'])} {vix_label}</div>
+      </div>
+      <div class="mc {ys_bc}" onclick="showMC('ys')" style="cursor:pointer;">
+        <div class="mc-l">逆イールド ⓘ</div>
+        <div class="mc-v {ys_vc}">{MKT['yield_spread']:+.2f}</div>
+        <div class="mc-s {ys_vc}">{ys_label}</div>
+      </div>
+      <div class="mc {hyg_bc}" onclick="showMC('hyg')" style="cursor:pointer;">
+        <div class="mc-l">社債市場 ⓘ</div>
+        <div class="mc-v {'cg' if MKT['hyg_chg']>=0 else 'cr'}">{MKT['hyg_v']}</div>
+        <div class="mc-s {'cg' if MKT['hyg_chg']>=0 else 'cr'}">{hyg_label}</div>
+      </div>
+      <div class="mc {_mp_bc}">
+        <div class="mc-l">マクロスコア</div>
+        <div class="mc-v {_mp_vc}" style="font-size:16px;">{_mp_score}点</div>
+        <div class="mc-s {_mp_vc}">{_mp_txt}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-left:1px solid #374151;border-right:1px solid #374151;min-width:24px;"><div style="font-size:8px;color:#f59e0b;font-weight:700;writing-mode:vertical-rl;">🟡 バリュエーション</div></div>
+      <div class="mc {cape_bc}" onclick="showMC('cape')" style="cursor:pointer;">
+        <div class="mc-l">シラーPER ⓘ</div>
+        <div class="mc-v {'cr' if cape_jp>25 else 'ca' if cape_jp>18 else 'cg'}">{cape_jp:.0f}倍</div>
+        <div class="mc-s ca">🇯🇵 日本</div>
+      </div>
+      <div class="mc {pbr_bc}" onclick="showMC('pbr')" style="cursor:pointer;">
+        <div class="mc-l">PBR ⓘ</div>
+        <div class="mc-v {'cr' if pbr_jp>2.0 else 'ca' if pbr_jp>1.5 else 'cg'}">{pbr_jp:.2f}倍</div>
+        <div class="mc-s ca">🇯🇵 日本</div>
+      </div>
+      <div class="mc {buf_bc}" onclick="showMC('buf')" style="cursor:pointer;">
+        <div class="mc-l">バフェット指数 ⓘ</div>
+        <div class="mc-v {'cr' if buf_jp>160 else 'ca' if buf_jp>130 else 'cg'}">{buf_jp:.0f}%</div>
+        <div class="mc-s ca">🇯🇵 日本</div>
+      </div>
+      <div class="mc {yld_bc}" onclick="showMC('yield')" style="cursor:pointer;">
+        <div class="mc-l">益回り ⓘ</div>
+        <div class="mc-v {'cg' if yld_jp>4.0 else 'ca' if yld_jp>2.5 else 'cr'}">{yld_jp:.2f}%</div>
+        <div class="mc-s ca">🇯🇵 日本</div>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-left:1px solid #374151;border-right:1px solid #374151;min-width:24px;"><div style="font-size:8px;color:#22c55e;font-weight:700;writing-mode:vertical-rl;">🟢 マクロ動向</div></div>
+      <div class="mc bg" onclick="showMC('m2')" style="cursor:pointer;">
+        <div class="mc-l">日本M2 ⓘ</div>
+        <div class="mc-v cg">+{VAL.get('rate_jp', 1.5):.2f}%</div>
+        <div class="mc-s cg">加速中↑</div>
+      </div>
+      <div class="mc {nk_bc}" onclick="showMC('nk')" style="cursor:pointer;">
+        <div class="mc-l">日経225 ⓘ</div>
+        <div class="mc-v {nk_vc}">{MKT['nk_v']:,}</div>
+        <div class="mc-s">{fmt_chg(MKT['nk_chg'])}</div>
+        {fmt_52w(MKT['nk_p52'])}
+      </div>
       <div class="mc mc-signal {short_bc}" style="border-color:{'#065f46' if SHORT_SCORE>=55 else '#92400e' if SHORT_SCORE>=45 else '#991b1b'}!important;">
         <div class="mc-l" style="color:{'#6ee7b7' if SHORT_SCORE>=55 else '#fcd34d' if SHORT_SCORE>=45 else '#fca5a5'};cursor:pointer;" onclick="showHelp('short_score')">短期スコア（1年）<span class="help-icon">?</span></div>
         <div class="mc-v {short_vc}" style="font-size:15px;">{SHORT_SCORE}点</div>
