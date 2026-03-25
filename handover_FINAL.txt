@@ -1,0 +1,152 @@
+================================================================
+AI Investment System Handover FINAL
+Last updated: 2026/03/25
+================================================================
+
+Next session phrase: "書記官を召喚して、昨日の続きを"
+
+handover.txt (lightweight): https://hosoyamasuyuki-stack.github.io/-AI-/handover.txt
+
+================================================================
+SECTION 1: GOAL
+================================================================
+Target: Nikkei225 annual excess return +3.9% (top 3-4% of JP investors)
+Asset: 200M JPY x +780M JPY/year excess
+
+4-axis prediction:
+- Immediate (3 months): entry/exit timing
+- Short (1 year)
+- Mid (3 years)
+- Long (3+ years, permanent hold candidates)
+
+Key insights:
+- 1Y judgment = 50% win rate (coin flip) -> long hold wins
+- 5Y hold: 88% of buy signals beat Nikkei (confirmed)
+- Backtest v1: 5Y win rate 100%, excess +287%
+
+================================================================
+SECTION 2: TEAM v3.0 (confirmed 2026/03/24)
+================================================================
+Always: Statistician / Investor / Programmer
+On-call: 50s-beginner / Maintenance-engineer
+Monitor: Compliance-officer
+Recorder: Secretary
+
+================================================================
+SECTION 3: INFRASTRUCTURE
+================================================================
+SpreadsheetID: 1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE
+GitHub: https://github.com/hosoyamasuyuki-stack/-AI-
+Dashboard: https://hosoyamasuyuki-stack.github.io/-AI-/ai_dashboard_v13.html
+J-Quants API (current): JQUANTS_CURRENT_KEY=[SEE-GITHUB-SECRETS]
+J-Quants API (old): JQUANTS_OLD_KEY=[SEE-GITHUB-SECRETS]
+EDINET API: EDINET_KEY=[SEE-GITHUB-SECRETS]
+FRED API: FRED_KEY=[SEE-GITHUB-SECRETS]
+GAS URL: https://script.google.com/macros/s/AKfycby8lU6RV2WafwWJKcof0FFRRWGGGRIgRequ54rlp00HYTWwYL3Iefoy_eTXFlhwWDyS/exec
+GitHub Token (2026/03/25 classic): ghp_[2026-03-25-classic-SEE-GITHUB-SECRETS]
+
+================================================================
+SECTION 4: SCORE MODEL v4.2 (confirmed)
+================================================================
+Total Score = Real ROIC(40%) x Trend(35%) x Price(25%)
+
+Var1 Real ROIC (40%): ROE score x60% + FCF conversion rate x40%
+Var2 Trend (35%): ROE 3-4yr slope x60% + FCR slope x40%
+Var3 Price (25%): PEG score x50% + FCF yield score x50%
+
+Rank: S>=80 / A>=65 / B>=50 / C<50 / D=low
+
+Backtest H001-C:
+- 3Y hold: excess +4.46%/yr (target achieved)
+- Top10 3Y: +122.2% (vs Nikkei +85%)
+- 5Y hold: 100% win rate, excess +287%
+
+================================================================
+SECTION 5: STEP PROGRESS
+================================================================
+STEP0 (4-axis prediction record): COMPLETE (2026/03/18)
+- 15 stocks (held+watchlist) + 83 stocks (learning)
+- Immediate verification: 2026/04/15 (verify_0415.py auto-run)
+
+STEP1 (BF evaluation score): NOT STARTED
+
+================================================================
+SECTION 6: GITHUB ACTIONS SCRIPTS
+================================================================
+daily_price_update.py: daily 7:30 JST (Var3 price score recalc)
+weekly_update_v4.py: every Monday (J-Quants V2 full update)
+sheet_manager.py: 1st of month 9:00 JST (ledger generation)
+verify_0415.py v3: 2026/04/15 auto-run (STEP0 verification) [FIXED 2026/03/25]
+verify_monday.py: every Monday (first run 2026/03/30)
+
+J-Quants V2:
+- endpoint: /v2/equities/bars/daily
+- date format: YYYYMMDD
+- data field: AdjC (adjusted close)
+- auth: x-api-key header only (v1 auth_user deprecated)
+
+================================================================
+SECTION 7: SHEET STRUCTURE (predict_record)
+================================================================
+Row 0: header (date, code, name, sector, price, score, rank, action, ...4-axis headers)
+Row 1: subheader (empty, empty, ..., direction, target, basis, verify_date, ...)
+Row 2+: data
+
+Column index:
+COL_DATE=0, COL_CODE=1, COL_NAME=2, COL_SECT=3
+COL_PRICE=4, COL_SCORE=5, COL_RANK=6, COL_ACTION=7
+COL_DIR=8, COL_TARGET=9, COL_BASIS=10, COL_VERDATE=11
+
+================================================================
+SECTION 8: HYPOTHESIS LOG
+================================================================
+H001: 3-variable scoring model validity -> ADOPTED (3Y +4.46% excess)
+H002: Variable1 (Real ROIC) validity -> VERIFIED
+H003: Variable2 (Trend) validity -> VERIFIED
+H004: Variable3 (Price) validity -> NOT STARTED
+H005: Macro phase judgment (32 indicators, 4 layers) -> DESIGNED, NOT CODED
+H006: STEP0 prediction verification -> STEP0 complete, awaiting 2026/04/15
+
+Verification: 7-step procedure, 3-stage rejection rule
+Walk-forward: 5 windows (2017-2024)
+
+================================================================
+SECTION 9: UNRESOLVED ISSUES
+================================================================
+1. J-Quants v1 financial data: 400 auth error (contact support)
+2. GAS deploy: incomplete (next priority)
+3. generate_handover.py GitHub Actions: GOOGLE_CREDENTIALS_JSON secret not set
+4. docs/ folder: ERR 404 on commit
+
+================================================================
+SECTION 10: NEXT PRIORITIES
+================================================================
+[TOP]
+1. GAS deploy complete
+2. STEP1 (BF evaluation score) implementation
+3. H004 backtest (Variable3 price score)
+4. J-Quants support inquiry (v1 auth issue)
+
+[DONE 2026/03/25]
+- verify_0415.py v3: col mapping fixed, API key updated, committed
+- handover_FINAL.txt: committed to GitHub (this file)
+- GitHub Classic token issued: ghp_[2026-03-25-classic-SEE-GITHUB-SECRETS]
+
+================================================================
+SECTION 11: KEY LESSONS
+================================================================
+1. Never design solution before checking actual data
+2. Never assert sheet names without verification
+3. Always grep base HTML before writing HTML code
+4. Verify sheet names before referencing in code
+5. Never say "it will be fixed" before identifying root cause
+6. predict_record sheet: 3-row structure (header/subheader/data)
+7. GitHub browser JS commit: use Classic token (not Fine-grained)
+
+================================================================
+2026/03/25 session summary:
+- verify_0415.py v3 committed (col mapping bug fixed)
+- handover_FINAL.txt committed (this file)
+- New GitHub Classic token issued
+- Confirmed: predict_record has 3-row structure (bug was in v2)
+================================================================
