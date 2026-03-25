@@ -319,7 +319,25 @@ def get_latest_val(ss, sheet_name, col=1):
         print(f"  WARN: {sheet_name} 取得失敗 -> {e}")
     return None
 
+def get_row_val(ss, sheet_name, col_name):
+    """指定列名の最新値を取得"""
+    try:
+        ws = ss.worksheet(sheet_name)
+        rows = ws.get_all_values()
+        if not rows: return None
+        header = rows[0]
+        if col_name not in header: return None
+        idx = header.index(col_name)
+        for r in reversed(rows[1:]):
+            if len(r) > idx and r[idx]:
+                try: return float(str(r[idx]).replace(',',''))
+                except: pass
+    except Exception as e:
+        print(f"  WARN {sheet_name}[{col_name}]: {e}")
+    return None
+
 def calc_macro_phase(ss):
+    # 修正版 v2: 正しいシート名・列名・判定ロジック (2026/03/25)
     detail = {}
     total = 0
 
@@ -327,83 +345,86 @@ def calc_macro_phase(ss):
     layer_a = 0
     vix = get_latest_val(ss, 'VIX')
     if vix is not None:
-        pts = 10 if vix < 18 else (5 if vix < 25 else 0)
+        pts = 15 if vix < 15 else 10 if vix < 20 else 5 if vix < 25 else 0
         layer_a += pts
-        detail['VIX'] = {'value': vix, 'pts': pts}
+        detail['VIX'] = {'value': vix, 'pts': pts, 'max': 15}
 
-    hy = get_latest_val(ss, 'HYスプレッド')
-    if hy is not None:
-        pts = 10 if hy < 3.5 else (5 if hy < 5.0 else 0)
+    hyg = get_latest_val(ss, 'HYスプレッド')
+    if hyg is not None:
+        pts = 15 if hyg < 3 else 10 if hyg < 4 else 5 if hyg < 5 else 0
         layer_a += pts
-        detail['HYspread'] = {'value': hy, 'pts': pts}
+        detail['HYG'] = {'value': hyg, 'pts': pts, 'max': 15}
 
     ted = get_latest_val(ss, 'TEDスプレッド')
     if ted is not None:
-        pts = 10 if ted < 0.3 else (5 if ted < 0.5 else 0)
+        pts = 10 if ted < 0.3 else 5 if ted < 0.5 else 0
         layer_a += pts
-        detail['TEDspread'] = {'value': ted, 'pts': pts}
-
-    ls = get_latest_val(ss, '長短金利差')
-    if ls is not None:
-        pts = 10 if ls > 0.5 else (5 if ls > 0 else 0)
-        layer_a += pts
-        detail['LongShortSpread'] = {'value': ls, 'pts': pts}
+        detail['TED'] = {'value': ted, 'pts': pts, 'max': 10}
 
     total += layer_a
-    detail['LayerA'] = {'score': layer_a, 'max': 40}
+    detail['LayerA'] = {'score': layer_a, 'max': 40, 'name': 'リスク指標'}
     print(f"  Layer A (リスク指標): {layer_a}/40点")
 
     # Layer B: 金融政策 (30点)
+    # M2:前月比% / FRB:前月比(符号)
     layer_b = 0
-    m2 = get_latest_val(ss, '日本M2')
-    if m2 is not None:
-        pts = 15 if m2 > 3.0 else (8 if m2 > 1.0 else 0)
+    m2_mom = get_row_val(ss, '日本M2', '前月比%')
+    if m2_mom is not None:
+        pts = 15 if m2_mom > 0.3 else 8 if m2_mom > 0 else 0
         layer_b += pts
-        detail['JapanM2'] = {'value': m2, 'pts': pts}
+        detail['JapanM2'] = {'value': m2_mom, 'pts': pts, 'max': 15, 'unit': '前月比%'}
 
-    frb = get_latest_val(ss, 'FRBバランスシート')
-    if frb is not None:
-        pts = 15 if frb > 1.0 else (8 if frb > -1.0 else 0)
+    frb_mom = get_row_val(ss, 'FRBバランスシート', '前月比')
+    if frb_mom is not None:
+        pts = 15 if frb_mom > 0 else 8 if frb_mom > -50000 else 0
         layer_b += pts
-        detail['FRBbalance'] = {'value': frb, 'pts': pts}
+        detail['FRB'] = {'value': frb_mom, 'pts': pts, 'max': 15, 'unit': '前月比'}
 
     total += layer_b
-    detail['LayerB'] = {'score': layer_b, 'max': 30}
+    detail['LayerB'] = {'score': layer_b, 'max': 30, 'name': '金融政策'}
     print(f"  Layer B (金融政策): {layer_b}/30点")
 
     # Layer C: 経済活動 (20点)
+    # ISM:乖離率%と前月比の組み合わせ / 失業率:絶対値
     layer_c = 0
-    ism = get_latest_val(ss, 'ISM製造業PMI')
-    if ism is not None:
-        pts = 10 if ism >= 55 else (5 if ism >= 50 else 0)
+    ism_dev = get_row_val(ss, 'ISM製造業PMI', '乖離率%')
+    ism_mom = get_row_val(ss, 'ISM製造業PMI', '前月比')
+    if ism_dev is not None and ism_mom is not None:
+        if ism_dev > 0 and ism_mom > 0:
+            pts = 10
+        elif ism_dev > -1 or ism_mom > 0:
+            pts = 5
+        else:
+            pts = 0
         layer_c += pts
-        detail['ISMPMI'] = {'value': ism, 'pts': pts}
+        detail['ISM'] = {'value': ism_dev, 'pts': pts, 'max': 10, 'unit': '乖離率%'}
 
     unemp = get_latest_val(ss, '米失業率')
     if unemp is not None:
-        pts = 10 if unemp < 4.0 else (5 if unemp < 5.0 else 0)
+        pts = 10 if unemp < 4.0 else 5 if unemp < 5.0 else 0
         layer_c += pts
-        detail['USUnemployment'] = {'value': unemp, 'pts': pts}
+        detail['UNEMP'] = {'value': unemp, 'pts': pts, 'max': 10}
 
     total += layer_c
-    detail['LayerC'] = {'score': layer_c, 'max': 20}
+    detail['LayerC'] = {'score': layer_c, 'max': 20, 'name': '経済活動'}
     print(f"  Layer C (経済活動): {layer_c}/20点")
 
     # Layer D: バリュエーション (10点)
     layer_d = 0
     cape = get_latest_val(ss, 'シラーPER')
     if cape is not None:
-        pts = 10 if cape < 20 else (5 if cape < 25 else 0)
+        pts = 10 if cape < 20 else 5 if cape < 28 else 0
         layer_d += pts
-        detail['ShillerPER'] = {'value': cape, 'pts': pts}
+        detail['CAPE'] = {'value': cape, 'pts': pts, 'max': 10}
 
     total += layer_d
-    detail['LayerD'] = {'score': layer_d, 'max': 10}
+    detail['LayerD'] = {'score': layer_d, 'max': 10, 'name': 'バリュエーション'}
     print(f"  Layer D (バリュエーション): {layer_d}/10点")
 
-    label = 'GREEN' if total >= 60 else ('YELLOW' if total >= 30 else 'RED')
-    print(f"  ▶ マクロフェーズ: {label} ({total}/100点)")
+    label = 'GREEN' if total >= 60 else 'YELLOW' if total >= 30 else 'RED'
+    print(f"  総合: {total}/100 -> {label}")
     return total, label, detail
+
 
 def save_macro_phase(ss, score, label, detail):
     import datetime
