@@ -5,6 +5,9 @@ on:
     - cron: '0 22 * * 1-5'  # 平日22時UTC = 翌朝7時JST
   workflow_dispatch:  # 手動実行も可能
 
+env:
+  TZ: Asia/Tokyo
+
 jobs:
   daily-update:
     runs-on: ubuntu-latest

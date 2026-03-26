@@ -37,8 +37,8 @@ warnings.filterwarnings('ignore')
 
 # ── 認証 ──────────────────────────────────────────────────────
 SPREADSHEET_ID = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE'
-JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY', '7bEWg3-b2MPc0DWG1vjSugW48LahAiVi622Nxy8S7PA')
-FRED_API_KEY    = os.environ.get('FRED_API_KEY', '467c035b9ae8a723c2b9ee2184a22522')
+JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY', '')
+FRED_API_KEY    = os.environ.get('FRED_API_KEY', '')
 JQUANTS_HEADERS = {'x-api-key': JQUANTS_API_KEY}
 JQUANTS_BASE    = 'https://api.jquants.com'
 scope = ['https://spreadsheets.google.com/feeds',

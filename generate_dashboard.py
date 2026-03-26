@@ -315,7 +315,6 @@ def load_valuation():
             ws.update('A2', [row])
         else:
             ws.update('A2', [row])
-            ws.update(f'A{len(existing)+1}', [row])
         print(f"  ✅ バリュエーション保存完了（v21ソース）")
     except Exception as e:
         print(f"  ⚠️ バリュエーション保存失敗: {e}")
@@ -375,6 +374,28 @@ def fetch_market():
     return result
 
 MKT = fetch_market()
+
+# ── 日本M2前年比%を取得 ──────────────────────────────────────
+_m2_yoy = None
+_m2_label = '---'
+try:
+    _m2_ws = ss.worksheet('日本M2')
+    _m2_rows = _m2_ws.get_all_values()
+    if len(_m2_rows) >= 2:
+        _m2_hdr = _m2_rows[0]
+        if '前年比%' in _m2_hdr:
+            _m2_idx = _m2_hdr.index('前年比%')
+            for _r in reversed(_m2_rows[1:]):
+                if len(_r) > _m2_idx and _r[_m2_idx]:
+                    try:
+                        _m2_yoy = float(_r[_m2_idx])
+                        break
+                    except: pass
+    if _m2_yoy is not None:
+        _m2_label = '加速中' if _m2_yoy > 3.0 else '拡大中' if _m2_yoy > 0 else '縮小中'
+    print(f"  日本M2前年比: {_m2_yoy}% ({_m2_label})")
+except Exception as e:
+    print(f"  WARN: 日本M2取得失敗: {e}")
 
 # ── 市場指標HTML生成 ─────────────────────────────────────────
 def fmt_chg(c):
@@ -476,10 +497,10 @@ MSTRIP_HTML = f"""    <div class="mstrip">
         <div class="mc-s ca">🇯🇵 日本</div>
       </div>
       <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-left:1px solid #374151;border-right:1px solid #374151;min-width:24px;"><div style="font-size:8px;color:#22c55e;font-weight:700;writing-mode:vertical-rl;">🟢 マクロ動向</div></div>
-      <div class="mc bg" onclick="showMC('m2')" style="cursor:pointer;">
+      <div class="mc {'bg' if _m2_yoy and _m2_yoy > 0 else 'br'}" onclick="showMC('m2')" style="cursor:pointer;">
         <div class="mc-l">日本M2 ⓘ</div>
-        <div class="mc-v cg">+{VAL.get('rate_jp', 1.5):.2f}%</div>
-        <div class="mc-s cg">加速中↑</div>
+        <div class="mc-v {'cg' if _m2_yoy and _m2_yoy > 0 else 'cr'}">{f'+{_m2_yoy:.2f}' if _m2_yoy and _m2_yoy > 0 else f'{_m2_yoy:.2f}' if _m2_yoy else '---'}%</div>
+        <div class="mc-s {'cg' if _m2_yoy and _m2_yoy > 0 else 'cr'}">{_m2_label}</div>
       </div>
       <div class="mc {nk_bc}" onclick="showMC('nk')" style="cursor:pointer;">
         <div class="mc-l">日経225 ⓘ</div>
@@ -517,7 +538,11 @@ var MC_INFO={{
   vix:{{t:'VIX（恐怖指数）とは',b:'投資家がどれだけ「怖い」と感じているかを数値化した指標です。\\n\\n20以下→平静（買いやすい環境）\\n20〜30→不安（慎重に）\\n30以上→恐怖（嵐の中）\\n\\nただし長期投資家にとって恐怖は仕込みのチャンスでもあります。'}},
   hyg:{{t:'社債市場（HYG）とは',b:'信用力が低い企業が発行する債券のETFです。\\n\\nHYGが上がる→市場全体がリスクを取りやすい安心環境\\nHYGが下がる→企業の倒産懸念が高まっている危険サイン\\n\\n株式市場より先行して動くことが多く、先行指標として機能します。'}},
   ys:{{t:'逆イールドとは',b:'10年国債の金利−2年国債の金利の差です。\\n\\nプラス（正常）→景気は通常運転\\nマイナス（逆イールド）→近い将来の景気後退を市場が予測\\n\\n歴史的にマイナスが1年以上続いた後、景気後退が起きることが多い。現在は正常化の方向。'}},
-  m2:{{t:'日本M2（マネーサプライ）とは',b:'日本国内に出回っているお金の総量の増加率です。\\n\\nM2が増加→15〜18ヶ月後に株式市場に資金が流入\\nM2が減少→将来の株式市場に逆風\\n\\n現在は加速中のため、2027年後半の株価上昇が期待されます。'}}
+  m2:{{t:'日本M2（マネーサプライ）とは',b:'日本国内に出回っているお金の総量の増加率です。\\n\\nM2が増加→15〜18ヶ月後に株式市場に資金が流入\\nM2が減少→将来の株式市場に逆風\\n\\n前年比プラスで拡大中なら、将来の株価上昇が期待されます。'}},
+  cape:{{t:'シラーPER（CAPE）とは',b:'過去10年間の平均利益で計算したPERです。\\n\\n20倍以下→割安（買い場の可能性）\\n20〜25倍→適正\\n25倍以上→割高（注意）\\n\\n通常のPERより景気変動の影響を受けにくく、長期投資の判断に適しています。'}},
+  pbr:{{t:'PBR（株価純資産倍率）とは',b:'株価が企業の純資産（解散価値）の何倍かを示します。\\n\\n1倍以下→解散価値割れ（割安の可能性）\\n1〜1.5倍→適正水準\\n2倍以上→割高（成長期待込み）\\n\\n日本株は歴史的に1.0〜1.5倍が中心。2倍超えは要注意。'}},
+  buf:{{t:'バフェット指数とは',b:'株式市場の時価総額÷GDPで計算します。\\n\\n100%以下→割安\\n100〜130%→適正\\n130〜160%→やや割高\\n160%以上→過熱（バブル警戒）\\n\\nウォーレン・バフェットが重視する指標として有名です。'}},
+  yield:{{t:'益回りとは',b:'PERの逆数（1÷PER×100）です。\\n株式の「利回り」を債券と比較できます。\\n\\n益回り＞国債利回り→株式が有利\\n益回り＜国債利回り→債券が有利\\n\\n4%以上あれば株式投資は魅力的な水準です。'}}
 }};
 function showMC(k){{var d=MC_INFO[k];if(!d)return;document.getElementById('mc-ttl').textContent=d.t;document.getElementById('mc-body').textContent=d.b;document.getElementById('mc-modal').classList.add('open');}}
 function closeMC(){{document.getElementById('mc-modal').classList.remove('open');}}

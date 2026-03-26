@@ -14,6 +14,9 @@ on:
   # 手動実行ボタン（テスト用）
   workflow_dispatch:
 
+env:
+  TZ: Asia/Tokyo
+
 jobs:
   build-dashboard:
     runs-on: ubuntu-latest
@@ -43,6 +46,8 @@ jobs:
       - name: ダッシュボードHTMLを生成
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: |
           python generate_dashboard.py
 

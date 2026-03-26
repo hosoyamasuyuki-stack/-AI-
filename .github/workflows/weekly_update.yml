@@ -5,6 +5,9 @@ on:
     - cron: '0 1 * * 1'  # 毎週月曜1時UTC = 月曜10時JST（市場開場後）
   workflow_dispatch:  # 手動実行ボタンも有効
 
+env:
+  TZ: Asia/Tokyo
+
 jobs:
   update:
     runs-on: ubuntu-latest

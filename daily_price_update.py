@@ -28,8 +28,7 @@ warnings.filterwarnings('ignore')
 
 # ── 認証・設定 ─────────────────────────────────────────────
 SPREADSHEET_ID  = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE'
-JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY',
-                  '7bEWg3-b2MPc0DWG1vjSugW48LahAiVi622Nxy8S7PA')
+JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY', '')
 JQUANTS_HEADERS = {'x-api-key': JQUANTS_API_KEY}
 JQUANTS_BASE    = 'https://api.jquants.com'
 

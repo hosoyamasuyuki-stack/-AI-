@@ -73,7 +73,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Actions [Full Update]"
-          git add -A
+          git add ai_dashboard_v13.html
           git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
           git commit -m "full update $(date +'%Y/%m/%d %H:%M') JST"
           git push
