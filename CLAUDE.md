@@ -296,9 +296,11 @@ verify_0415.py が完全自動化済み
 4. 2026/04/15 STEP0目先予測自動検証（verify_0415.py v3）
 
 【通常優先】
-5. マクロフェーズ判断ロジック実装（H005・32指標・4層・100点）
-6. docs/フォルダのGitHubコミット問題を解決
-7. generate_handover.pyのGitHub Actions自動化設定
+5. ヘッダー日時バッジの動的更新（generate_dashboard.pyで更新日時を反映）
+6. マクロフェーズ判断ロジック実装（H005・32指標・4層・100点）
+7. docs/フォルダのGitHubコミット問題を解決
+8. generate_handover.pyのGitHub Actions自動化設定
+9. エビデンスページにH004検証結果を追加（年率+9.13%・5/5勝ち・p=0.0321）
 
 【将来的な大きなタスク】
 8. GitHubをdocs/フォルダで完全構造化（第三者引き継ぎ対応）
@@ -576,10 +578,16 @@ docs/フォルダ：ERR404問題で未完了
 ## 本日（2026/03/26）のコミット履歴
 ================================================================
 
+747e2b7 : docs: CLAUDE.md更新 - Priority 3解決・書き戻し実装を記録
+430b74e : feat: weekly_update.pyにv4.3スコア保有/監視シート書き戻し追加
+520200d : fix: 全更新push失敗+weekly_updateバグ2件修正
+281ab72 : docs: CLAUDE.md更新 - 全更新push修正・バグ修正・動作確認を記録
+d022852 : docs: CLAUDE.md更新 - 本セッション全作業記録・新規課題追加
 a6245bb : fix: weekly_update.ymlにJQUANTS_API_KEY環境変数を追加
 cb3fa85 : feat: 判断フレームワークページ追加（4時間軸の判断材料を初心者向けに解説）
 b7d6c1e : fix: 再チェックで発見したバグ8件を一括修正
 a9b82b5 : feat: ヘッダーに科学的根拠ボタン追加
+9564b8d : docs: エビデンスページ情報を追記
 eee0023 : docs: CLAUDE.md緊急課題更新
 e027786 : Merge remote-tracking branch 'origin/claude/lucid-mclean'
 737d879 : fix: スコアモデル重大バグ6件を一括修正
