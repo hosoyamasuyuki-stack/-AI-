@@ -710,6 +710,74 @@ except Exception as e:
     import traceback; traceback.print_exc()
 
 # ============================================================
+# v4.3スコアを保有/監視シートに書き戻し
+# ============================================================
+print(f"\n{'='*60}")
+print("v4.3スコアを保有/監視シートに書き戻し")
+print('='*60)
+
+# コアスキャン結果をコード→データのdictに変換
+scan_map = {}
+for _, r in df_scan.iterrows():
+    scan_map[str(r['コード'])] = r
+
+SYNC_SHEETS = ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']
+SYNC_COLS   = ['総合スコア', 'ランク', '変数1', '変数2', '変数3',
+               'ROE平均', 'FCR平均', 'ROEトレンド', 'PEG', 'FCF利回り', '株価']
+
+for sheet_name in SYNC_SHEETS:
+    try:
+        ws = ss.worksheet(sheet_name)
+        all_vals = ws.get_all_values()
+        if len(all_vals) < 2:
+            print(f"  {sheet_name}: データなし（スキップ）")
+            continue
+
+        header = all_vals[0]
+        col_idx = {}
+        for col_name in ['コード'] + SYNC_COLS:
+            if col_name in header:
+                col_idx[col_name] = header.index(col_name)
+
+        if 'コード' not in col_idx:
+            print(f"  {sheet_name}: コード列なし（スキップ）")
+            continue
+
+        updates = 0
+        batch_updates = []
+
+        for row_num in range(1, len(all_vals)):
+            row = all_vals[row_num]
+            code = str(row[col_idx['コード']]).strip()
+            if code not in scan_map:
+                continue
+
+            sr = scan_map[code]
+            for col_name in SYNC_COLS:
+                if col_name not in col_idx:
+                    continue
+                ci = col_idx[col_name]
+                new_val = sr.get(col_name)
+                if new_val is not None and str(new_val) not in ('', 'nan', 'None'):
+                    cell_label = gspread.utils.rowcol_to_a1(row_num + 1, ci + 1)
+                    batch_updates.append({
+                        'range': cell_label,
+                        'values': [[float(new_val) if isinstance(new_val, (int, float, np.integer, np.floating)) else str(new_val)]]
+                    })
+            updates += 1
+
+        if batch_updates:
+            ws.batch_update(batch_updates)
+            print(f"  {sheet_name}: {updates}銘柄を更新（{len(batch_updates)}セル）")
+        else:
+            print(f"  {sheet_name}: 更新対象なし")
+
+    except Exception as e:
+        print(f"  {sheet_name}: エラー {e}")
+
+print(f"$2705 保有/監視シート書き戻し完了")
+
+# ============================================================
 # 作業ログ記録
 # ============================================================
 try:
@@ -719,7 +787,7 @@ try:
         NOW, 'weekly_update v4.2（バグ修正済）',
         f'v4.3スキャン{len(df_scan)}銘柄・短期{short_score}点・中期{medium_score}点・'
         f'因子劣化チェック・インデックス予測記録・'
-        f'Part3シート名バグ修正(失敗35)',
+        f'保有/監視シート書き戻し済',
         'J-Quants V2（10年分）', '$2705完了'
     ]])
     print(f"\n$2705 作業ログ記録完了")
