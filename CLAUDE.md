@@ -208,9 +208,32 @@ J-Quants V2仕様：
     - concurrency設定（ボタン連打防止）
     - 全ステップcontinue-on-error（独立実行）
     - daily_price_update.pyにv4.3シート反映コード追加
+    - yfinanceリアルタイム株価取得対応 SHA:2ca99b5
+    - Step3前に60秒待機追加（Sheets APIレート制限回避）SHA:3c7f7e3
   GASデプロイ：バージョン12（2026/03/26 10:14）
   スクリプトプロパティ：EDINET_API_KEY / GITHUB_TOKEN 設定済み
   注意：市場開場中（9:00-15:00 JST）の終値確定後に押すのが最も効果的
+
+### Priority 1【解決済み】スコアモデル重大バグ6件修正
+
+2026/03/26解決 SHA:737d879：
+  CRITICAL:
+    - C1: abs(fcf)削除 - マイナスFCFが正の値になるバグ修正
+    - C2: PEG<0.5が10点→100点に修正（thr_low関数追加）
+    - C3: STOCKSリスト56銘柄ハードコード→v4.3シートから動的取得（119銘柄全更新）
+    - C4: daily_price_update.ymlにyfinance追加（明朝ImportError防止）
+  HIGH:
+    - H1: MacroPhase詳細キー名不一致修正（VIX/HYG/TED等）
+    - H2: SHORT/MID_SCOREをLayerA+B/C+Dから正規化計算に変更
+  教訓：ハードコード依存症・端から端までのテスト不在・仕様とコードの乖離
+
+### Priority 1【解決済み】generate_dashboard.py・ダッシュボード修正
+
+2026/03/26解決：
+  - generate_dashboard.py未定義関数を追加（get_yf_info等）SHA:01a1e70
+  - SHORT_SCORE/MID_SCORE未定義エラー修正・重複コード整理 SHA:898f1e5
+  - TICKER_HTML/PHASE_HTML未定義+モーダル挿入バグ一括修正 SHA:56f8a7a
+  - MacroPhaseシートAPIレート制限エラーをリトライで回避 SHA:9c45b47
 
 ### Priority 1【進行中】賢者の審判ボタンの動作確認
 
@@ -250,11 +273,10 @@ verify_0415.py が完全自動化済み
 5. マクロフェーズ判断ロジック実装（H005・32指標・4層・100点）
 6. docs/フォルダのGitHubコミット問題を解決
 7. generate_handover.pyのGitHub Actions自動化設定
-8. generate_dashboard.pyの未定義関数（scrape_pbr_japan等）を修正
 
 【将来的な大きなタスク】
-9. GitHubをdocs/フォルダで完全構造化（第三者引き継ぎ対応）
-10. WEB上で完結するシステムとしての販売準備
+8. GitHubをdocs/フォルダで完全構造化（第三者引き継ぎ対応）
+9. WEB上で完結するシステムとしての販売準備
 
 ================================================================
 ## 仮説登録簿（H001-H006）
@@ -528,6 +550,17 @@ docs/フォルダ：ERR404問題で未完了
 ## 本日（2026/03/26）のコミット履歴
 ================================================================
 
+e027786 : Merge remote-tracking branch 'origin/claude/lucid-mclean'
+737d879 : fix: スコアモデル重大バグ6件を一括修正
+a015550 : full update 2026/03/26 12:50 JST
+9c45b47 : fix: MacroPhaseシートAPIレート制限エラーをリトライで回避
+6bc809f : full update 2026/03/26 12:14 JST
+56f8a7a : fix: TICKER_HTML/PHASE_HTML未定義+モーダル挿入バグ一括修正
+898f1e5 : fix: SHORT_SCORE/MID_SCORE未定義エラー修正・重複コード整理
+01a1e70 : fix: generate_dashboard.py未定義関数を追加（get_yf_info等）
+3c7f7e3 : fix: Step3前に60秒待機追加（Sheets APIレート制限回避）
+2ca99b5 : feat: 全更新ボタンでyfinanceリアルタイム株価取得
+da97092 : docs: CLAUDE.md更新
 0ebb6bb : fix: マトリックス修正・賢者の審判インライン統合
 0a3cfc1 : fix: 保有・監視・詳細パネルのスクロール復元
 d1eecb8 : fix: パネルスクロール修正（#top flex伸長+無名div flex伝播）
@@ -561,7 +594,15 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
 11. daily_price_update.pyにv4.3シート反映コード追加（株価・スコア・ランク同期）
 12. full_update.yml改善（TZ/concurrency/continue-on-error）
 13. GitHubトークン新規発行（GAS-full-update・90日・repo+workflow）
-14. CLAUDE.md緊急課題更新
+14. yfinanceリアルタイム株価取得対応 SHA:2ca99b5
+15. Step3前に60秒待機追加（Sheets APIレート制限回避）SHA:3c7f7e3
+16. generate_dashboard.py未定義関数追加（get_yf_info等）SHA:01a1e70
+17. SHORT_SCORE/MID_SCORE未定義エラー修正 SHA:898f1e5
+18. TICKER_HTML/PHASE_HTML未定義+モーダル挿入バグ修正 SHA:56f8a7a
+19. MacroPhaseシートAPIレート制限リトライ回避 SHA:9c45b47
+20. スコアモデル重大バグ6件一括修正（abs(fcf)/PEG/ハードコード等）SHA:737d879
+21. full update 2回実行（12:14/12:50 JST）
+22. CLAUDE.md緊急課題更新
 
 2026/03/25：
 1. verify_0415.py v3コミット（列バグ修正・APIキー更新）SHA:05ddf20e
