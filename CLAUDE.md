@@ -265,9 +265,25 @@ J-Quants V2仕様：
 verify_0415.py が完全自動化済み
 当日Colabで実行するだけ
 
-### Priority 3：weekly_update.pyにv4.2スコアを組み込む
+### Priority 1【要調査】全更新ボタンで株価が更新されない
 
-未着手
+2026/03/26報告：
+  - ダッシュボードの日時が2026-03-18 04:30 JSTのまま更新されない
+  - 全更新ボタンを複数回押しても変化なし
+  - GitHub ActionsのFull Updateログ確認が必要
+  - 考えられる原因：Step3(generate_dashboard.py)がエラー終了（continue-on-errorで隠蔽）
+
+### Priority 1【要調査】get_shares_jqの二重計算バグ疑惑
+
+  weekly_update.pyのget_shares_jqがTotalMarketValue（時価総額）を返している可能性
+  FCF利回り計算でprice×TotalMarketValueになり二重計算の恐れ
+  次回セッションでコード精査が必要
+
+### Priority 3：weekly_update.pyのv4.3スコア書き戻し
+
+  calc_v43_score()は既に実装済み（コアスキャン_v4.3に書き込み）
+  ただし保有銘柄_v4.3スコア・監視銘柄_v4.3スコアへの書き戻しが未実装
+  daily_price_update.pyは変数3のみ更新、変数1・2は既存値を再利用
 
 ### Priority 4（handoverより）：次回優先タスク
 
@@ -558,6 +574,11 @@ docs/フォルダ：ERR404問題で未完了
 ## 本日（2026/03/26）のコミット履歴
 ================================================================
 
+a6245bb : fix: weekly_update.ymlにJQUANTS_API_KEY環境変数を追加
+cb3fa85 : feat: 判断フレームワークページ追加（4時間軸の判断材料を初心者向けに解説）
+b7d6c1e : fix: 再チェックで発見したバグ8件を一括修正
+a9b82b5 : feat: ヘッダーに科学的根拠ボタン追加
+eee0023 : docs: CLAUDE.md緊急課題更新
 e027786 : Merge remote-tracking branch 'origin/claude/lucid-mclean'
 737d879 : fix: スコアモデル重大バグ6件を一括修正
 a015550 : full update 2026/03/26 12:50 JST
@@ -611,6 +632,19 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
 20. スコアモデル重大バグ6件一括修正（abs(fcf)/PEG/ハードコード等）SHA:737d879
 21. full update 2回実行（12:14/12:50 JST）
 22. CLAUDE.md緊急課題更新
+23. エビデンスページ情報をCLAUDE.mdに追記
+24. ダッシュボードに「科学的根拠」ボタン追加 SHA:a9b82b5
+25. 再チェックでバグ8件一括修正 SHA:b7d6c1e
+    - 日本M2カードが国債金利を表示→M2前年比%に修正
+    - バリュエーションカード(CAPE/PBR等)クリック無反応→MC_INFO説明追加
+    - APIキーハードコード削除（セキュリティ）
+    - dashboard_update.ymlにFRED_API_KEY/SPREADSHEET_ID追加
+    - 4つのYAMLにTZ: Asia/Tokyo追加
+    - バリュエーション_日次の二重書き込み修正
+    - full_update.ymlのgit add -Aを特定ファイル指定に変更
+26. 判断フレームワークページ新規作成（8セクション・知的財産保護・免責事項付き）SHA:cb3fa85
+27. ダッシュボードに「判断フレームワーク」ボタン追加（紫色）
+28. weekly_update.ymlにJQUANTS_API_KEY環境変数追加（月曜更新失敗防止）SHA:a6245bb
 
 2026/03/25：
 1. verify_0415.py v3コミット（列バグ修正・APIキー更新）SHA:05ddf20e
