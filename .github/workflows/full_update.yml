@@ -4,10 +4,16 @@ on:
   # ダッシュボードのボタンからGAS経由で起動
   workflow_dispatch:
 
+env:
+  TZ: Asia/Tokyo
+
 jobs:
   full-update:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    concurrency:
+      group: full-update
+      cancel-in-progress: true
 
     steps:
       - name: リポジトリをチェックアウト
@@ -31,7 +37,7 @@ jobs:
         run: |
           echo "=== Step 1: 日次価格更新 ==="
           python daily_price_update.py
-          echo "✅ Step 1 完了"
+          echo "Step 1 完了"
 
       - name: Step 2 - マクロ指標更新（32指標+4層スコア）
         env:
@@ -41,22 +47,25 @@ jobs:
         run: |
           echo "=== Step 2: マクロ指標更新 ==="
           python daily_update.py
-          echo "✅ Step 2 完了"
+          echo "Step 2 完了"
 
       - name: Step 3 - ダッシュボードHTML再生成
+        continue-on-error: true
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: |
           echo "=== Step 3: ダッシュボード再生成 ==="
           python generate_dashboard.py
-          echo "✅ Step 3 完了"
+          echo "Step 3 完了"
 
       - name: Step 4 - GitHubにプッシュ
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Actions [Full Update]"
-          git add ai_dashboard_v13.html
+          git add -A
           git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
-          git commit -m "🔄 全更新完了 $(TZ=Asia/Tokyo date +'%Y/%m/%d %H:%M') JST"
+          git commit -m "full update $(date +'%Y/%m/%d %H:%M') JST"
           git push
-          echo "✅ Step 4 GitHubプッシュ完了 → GitHub Pagesに数分で反映"
+          echo "Step 4 GitHubプッシュ完了"
