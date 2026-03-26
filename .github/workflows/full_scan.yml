@@ -1,0 +1,42 @@
+name: Weekly Full Market Scan
+
+on:
+  schedule:
+    - cron: '0 13 * * 0'  # 毎週日曜 22:00 JST
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    concurrency:
+      group: full-scan
+      cancel-in-progress: false
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 依存パッケージをインストール
+        run: |
+          pip install requests gspread google-auth yfinance pandas numpy
+
+      - name: 全市場スクリーニング実行
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          echo "=== Weekly Full Market Scan ==="
+          python full_scan.py
+          echo "=== Scan Complete ==="

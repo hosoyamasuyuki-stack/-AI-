@@ -1565,6 +1565,22 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
       </table>
     </div>
+    <!-- スクリーニングTop50セクション（折りたたみ式） -->
+    <div class="ph" style="cursor:pointer;border-top:1px solid #f59e0b33;margin-top:4px;padding:4px 8px;" onclick="toggleScreen()">
+      <span class="t" style="color:#f59e0b;font-size:9px;">&#x1F50D; AI Market Scan Top 50</span>
+      <span class="r" id="screen-toggle" style="font-size:8px;color:#f59e0b;">&#x25BC; 展開</span>
+    </div>
+    <div id="screen-section" style="display:none;flex:1;overflow-y:auto;min-height:0;">
+      <table id="tS">
+        <tr>
+          <th class="sh" onclick="srt('tS',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',2,this)" style="color:#f59e0b;">v4.3<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th>判定</th>
+        </tr>
+        <tr><td colspan="4" style="color:#475569;font-size:9px;text-align:center;padding:12px;">日曜夜のスキャン後に表示されます</td></tr>
+      </table>
+    </div>
     <div class="gbar"><span class="gl">現在の環境</span><span class="gi">短期29点・中期25点ともに弱気</span><span class="gi">押し目形成後に再評価</span></div>
   </div>
 
@@ -1868,6 +1884,18 @@ function execMgmt(action){
   });
 }
 /* === /銘柄管理 === */
+
+/* === スクリーニングTop50 折りたたみ === */
+function toggleScreen(){
+  var sec=document.getElementById('screen-section');
+  var tog=document.getElementById('screen-toggle');
+  if(sec.style.display==='none'){
+    sec.style.display='';tog.innerHTML='&#x25B2; 閉じる';
+  }else{
+    sec.style.display='none';tog.innerHTML='&#x25BC; 展開';
+  }
+}
+/* === /スクリーニング === */
 const arrowMap={
   '↑↑':'<span class="ar-uu">↑↑</span>',
   '↑':'<span class="ar-u">↑</span>',
