@@ -398,35 +398,23 @@ vix_label = '平静'   if MKT['vix_v'] <= 20 else '警戒' if MKT['vix_v'] <= 30
 hyg_label = '良好'   if MKT['hyg_chg'] >= 0 else '悪化'
 hyg_bc    = 'bg'     if MKT['hyg_chg'] >= 0 else 'br'
 
+# ── MacroPhaseからスコア取得 ──────────────────────────────
+try:
+    _mp_ws = ss.worksheet('MacroPhase'); _mp_rows = _mp_ws.get_all_values()
+    _mp_row = _mp_rows[-1]
+    _mp_score = int(float(_mp_row[1])); _mp_lbl = _mp_row[2]
+    # SHORT_SCORE / MID_SCORE の取得（列4,5にある想定、なければフォールバック）
+    SHORT_SCORE = int(float(_mp_row[4])) if len(_mp_row) > 4 and _mp_row[4] else 19
+    MID_SCORE   = int(float(_mp_row[5])) if len(_mp_row) > 5 and _mp_row[5] else 50
+except:
+    _mp_score = 45; _mp_lbl = 'YELLOW'; SHORT_SCORE = 19; MID_SCORE = 50
+
 short_bc  = 'bg' if SHORT_SCORE >= 55 else 'ba' if SHORT_SCORE >= 45 else 'br'
 short_vc  = 'cg' if SHORT_SCORE >= 55 else 'ca' if SHORT_SCORE >= 45 else 'cr'
 short_lbl = '🟢 強気' if SHORT_SCORE >= 55 else '🟡 中立' if SHORT_SCORE >= 45 else '🔴 弱気'
 mid_bc    = 'bg' if MID_SCORE >= 55 else 'ba' if MID_SCORE >= 45 else 'br'
 mid_vc    = 'cg' if MID_SCORE >= 55 else 'ca' if MID_SCORE >= 45 else 'cr'
 mid_lbl   = '🟢 強気' if MID_SCORE >= 55 else '🟡 中立' if MID_SCORE >= 45 else '🔴 弱気'
-try:
-    _mp_ws = ss.worksheet('MacroPhase'); _mp_row = _mp_ws.get_all_values()[-1]
-    _mp_score = int(float(_mp_row[1])); _mp_lbl = _mp_row[2]
-except: _mp_score = 45; _mp_lbl = 'YELLOW'
-_mp_bc = 'bg' if _mp_lbl=='GREEN' else 'ba' if _mp_lbl=='YELLOW' else 'br'
-_mp_vc = 'cg' if _mp_lbl=='GREEN' else 'ca' if _mp_lbl=='YELLOW' else 'cr'
-_mp_txt = '良好' if _mp_lbl=='GREEN' else '慎重に' if _mp_lbl=='YELLOW' else '今は待て'
-cape_jp = VAL.get('cape_jp', 20); pbr_jp = VAL.get('pbr_jp', 1.76)
-buf_jp  = VAL.get('buffett_jp', 140); yld_jp = VAL.get('yield_jp', 3.5)
-cape_bc = 'br' if cape_jp > 25 else 'ba' if cape_jp > 18 else 'bg'
-pbr_bc  = 'br' if pbr_jp > 2.0 else 'ba' if pbr_jp > 1.5 else 'bg'
-buf_bc  = 'br' if buf_jp > 160 else 'ba' if buf_jp > 130 else 'bg'
-yld_bc  = 'bg' if yld_jp > 4.0 else 'ba' if yld_jp > 2.5 else 'br'
-short_bc  = 'bg' if SHORT_SCORE >= 55 else 'ba' if SHORT_SCORE >= 45 else 'br'
-short_vc  = 'cg' if SHORT_SCORE >= 55 else 'ca' if SHORT_SCORE >= 45 else 'cr'
-short_lbl = '🟢 強気' if SHORT_SCORE >= 55 else '🟡 中立' if SHORT_SCORE >= 45 else '🔴 弱気'
-mid_bc    = 'bg' if MID_SCORE >= 55 else 'ba' if MID_SCORE >= 45 else 'br'
-mid_vc    = 'cg' if MID_SCORE >= 55 else 'ca' if MID_SCORE >= 45 else 'cr'
-mid_lbl   = '🟢 強気' if MID_SCORE >= 55 else '🟡 中立' if MID_SCORE >= 45 else '🔴 弱気'
-try:
-    _mp_ws = ss.worksheet('MacroPhase'); _mp_row = _mp_ws.get_all_values()[-1]
-    _mp_score = int(float(_mp_row[1])); _mp_lbl = _mp_row[2]
-except: _mp_score = 45; _mp_lbl = 'YELLOW'
 _mp_bc = 'bg' if _mp_lbl=='GREEN' else 'ba' if _mp_lbl=='YELLOW' else 'br'
 _mp_vc = 'cg' if _mp_lbl=='GREEN' else 'ca' if _mp_lbl=='YELLOW' else 'cr'
 _mp_txt = '良好' if _mp_lbl=='GREEN' else '慎重に' if _mp_lbl=='YELLOW' else '今は待て'
