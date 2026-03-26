@@ -570,7 +570,7 @@ for row, stype in all_data:
 print(f"  保有:{len(rows_h)}銘柄 監視:{len(rows_w)}銘柄")
 
 BASE_URL = ('https://raw.githubusercontent.com/'
-            'hosoyamasuyuki-stack/-AI-/main/ai_dashboard_v11_fixed.html')
+            'hosoyamasuyuki-stack/-AI-/main/ai_dashboard_v13.html')
 print(f"  ベースHTML取得中...")
 resp = requests.get(BASE_URL, timeout=30)
 resp.raise_for_status()
@@ -849,7 +849,7 @@ print('OK: マクロフェーズゲージ置換')
 src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
 print("OK: モーダル挿入")
 
-out = 'ai_dashboard_v11_fixed.html'
+out = 'ai_dashboard_v13.html'
 with open(out, 'w', encoding='utf-8') as f:
     f.write(src)
 print(f"\n✅ 出力完了: {out}")

@@ -48,14 +48,14 @@ jobs:
 
       - name: 生成結果を確認
         run: |
-          ls -lh ai_dashboard_v11_fixed.html
+          ls -lh ai_dashboard_v13.html
           echo "生成完了"
 
       - name: 変更をGitHubにコミット＆プッシュ
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Actions [Dashboard Bot]"
-          git add ai_dashboard_v11_fixed.html
+          git add ai_dashboard_v13.html
           # 変更がない場合はスキップ
           git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
           git commit -m "🤖 ダッシュボード自動更新 $(date +'%Y/%m/%d %H:%M') JST"

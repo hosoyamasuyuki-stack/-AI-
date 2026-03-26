@@ -195,6 +195,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
     <div id="logo-text">AI 投資判断システム v11</div>
   </div>
   <div id="hdr-r">
+    <span id="update-btn" onclick="triggerFullUpdate()" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#1e293b;border:1px solid #f59e0b;border-radius:6px;cursor:pointer;font-size:8px;font-weight:900;color:#f59e0b;transition:all .2s;" onmouseover="this.style.background='#f59e0b';this.style.color='#000'" onmouseout="this.style.background='#1e293b';this.style.color='#f59e0b'">&#x1F504; 全更新</span>
     <span style="display:flex;align-items:center;gap:4px;font-size:9px;font-weight:800;color:#22c55e;"><span class="livedot"></span>LIVE</span>
     <span class="badge badge-t">PHASE 1 — 蓄積中</span>
     <span class="badge">2026-03-18 &nbsp;04:30 JST</span>
@@ -1769,6 +1770,34 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
 </div>
 
 <script>
+/* === 全更新ボタン === */
+var FULL_UPDATE_GAS_URL='https://script.google.com/macros/s/AKfycbwVDZ9IhuGEz7onU9uCvhSFd7N84cGQouIcnBMQO5iIlFwbNbVP4J8_tPtOj8X7yxAw/exec';
+function triggerFullUpdate(){
+  var btn=document.getElementById('update-btn');
+  if(!btn)return;
+  var orig=btn.innerHTML;
+  btn.innerHTML='&#x23F3; 更新中...';
+  btn.style.pointerEvents='none';
+  btn.style.opacity='0.6';
+  fetch(FULL_UPDATE_GAS_URL,{method:'POST',body:JSON.stringify({action:'full_update'}),redirect:'follow'})
+  .then(function(r){return r.json()})
+  .then(function(d){
+    if(d.ok){
+      btn.innerHTML='&#x2705; 更新開始!';
+      btn.style.background='#064e3b';btn.style.color='#34d399';btn.style.borderColor='#34d399';
+      setTimeout(function(){btn.innerHTML=orig;btn.style.pointerEvents='';btn.style.opacity='';btn.style.background='';btn.style.color='#f59e0b';btn.style.borderColor='#f59e0b';},5000);
+    }else{
+      btn.innerHTML='&#x274C; '+d.error;
+      btn.style.background='#7f1d1d';btn.style.color='#f87171';btn.style.borderColor='#f87171';
+      setTimeout(function(){btn.innerHTML=orig;btn.style.pointerEvents='';btn.style.opacity='';btn.style.background='';btn.style.color='#f59e0b';btn.style.borderColor='#f59e0b';},5000);
+    }
+  })
+  .catch(function(e){
+    btn.innerHTML='&#x274C; Error';
+    setTimeout(function(){btn.innerHTML=orig;btn.style.pointerEvents='';btn.style.opacity='';btn.style.background='';btn.style.color='#f59e0b';btn.style.borderColor='#f59e0b';},5000);
+  });
+}
+/* === /全更新ボタン === */
 const arrowMap={
   '↑↑':'<span class="ar-uu">↑↑</span>',
   '↑':'<span class="ar-u">↑</span>',
