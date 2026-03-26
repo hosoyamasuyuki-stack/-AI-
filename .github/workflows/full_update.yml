@@ -30,7 +30,8 @@ jobs:
         run: |
           pip install requests gspread google-auth yfinance pandas numpy
 
-      - name: Step 1 - 株価更新（変数3再計算）
+      - name: Step 1 - 株価更新（変数3再計算+v4.3シート反映）
+        continue-on-error: true
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
@@ -40,6 +41,7 @@ jobs:
           echo "Step 1 完了"
 
       - name: Step 2 - マクロ指標更新（32指標+4層スコア）
+        continue-on-error: true
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
