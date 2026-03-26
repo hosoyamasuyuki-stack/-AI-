@@ -280,11 +280,12 @@ verify_0415.py が完全自動化済み
   バグ1：get_shares_jqがTotalMarketValue（時価総額）を返却→get_fin_jq内でShOutFYからmarket_cap再計算するロジック追加
   バグ2：weekly_update.pyのFCF利回り計算にabs()が残存→削除（daily_price_update.pyと同じ修正）
 
-### Priority 3：weekly_update.pyのv4.3スコア書き戻し
+### Priority 3【解決済み】weekly_update.pyのv4.3スコア書き戻し
 
-  calc_v43_score()は既に実装済み（コアスキャン_v4.3に書き込み）
-  ただし保有銘柄_v4.3スコア・監視銘柄_v4.3スコアへの書き戻しが未実装
-  daily_price_update.pyは変数3のみ更新、変数1・2は既存値を再利用
+2026/03/26解決 SHA:430b74e：
+  コアスキャン_v4.3に書くだけだった結果を保有銘柄_v4.3スコア・監視銘柄_v4.3スコアにも同期
+  同期対象：総合スコア・ランク・変数1・変数2・変数3・ROE平均・FCR平均・ROEトレンド・PEG・FCF利回り・株価
+  3/30月曜の週次更新から変数1・2が正しく反映される
 
 ### Priority 4（handoverより）：次回優先タスク
 
@@ -651,6 +652,8 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
     - weekly_update.py: get_shares_jq二重計算修正（ShOutFYでmarket_cap再計算）
     - weekly_update.py: abs(fcf)削除
 30. 全更新ボタン動作確認成功（#22 15:24 JST・株価/スコア更新確認済み）
+31. weekly_update.pyにv4.3スコア保有/監視シート書き戻し追加 SHA:430b74e
+    （変数1・2・3が週次で正しく更新される・Priority 3解決）
 
 2026/03/25：
 1. verify_0415.py v3コミット（列バグ修正・APIキー更新）SHA:05ddf20e
