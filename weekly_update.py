@@ -263,6 +263,9 @@ def get_fin_jq(code):
             shares_latest = df['ShOutFY'].dropna()
             if len(shares_latest) > 0:
                 price_info['shares'] = float(shares_latest.iloc[-1])
+                # market_capをShOutFY（正確な発行済み株数）で再計算
+                if price_info.get('price'):
+                    price_info['market_cap'] = float(price_info['price']) * float(shares_latest.iloc[-1])
         return df.replace([np.inf, -np.inf], np.nan).dropna(how='all'), price_info
     except: return None, {}
 
@@ -310,11 +313,11 @@ def calc_v43_score(df, price_info):
             fcf_v      = float(fcf_l.iloc[-1])
             market_cap = price_info.get('market_cap')
             if market_cap and market_cap > 0:
-                fy = abs(fcf_v) / market_cap * 100
+                fy = fcf_v / market_cap * 100
             elif 'TA' in df.columns:
                 ta_l = df['TA'].dropna()
                 if len(ta_l) > 0:
-                    fy = abs(fcf_v) / float(ta_l.iloc[-1]) * 100
+                    fy = fcf_v / float(ta_l.iloc[-1]) * 100
     s3    = round(thr_high(peg, PEG_THR) * 0.50 + thr_high(fy, FCY_THR) * 0.50)
     total = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)
     rank  = ('S' if total >= 80 else 'A' if total >= 65 else
