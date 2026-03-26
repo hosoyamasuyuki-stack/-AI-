@@ -162,6 +162,10 @@ backtest_H004_v2.py    : H004バックテスト（本番計算）
 H004_complete_record.txt : H004完全記録
 sheet_manager.py       : SheetManagementLedger生成（毎月1日9:00 JST）
 record_changelog.py    : 変更履歴記録
+evidence_page.html     : 科学的根拠ページ（H002・H003バックテスト結果を視覚的に表示）
+                         URL: https://hosoyamasuyuki-stack.github.io/-AI-/evidence_page.html
+                         ダッシュボードヘッダー「科学的根拠」ボタンから別タブで開く
+                         Chart.jsで統計グラフ表示・ダークテーマ・ゴールドカラー設計
 
 ================================================================
 ## GitHub Actionsスクリプト
