@@ -30,13 +30,14 @@ jobs:
         run: |
           pip install requests gspread google-auth yfinance pandas numpy
 
-      - name: Step 1 - 株価更新（変数3再計算+v4.3シート反映）
+      - name: Step 1 - 株価更新（yfinanceリアルタイム+v4.3シート反映）
         continue-on-error: true
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          PRICE_SOURCE: yfinance
         run: |
-          echo "=== Step 1: 日次価格更新 ==="
+          echo "=== Step 1: 株価更新（yfinanceリアルタイム） ==="
           python daily_price_update.py
           echo "Step 1 完了"
 

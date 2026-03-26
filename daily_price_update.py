@@ -20,17 +20,21 @@
 import os, json, requests, time, warnings
 import pandas as pd
 import numpy as np
+import yfinance as yf
 from datetime import datetime, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
 warnings.filterwarnings('ignore')
 
-# ── 認証 ────────────────────────────────────────────────────
+# ── 認証・設定 ─────────────────────────────────────────────
 SPREADSHEET_ID  = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE'
 JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY',
                   '7bEWg3-b2MPc0DWG1vjSugW48LahAiVi622Nxy8S7PA')
 JQUANTS_HEADERS = {'x-api-key': JQUANTS_API_KEY}
 JQUANTS_BASE    = 'https://api.jquants.com'
+
+# 株価取得ソース切替：jquants（自動更新・前日終値）/ yfinance（手動更新・リアルタイム）
+PRICE_SOURCE = os.environ.get('PRICE_SOURCE', 'jquants')
 
 scope      = ['https://spreadsheets.google.com/feeds',
               'https://www.googleapis.com/auth/drive']
@@ -45,7 +49,8 @@ TODAY = datetime.now()
 print(f"$2705 接続完了: {ss.title}")
 print(f"実行日時: {NOW}")
 print(f"\n{'='*60}")
-print("日次 変数3（価格）更新スクリプト")
+print(f"日次 変数3（価格）更新スクリプト")
+print(f"株価ソース: {PRICE_SOURCE}" + (" (リアルタイム)" if PRICE_SOURCE == 'yfinance' else " (前日終値)"))
 print('='*60)
 
 # ── 56銘柄マスタ（weekly_update_v4.pyと同一）────────────────
@@ -127,8 +132,8 @@ PEG_THR = [(0.5,100),(0.8,85),(1.0,72),(1.2,58),(1.5,42),(2.0,26),(999,12)]
 FCY_THR = [(8,100),(6,85),(4,70),(3,55),(2,38),(1,22),(0,8)]
 
 # ── 株価取得（2営業日分：当日と前日）───────────────────────
-def get_price_2days(code):
-    """当日と前日の株価を取得（前日比計算用）"""
+def get_price_jquants(code):
+    """J-Quants: 前日終値を取得（自動更新用・正確）"""
     code5   = code + '0' if len(code) == 4 else code
     prices  = {}
     for label, days_ago in [('today', 1), ('yesterday', 2)]:
@@ -152,6 +157,45 @@ def get_price_2days(code):
                         break
             except: pass
     return prices
+
+def get_price_yfinance(code):
+    """yfinance: リアルタイム株価を取得（手動更新用・15分遅延）"""
+    ticker = f"{code}.T"
+    prices = {}
+    try:
+        t = yf.Ticker(ticker)
+        h = t.history(period='5d')
+        if len(h) >= 2:
+            prices['today'] = {
+                'price': round(float(h['Close'].iloc[-1]), 1),
+                'date':  str(h.index[-1].date()),
+                'volume': int(h['Volume'].iloc[-1]) if h['Volume'].iloc[-1] else 0,
+            }
+            prices['yesterday'] = {
+                'price': round(float(h['Close'].iloc[-2]), 1),
+                'date':  str(h.index[-2].date()),
+                'volume': int(h['Volume'].iloc[-2]) if h['Volume'].iloc[-2] else 0,
+            }
+        elif len(h) == 1:
+            prices['today'] = {
+                'price': round(float(h['Close'].iloc[-1]), 1),
+                'date':  str(h.index[-1].date()),
+                'volume': int(h['Volume'].iloc[-1]) if h['Volume'].iloc[-1] else 0,
+            }
+    except:
+        pass
+    return prices
+
+def get_price_2days(code):
+    """株価取得（PRICE_SOURCEに応じて切替・失敗時フォールバック）"""
+    if PRICE_SOURCE == 'yfinance':
+        prices = get_price_yfinance(code)
+        if prices.get('today'):
+            return prices
+        # yfinance失敗→J-Quantsにフォールバック
+        return get_price_jquants(code)
+    else:
+        return get_price_jquants(code)
 
 def get_fin_summary_latest(code):
     """最新の財務サマリーから FCF・EPS・発行済み株数を取得"""
