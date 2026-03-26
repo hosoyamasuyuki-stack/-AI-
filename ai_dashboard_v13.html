@@ -270,56 +270,60 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
       </div>
 
     </div>
-    <!-- 割安度：横長バー（日本 vs 米国比較） -->
-    <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #fb923c;border-radius:6px;padding:5px 8px;margin-top:4px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <!-- ラベル -->
-        <div style="flex-shrink:0;">
-          <span style="font-size:8px;font-weight:900;color:#fdba74;letter-spacing:.5px;">割安度</span>
-          <span style="font-size:6.5px;color:#475569;font-weight:700;margin-left:4px;">🇯🇵日本 / 🇺🇸米国</span>
+    <!-- 割安度 + マクロ総合：横長バー -->
+    <div style="display:grid;grid-template-columns:3fr 1.2fr;gap:4px;margin-top:4px;">
+      <!-- 割安度：日本 vs 米国 比較テーブル -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #fb923c;border-radius:6px;padding:6px 10px;">
+        <div style="display:flex;align-items:center;margin-bottom:6px;">
+          <span style="font-size:9px;font-weight:900;color:#fdba74;letter-spacing:.5px;">割安度</span>
+          <span style="font-size:7px;color:#475569;font-weight:700;margin-left:6px;">- 日本と米国、今どっちが割安？</span>
         </div>
-        <!-- 4指標を横並び -->
-        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
-          <div style="cursor:pointer;text-align:center;" onclick="showHelp('cape')">
-            <div style="color:#94a3b8;font-size:7px;font-weight:800;">CAPE</div>
-            <div style="font-size:10px;font-weight:900;font-family:monospace;"><span style="color:#f87171;">🇯🇵29x</span><span style="color:#374151;"> / </span><span style="color:#f87171;">🇺🇸38x</span></div>
-            <span style="background:#7f1d1d;color:#f87171;font-size:6px;font-weight:900;padding:1px 3px;border-radius:2px;">割高</span>
-          </div>
-          <div style="cursor:pointer;text-align:center;" onclick="showHelp('pbr')">
-            <div style="color:#94a3b8;font-size:7px;font-weight:800;">PBR</div>
-            <div style="font-size:10px;font-weight:900;font-family:monospace;"><span style="color:#fbbf24;">🇯🇵1.76x</span><span style="color:#374151;"> / </span><span style="color:#f87171;">🇺🇸4.80x</span></div>
-            <span style="background:#92400e;color:#fbbf24;font-size:6px;font-weight:900;padding:1px 3px;border-radius:2px;">やや高</span>
-          </div>
-          <div style="cursor:pointer;text-align:center;" onclick="showHelp('earnings_yield')">
-            <div style="color:#94a3b8;font-size:7px;font-weight:800;">益回り</div>
-            <div style="font-size:10px;font-weight:900;font-family:monospace;"><span style="color:#34d399;">🇯🇵6.25%</span><span style="color:#374151;"> / </span><span style="color:#fbbf24;">🇺🇸3.86%</span></div>
-            <span style="background:#064e3b;color:#34d399;font-size:6px;font-weight:900;padding:1px 3px;border-radius:2px;">有利</span>
-          </div>
-          <div style="cursor:pointer;text-align:center;" onclick="showHelp('buffett')">
-            <div style="color:#94a3b8;font-size:7px;font-weight:800;">BF指数</div>
-            <div style="font-size:10px;font-weight:900;font-family:monospace;"><span style="color:#fbbf24;">🇯🇵140%</span><span style="color:#374151;"> / </span><span style="color:#f87171;">🇺🇸200%</span></div>
-            <span style="background:#92400e;color:#fbbf24;font-size:6px;font-weight:900;padding:1px 3px;border-radius:2px;">注意</span>
-          </div>
+        <!-- テーブル型：ヘッダー行 + データ行 -->
+        <div style="display:grid;grid-template-columns:70px 1fr 1fr 1fr 1fr;gap:0;font-family:monospace;">
+          <!-- ヘッダー -->
+          <div style="padding:2px 0;"></div>
+          <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:8px;font-weight:800;">CAPE</span></div>
+          <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:8px;font-weight:800;">PBR</span></div>
+          <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:8px;font-weight:800;">益回り</span></div>
+          <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:8px;font-weight:800;">BF指数</span></div>
+          <!-- 日本行 -->
+          <div style="padding:3px 0;display:flex;align-items:center;"><span style="font-size:9px;font-weight:900;color:#e2e8f0;">🇯🇵 日本</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('cape')"><span style="font-size:11px;font-weight:900;color:#f87171;">29倍</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('pbr')"><span style="font-size:11px;font-weight:900;color:#fbbf24;">1.76倍</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('earnings_yield')"><span style="font-size:11px;font-weight:900;color:#34d399;">6.25%</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('buffett')"><span style="font-size:11px;font-weight:900;color:#fbbf24;">140%</span></div>
+          <!-- 米国行 -->
+          <div style="padding:3px 0;display:flex;align-items:center;"><span style="font-size:9px;font-weight:900;color:#e2e8f0;">🇺🇸 米国</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('cape')"><span style="font-size:11px;font-weight:900;color:#f87171;">38倍</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('pbr')"><span style="font-size:11px;font-weight:900;color:#f87171;">4.80倍</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('earnings_yield')"><span style="font-size:11px;font-weight:900;color:#fbbf24;">3.86%</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('buffett')"><span style="font-size:11px;font-weight:900;color:#f87171;">200%</span></div>
+          <!-- 判定行 -->
+          <div style="padding:2px 0;border-top:1px solid #1e2d40;"><span style="color:#fb923c;font-size:7px;font-weight:800;">判定</span></div>
+          <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;"><span style="background:#7f1d1d;color:#f87171;font-size:7px;font-weight:900;padding:1px 4px;border-radius:2px;">割高</span></div>
+          <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;"><span style="background:#92400e;color:#fbbf24;font-size:7px;font-weight:900;padding:1px 4px;border-radius:2px;">やや高</span></div>
+          <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;"><span style="background:#064e3b;color:#34d399;font-size:7px;font-weight:900;padding:1px 4px;border-radius:2px;">日本有利</span></div>
+          <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;"><span style="background:#92400e;color:#fbbf24;font-size:7px;font-weight:900;padding:1px 4px;border-radius:2px;">注意</span></div>
         </div>
-        <!-- 区切り線 -->
-        <div style="width:1px;height:30px;background:#1e2d40;flex-shrink:0;"></div>
-        <!-- マクロ総合スコア -->
-        <div style="flex-shrink:0;display:flex;align-items:center;gap:6px;">
-          <div>
-            <div style="display:flex;align-items:baseline;gap:3px;">
-              <span style="color:#f59e0b;font-size:7px;font-weight:900;">MACRO</span>
-              <span style="font-size:14px;font-weight:900;font-family:monospace;color:#f59e0b;">45</span><span style="font-size:8px;color:#475569;">/100</span>
-            </div>
-            <div style="background:#1e293b;border-radius:2px;height:3px;width:60px;margin-top:2px;"><div style="width:45%;height:3px;border-radius:2px;background:#f59e0b;"></div></div>
+      </div>
+      <!-- マクロ総合スコア -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #f59e0b;border-radius:6px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
+        <div style="font-size:8px;font-weight:900;color:#f59e0b;margin-bottom:4px;letter-spacing:.5px;">マクロ総合</div>
+        <div style="text-align:center;margin-bottom:4px;">
+          <div style="font-size:20px;font-weight:900;font-family:monospace;color:#f59e0b;">45<span style="font-size:10px;color:#475569;">/100</span></div>
+          <div style="background:#1e293b;border-radius:3px;height:4px;margin:3px 0;"><div style="width:45%;height:4px;border-radius:3px;background:#f59e0b;"></div></div>
+          <div style="font-size:9px;font-weight:800;color:#f59e0b;">慎重に</div>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <div style="flex:1;background:#0a0d16;border:1px solid #991b1b;border-radius:3px;padding:3px;text-align:center;cursor:pointer;" onclick="showHelp('short_score')">
+            <div style="color:#94a3b8;font-size:6.5px;font-weight:800;">短期(1年)</div>
+            <div style="color:#f87171;font-size:11px;font-weight:900;font-family:monospace;">19</div>
+            <div style="color:#f87171;font-size:6.5px;font-weight:800;">弱気</div>
           </div>
-          <span style="font-size:8px;font-weight:800;color:#f59e0b;">慎重に</span>
-          <div style="display:flex;gap:3px;">
-            <div style="background:#0a0d16;border:1px solid #991b1b;border-radius:3px;padding:2px 5px;text-align:center;cursor:pointer;" onclick="showHelp('short_score')">
-              <span style="color:#94a3b8;font-size:6px;">短期</span> <span style="color:#f87171;font-size:9px;font-weight:900;font-family:monospace;">19</span> <span style="color:#f87171;font-size:6px;">弱気</span>
-            </div>
-            <div style="background:#0a0d16;border:1px solid #92400e;border-radius:3px;padding:2px 5px;text-align:center;cursor:pointer;" onclick="showHelp('medium_score')">
-              <span style="color:#94a3b8;font-size:6px;">中期</span> <span style="color:#fbbf24;font-size:9px;font-weight:900;font-family:monospace;">50</span> <span style="color:#fbbf24;font-size:6px;">中立</span>
-            </div>
+          <div style="flex:1;background:#0a0d16;border:1px solid #92400e;border-radius:3px;padding:3px;text-align:center;cursor:pointer;" onclick="showHelp('medium_score')">
+            <div style="color:#94a3b8;font-size:6.5px;font-weight:800;">中期(3年)</div>
+            <div style="color:#fbbf24;font-size:11px;font-weight:900;font-family:monospace;">50</div>
+            <div style="color:#fbbf24;font-size:6.5px;font-weight:800;">中立</div>
           </div>
         </div>
       </div>
