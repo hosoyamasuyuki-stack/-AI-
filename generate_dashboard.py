@@ -23,6 +23,67 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 
+# ── ヘルパー関数（スクレイピング・API取得）────────────────────
+UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+
+def get_yf_info(ticker, key):
+    """yfinanceからinfo値を安全に取得"""
+    try:
+        t = yf.Ticker(ticker)
+        return t.info.get(key)
+    except: return None
+
+def get_fred(series_id):
+    """FRED APIから最新値を取得"""
+    api_key = os.environ.get('FRED_API_KEY', '')
+    if not api_key: return None
+    try:
+        url = f'https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&sort_order=desc&limit=5&api_key={api_key}&file_type=json'
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            obs = r.json().get('observations', [])
+            for o in obs:
+                if o['value'] != '.':
+                    return float(o['value'])
+    except: pass
+    return None
+
+def scrape_pbr_japan():
+    """日経プロフィルから日本PBRを取得"""
+    try:
+        r = requests.get('https://indexes.nikkei.co.jp/nkave/index/profile?idx=0009', headers=UA, timeout=10)
+        if r.status_code == 200:
+            m = re.search(r'PBR.*?([\d.]+)\s*倍', r.text)
+            if m:
+                v = float(m.group(1))
+                if 0.5 < v < 5.0: return v
+    except: pass
+    return None
+
+def scrape_pbr_us():
+    """multpl.comから米国PBRを取得"""
+    try:
+        r = requests.get('https://www.multpl.com/s-p-500-price-to-book', headers=UA, timeout=10)
+        if r.status_code == 200:
+            m = re.search(r'([\d.]+)\s*</div>', r.text)
+            if m:
+                v = float(m.group(1))
+                if 1.0 < v < 10.0: return v
+    except: pass
+    return None
+
+def scrape_cape_us():
+    """multpl.comからシラーPER米国を取得"""
+    try:
+        r = requests.get('https://www.multpl.com/shiller-pe', headers=UA, timeout=10)
+        if r.status_code == 200:
+            m = re.search(r'([\d.]+)\s*</div>', r.text)
+            if m:
+                v = float(m.group(1))
+                if 5.0 < v < 80.0: return v
+    except: pass
+    return None
+
 # ── 認証 ────────────────────────────────────────────────────
 SPREADSHEET_ID = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE'
 scope = ['https://spreadsheets.google.com/feeds',
@@ -116,8 +177,14 @@ def load_valuation():
                 }
     except: pass
 
-    # 前回値を先に取得（フォールバック用）
-    prev = get_prev_valuation()
+    # フォールバック：ハードコード値（未定義関数の代替）
+    prev = {
+        'per_jp': 16, 'per_us': 22, 'pbr_jp': 1.76, 'pbr_us': 4.8,
+        'div_jp': 2.0, 'div_us': 1.3, 'yield_jp': 6.25, 'yield_us': 4.5,
+        'roe_jp': 10.5, 'roe_us': 21.8, 'cape_jp': 24.0, 'cape_us': 38.0,
+        'rate_jp': 1.5, 'rate_us': 4.3, 'rate_diff': 2.8,
+        'buffett_jp': 140, 'buffett_us': 200, 'usdjpy': 149,
+    }
 
     # ── yfinance取得（PER・配当等）────────────────────────
     per_jp  = get_yf_info('^N225', 'trailingPE')
