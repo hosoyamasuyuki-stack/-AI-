@@ -559,7 +559,8 @@ def load(name, stype):
 
 all_data = (load('保有銘柄_v4.3スコア', '保有') +
             load('監視銘柄_v4.3スコア', '監視'))
-print(f"  合計: {len(all_data)}銘柄")
+screen_data = load('スクリーニング_Top50', 'スクリーニング')
+print(f"  合計: {len(all_data)}銘柄 + スクリーニング{len(screen_data)}銘柄")
 
 def sf(v, d=0):
     try:
@@ -655,7 +656,56 @@ for row, stype in all_data:
     )
     (rows_h if stype == '保有' else rows_w).append(tr)
 
-print(f"  保有:{len(rows_h)}銘柄 監視:{len(rows_w)}銘柄")
+# スクリーニングTop50のテーブル行生成（簡素表示：銘柄・株価・スコア・シグナル）
+rows_s = []
+for row, stype in screen_data:
+    code  = str(row.get('コード',    '')).strip()
+    name  = str(row.get('銘柄名',    '')).strip()
+    sect  = str(row.get('業種',      '')).strip()
+    tot   =     sf(row.get('総合スコア'))
+    rank  = str(row.get('ランク',   'D')).strip()
+    s1    =     sf(row.get('変数1'))
+    s2    =     sf(row.get('変数2'))
+    s3    =     sf(row.get('変数3'))
+    roe   =     sf(row.get('ROE平均'))
+    fcr   =     sf(row.get('FCR平均'))
+    roeT  =     sf(row.get('ROEトレンド'))
+    peg   =     sf(row.get('PEG'),  1.0)
+    fy    =     sf(row.get('FCF利回り'))
+    price =     sf(row.get('株価'))
+    if not code: continue
+
+    SCORES[code] = [s1, s2, s3, tot, roe, fcr, roeT, 0, peg, fy]
+    ps = f"{int(price):,}" if price > 0 else '-'
+    vs = f"{tot:.1f}/{rank}" if tot > 0 else '-'
+    rc = rcol(rank)
+    st, sc = get_sig(rank)
+
+    def e2(s):
+        return s.replace("'","&#39;").replace('\n',' ')
+
+    sb2 = e2(f"短期{SHORT_SCORE}点({short_label(SHORT_SCORE)})。")
+    mb2 = e2(mid_sector_comment(sect, MID_SCORE))
+    lb2 = e2(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
+    nt2 = e2(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
+
+    tr_s = (
+        f'        <tr class="dr" onclick="sel(this);showD('
+        f"'{code}','{name}','{sect}',"
+        f"{tot},'{rank}',{SHORT_SCORE},'down','down','{rank}',"
+        f"'{sb2}','{mb2}','{lb2}','{nt2}','scan'"
+        f')">\n'
+        f'          <td><span style="font-size:9px;color:#475569;">{code}</span><br>'
+        f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
+        f'          <td style="font-family:monospace;">{ps}</td>\n'
+        f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
+        f'          <td><span class="s-buy" style="background:{rbg(rank)};color:{sc};">'
+        f'{st}</span></td>\n'
+        f'        </tr>'
+    )
+    rows_s.append(tr_s)
+
+print(f"  保有:{len(rows_h)}銘柄 監視:{len(rows_w)}銘柄 スクリーニング:{len(rows_s)}銘柄")
 
 BASE_URL = ('https://raw.githubusercontent.com/'
             'hosoyamasuyuki-stack/-AI-/main/ai_dashboard_v13.html')
@@ -770,6 +820,22 @@ watch_open = """      <table id="tW">
 src = re.sub(r'<table id="tW">.*?</table>',
              watch_open, src, count=1, flags=re.DOTALL)
 print("OK: 監視テーブル置換")
+
+# スクリーニングTop50テーブル置換
+if rows_s:
+    screen_open = """      <table id="tS">
+        <tr>
+          <th class="sh" onclick="srt('tS',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',2,this)" style="color:#f59e0b;">v4.3<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th>判定</th>
+        </tr>
+""" + '\n'.join(rows_s) + "\n      </table>"
+    src = re.sub(r'<table id="tS">.*?</table>',
+                 screen_open, src, count=1, flags=re.DOTALL)
+    print(f"OK: スクリーニングTop50テーブル置換（{len(rows_s)}銘柄）")
+else:
+    print("SKIP: スクリーニングデータなし（初回スキャン前）")
 
 # バリュエーションHTML生成（v20と同一ロジック・数値のみv21ソースに更新）
 def gauge_pct(mn, mx, v):
