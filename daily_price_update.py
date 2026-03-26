@@ -377,4 +377,83 @@ print(f"  更新銘柄数：{len(df_daily)}銘柄")
 print(f"  暴落急騰アラート：{len(alerts)}件")
 print(f"  FCF利回り計算：時価総額ベース（株価連動）")
 print(f"  暴落時動作：株価下落→PER低下→PEG低下→変数3上昇→スコア上昇→割安度増加")
+print(f"\n$2705 日次スコア計算完了：{NOW}")
+
+# ── v4.3スコアシートに最新株価・スコアを反映 ──────────────────
+# generate_dashboard.py は「保有銘柄_v4.3スコア」「監視銘柄_v4.3スコア」から
+# 読み込むため、日次更新結果をこれらのシートに反映する必要がある
+print(f"\n{'='*60}")
+print("v4.3スコアシートに日次結果を反映")
+print('='*60)
+
+# 日次結果をコード→データのdictに変換
+daily_map = {}
+for _, r in df_daily.iterrows():
+    daily_map[str(r['コード'])] = r
+
+SYNC_SHEETS = ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']
+SYNC_COLS   = ['株価', '変数3', '総合スコア', 'ランク', 'PEG', 'FCF利回り']
+
+for sheet_name in SYNC_SHEETS:
+    try:
+        ws = ss.worksheet(sheet_name)
+        all_vals = ws.get_all_values()
+        if len(all_vals) < 2:
+            print(f"  {sheet_name}: データなし（スキップ）")
+            continue
+
+        header = all_vals[0]
+        # 列インデックスを特定
+        col_idx = {}
+        for col_name in ['コード'] + SYNC_COLS:
+            if col_name in header:
+                col_idx[col_name] = header.index(col_name)
+
+        if 'コード' not in col_idx:
+            print(f"  {sheet_name}: コード列なし（スキップ）")
+            continue
+
+        updates = 0
+        batch_updates = []
+
+        for row_num in range(1, len(all_vals)):
+            row = all_vals[row_num]
+            code = str(row[col_idx['コード']]).strip()
+            if code not in daily_map:
+                continue
+
+            dr = daily_map[code]
+            for col_name in SYNC_COLS:
+                if col_name not in col_idx:
+                    continue
+                ci = col_idx[col_name]
+                # 日次結果の対応する列名
+                src_map = {
+                    '株価': '株価',
+                    '変数3': '変数3(日次)',
+                    '総合スコア': '総合スコア_日次',
+                    'ランク': 'ランク',
+                    'PEG': 'PEG',
+                    'FCF利回り': 'FCF利回り(時価総額)',
+                }
+                src_key = src_map.get(col_name, col_name)
+                new_val = dr.get(src_key)
+                if new_val is not None and str(new_val) not in ('', 'nan', 'None'):
+                    # gspread: row_num+1 (1-indexed, header=row1)
+                    cell_label = gspread.utils.rowcol_to_a1(row_num + 1, ci + 1)
+                    batch_updates.append({
+                        'range': cell_label,
+                        'values': [[float(new_val) if isinstance(new_val, (int, float, np.integer, np.floating)) else str(new_val)]]
+                    })
+            updates += 1
+
+        if batch_updates:
+            ws.batch_update(batch_updates)
+            print(f"  {sheet_name}: {updates}銘柄を更新（{len(batch_updates)}セル）")
+        else:
+            print(f"  {sheet_name}: 更新対象なし")
+
+    except Exception as e:
+        print(f"  {sheet_name}: エラー {e}")
+
 print(f"\n$2705 全処理完了：{NOW}")
