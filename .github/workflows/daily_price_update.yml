@@ -21,7 +21,7 @@ jobs:
 
       - name: 依存パッケージをインストール
         run: |
-          pip install requests gspread google-auth pandas numpy
+          pip install requests gspread google-auth pandas numpy yfinance
 
       - name: 日次価格更新を実行
         env:
