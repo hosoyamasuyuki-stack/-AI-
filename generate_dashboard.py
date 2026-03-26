@@ -728,6 +728,15 @@ src = src.replace(
 print("OK: マトリックス配列修正")
 src = re.sub(r'最終更新：[^<"\']+', f'最終更新：{NOW}', src)
 
+# ヘッダー日時バッジを現在日時に更新
+BADGE_NOW = datetime.now().strftime('%Y-%m-%d %H:%M')
+src = re.sub(
+    r'<span class="badge">\d{4}-\d{2}-\d{2}\s*&nbsp;\s*\d{2}:\d{2}\s*JST</span>',
+    f'<span class="badge">{BADGE_NOW} JST</span>',
+    src
+)
+print(f"OK: ヘッダー日時バッジ更新 → {BADGE_NOW} JST")
+
 # 保有テーブル置換
 hold_open = """      <table id="tH">
         <tr>
