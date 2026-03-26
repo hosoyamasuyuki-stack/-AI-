@@ -52,6 +52,12 @@ jobs:
           python daily_update.py
           echo "Step 2 完了"
 
+      - name: API制限回避（60秒待機）
+        run: |
+          echo "Google Sheets APIレート制限回避のため60秒待機..."
+          sleep 60
+          echo "待機完了"
+
       - name: Step 3 - ダッシュボードHTML再生成
         continue-on-error: true
         env:
