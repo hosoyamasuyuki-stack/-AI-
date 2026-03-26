@@ -28,4 +28,5 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python weekly_update.py
