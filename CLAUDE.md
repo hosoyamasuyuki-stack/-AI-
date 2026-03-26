@@ -265,19 +265,20 @@ J-Quants V2仕様：
 verify_0415.py が完全自動化済み
 当日Colabで実行するだけ
 
-### Priority 1【要調査】全更新ボタンで株価が更新されない
+### Priority 1【解決済み】全更新ボタンで株価が更新されない
 
-2026/03/26報告：
-  - ダッシュボードの日時が2026-03-18 04:30 JSTのまま更新されない
-  - 全更新ボタンを複数回押しても変化なし
-  - GitHub ActionsのFull Updateログ確認が必要
-  - 考えられる原因：Step3(generate_dashboard.py)がエラー終了（continue-on-errorで隠蔽）
+2026/03/26解決 SHA:520200d：
+  原因：Step4のgit pushがリモート競合でrejected（私たちのコミットと衝突）
+  修正：full_update.yml/dashboard_update.ymlにgit pull --rebase追加
+  動作確認：#22実行成功（15:24 JST）・株価・スコア更新確認済み
+  残課題：ヘッダー日時バッジ「2026-03-18 04:30 JST」はHTMLテンプレートの固定値
+         generate_dashboard.pyが動的に更新していないため別途対応が必要
 
-### Priority 1【要調査】get_shares_jqの二重計算バグ疑惑
+### Priority 1【解決済み】get_shares_jqの二重計算バグ + abs(fcf)バグ
 
-  weekly_update.pyのget_shares_jqがTotalMarketValue（時価総額）を返している可能性
-  FCF利回り計算でprice×TotalMarketValueになり二重計算の恐れ
-  次回セッションでコード精査が必要
+2026/03/26解決 SHA:520200d：
+  バグ1：get_shares_jqがTotalMarketValue（時価総額）を返却→get_fin_jq内でShOutFYからmarket_cap再計算するロジック追加
+  バグ2：weekly_update.pyのFCF利回り計算にabs()が残存→削除（daily_price_update.pyと同じ修正）
 
 ### Priority 3：weekly_update.pyのv4.3スコア書き戻し
 
@@ -645,6 +646,11 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
 26. 判断フレームワークページ新規作成（8セクション・知的財産保護・免責事項付き）SHA:cb3fa85
 27. ダッシュボードに「判断フレームワーク」ボタン追加（紫色）
 28. weekly_update.ymlにJQUANTS_API_KEY環境変数追加（月曜更新失敗防止）SHA:a6245bb
+29. 全更新push失敗修正（git pull --rebase追加）+ weekly_updateバグ2件修正 SHA:520200d
+    - full_update.yml/dashboard_update.yml: push前にpull --rebase
+    - weekly_update.py: get_shares_jq二重計算修正（ShOutFYでmarket_cap再計算）
+    - weekly_update.py: abs(fcf)削除
+30. 全更新ボタン動作確認成功（#22 15:24 JST・株価/スコア更新確認済み）
 
 2026/03/25：
 1. verify_0415.py v3コミット（列バグ修正・APIキー更新）SHA:05ddf20e
