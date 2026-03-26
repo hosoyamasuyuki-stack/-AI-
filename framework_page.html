@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>判断フレームワーク | AI投資判断システム</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=IBM+Plex+Mono:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #070c18;
+    --bg2:       #0d1526;
+    --bg3:       #111d35;
+    --border:    #1e2f52;
+    --gold:      #c9a84c;
+    --gold-lt:   #e8c97a;
+    --gold-dim:  #7a6230;
+    --text:      #d8e0f0;
+    --text-dim:  #7888aa;
+    --green:     #3dd68c;
+    --red:       #f26b6b;
+    --blue:      #5b9ef7;
+    --mono:      'IBM Plex Mono', monospace;
+    --serif:     'Noto Serif JP', serif;
+    --sans:      'Noto Sans JP', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.8;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: .4;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(7,12,24,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .site-header .logo {
+    font-family: var(--mono);
+    font-size: 12px; color: var(--gold);
+    letter-spacing: .15em; text-transform: uppercase;
+  }
+  .site-header .badge {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-dim); letter-spacing: .1em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    padding: 100px 40px 80px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(ellipse, rgba(201,168,76,.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-label {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--gold-dim); letter-spacing: .25em;
+    text-transform: uppercase; margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: var(--serif); font-size: clamp(28px,4vw,48px);
+    font-weight: 600; line-height: 1.3;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero p {
+    color: var(--text-dim); font-size: 16px;
+    max-width: 600px; margin: 0 auto 48px;
+  }
+  .hero-stats {
+    display: flex; justify-content: center; gap: 48px;
+    flex-wrap: wrap;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num {
+    font-family: var(--mono); font-size: 32px;
+    color: var(--gold); display: block; line-height: 1;
+  }
+  .hero-stat .lbl {
+    font-size: 12px; color: var(--text-dim);
+    margin-top: 6px; display: block; letter-spacing: .08em;
+  }
+  .divider {
+    width: 1px; height: 48px;
+    background: var(--border); align-self: center;
+  }
+
+  /* ── CONTAINER ── */
+  .container {
+    max-width: 1080px; margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    padding: 80px 0;
+    border-top: 1px solid var(--border);
+  }
+  .section-label {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--gold-dim); letter-spacing: .25em;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .section h2 {
+    font-family: var(--serif); font-size: 28px;
+    font-weight: 600; color: #fff;
+    margin-bottom: 12px; line-height: 1.3;
+  }
+  .section .lead {
+    color: var(--text-dim); font-size: 16px;
+    max-width: 640px; margin-bottom: 48px;
+  }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  @media(max-width:720px){
+    .grid-2,.grid-3{ grid-template-columns:1fr; }
+    .hero-stats{ gap:24px; }
+    .divider{ display:none; }
+    .container{ padding:0 20px; }
+    .site-header{ padding:0 20px; }
+    .hero{ padding:80px 20px 60px; }
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .card:hover { border-color: var(--gold-dim); }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .card.gold::before { background: var(--gold); }
+  .card.green::before { background: var(--green); }
+  .card.red::before   { background: var(--red); }
+  .card.blue::before  { background: var(--blue); }
+
+  .card .card-label {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-dim); letter-spacing: .2em;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .card .card-title {
+    font-family: var(--serif); font-size: 18px;
+    color: #fff; margin-bottom: 8px; font-weight: 600;
+  }
+  .card .card-body {
+    color: var(--text-dim); font-size: 14px; line-height: 1.7;
+  }
+
+  /* ── REBUTTAL ── */
+  .rebuttal-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  @media(max-width:720px){ .rebuttal-item{ grid-template-columns:1fr; gap:16px; } }
+  .rebuttal-q {
+    font-family: var(--serif); font-size: 16px;
+    color: var(--text); line-height: 1.5;
+  }
+  .rebuttal-q::before {
+    content: '\275D ';
+    color: var(--red); font-size: 18px;
+  }
+  .rebuttal-a {
+    font-size: 14px; color: var(--text-dim); line-height: 1.7;
+  }
+  .rebuttal-a strong { color: var(--gold); }
+
+  /* ── FINDING BOX ── */
+  .finding {
+    background: linear-gradient(135deg, rgba(201,168,76,.06), rgba(201,168,76,.02));
+    border: 1px solid rgba(201,168,76,.25);
+    border-radius: 12px;
+    padding: 32px;
+    margin-top: 32px;
+  }
+  .finding-icon { font-size: 24px; margin-bottom: 12px; }
+  .finding h3 {
+    font-family: var(--serif); font-size: 20px;
+    color: var(--gold); margin-bottom: 12px;
+  }
+  .finding p { color: var(--text-dim); font-size: 14px; line-height: 1.8; }
+  .finding strong { color: var(--text); }
+
+  /* ── STEP FLOW ── */
+  .steps {
+    display: flex; flex-direction: column;
+    gap: 0; margin-top: 32px;
+    position: relative;
+  }
+  .step {
+    display: flex; gap: 24px; align-items: flex-start;
+    padding: 24px 0; position: relative;
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute; left: 19px; top: 56px;
+    width: 2px; bottom: -8px;
+    background: var(--border);
+  }
+  .step-num {
+    width: 40px; height: 40px; flex-shrink: 0;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; color: var(--gold);
+  }
+  .step-content h4 {
+    font-family: var(--serif); font-size: 16px;
+    color: #fff; margin-bottom: 6px;
+  }
+  .step-content p { color: var(--text-dim); font-size: 14px; line-height: 1.7; }
+
+  /* ── CONCLUSION ── */
+  .conclusion {
+    background: linear-gradient(135deg, var(--bg2), var(--bg3));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 56px 48px;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .conclusion::before {
+    content: '';
+    position: absolute; top: -80px; right: -80px;
+    width: 300px; height: 300px;
+    background: radial-gradient(ellipse, rgba(201,168,76,.06) 0%, transparent 70%);
+  }
+  .conclusion h2 {
+    font-family: var(--serif); font-size: 30px;
+    color: #fff; margin-bottom: 16px;
+  }
+  .conclusion h2 span { color: var(--gold); }
+  .conclusion p { color: var(--text-dim); font-size: 16px; max-width: 560px; margin: 0 auto; }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 40px;
+    text-align: center;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-dim); letter-spacing: .1em;
+  }
+  .site-footer p { margin-top: 8px; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(20px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .fade-up { animation: fadeUp .6s ease both; }
+  .delay-1 { animation-delay: .1s; }
+  .delay-2 { animation-delay: .2s; }
+  .delay-3 { animation-delay: .3s; }
+
+  /* ── INLINE ACCENT ── */
+  .accent { color: var(--gold); font-weight: 600; }
+  .mono { font-family: var(--mono); }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="site-header">
+  <span class="logo">AI投資判断システム // 判断フレームワーク</span>
+  <span class="badge">INTERNAL RESEARCH RECORD · 2026</span>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-label fade-up">DECISION FRAMEWORK</p>
+  <h1 class="fade-up delay-1">
+    時間軸で変わる、<span>判断の本質</span>
+  </h1>
+  <p class="fade-up delay-2">
+    科学的根拠に基づく定量分析で、投資研究の効率化を支援します。目先から長期まで、4つの時間軸で分析の視点を整理します。※本システムは投資助言を行うものではありません。
+  </p>
+  <div class="hero-stats fade-up delay-3">
+    <div class="hero-stat">
+      <span class="num">3ヶ月</span>
+      <span class="lbl">目先判断</span>
+    </div>
+    <div class="divider"></div>
+    <div class="hero-stat">
+      <span class="num">1年</span>
+      <span class="lbl">短期判断</span>
+    </div>
+    <div class="divider"></div>
+    <div class="hero-stat">
+      <span class="num">3年</span>
+      <span class="lbl">中期判断</span>
+    </div>
+    <div class="divider"></div>
+    <div class="hero-stat">
+      <span class="num">5年+</span>
+      <span class="lbl">長期判断</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 01: 時間は投資家の最大の武器 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 01</p>
+    <h2>時間は投資家の最大の武器</h2>
+    <p class="lead">プロの機関投資家は四半期ごとに成績を問われます。個人投資家にはその制約がありません。それが最大の優位性です。</p>
+
+    <div class="grid-2">
+      <div class="card red">
+        <div class="card-title">1年で判断する場合</div>
+        <div class="card-body">
+          市場の勝率はほぼ50%。コイン投げと変わりません。短期のノイズに振り回され、感情的な売買をしがちです。プロのファンドマネージャーでさえ、1年単位では半数が市場に負けます。
+        </div>
+      </div>
+      <div class="card green">
+        <div class="card-title">5年で判断する場合</div>
+        <div class="card-body">
+          本システムが選んだ銘柄の88%が日経平均を上回りました。企業の本質的な価値が株価に反映されるには、時間が必要です。5年保有のバックテストでは、超過リターン+287%を記録しています。
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>設計思想</h3>
+      <p>
+        このシステムは<strong>「5年保有」を前提</strong>に設計されています。短期売買には向きません。目先・短期の判断材料は、あくまで「いつ買うか」のタイミング判断に使います。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 02: 市場の"天気予報"を読む -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 02 · 目先判断</p>
+    <h2>市場の"天気予報"を読む</h2>
+    <p class="lead">長期保有が前提でも、嵐の中で買う必要はありません。目先3ヶ月の判断材料は、エントリータイミングを見極めるためにあります。</p>
+
+    <div class="grid-3">
+      <div class="card gold">
+        <div class="card-title">市場の恐怖度</div>
+        <div class="card-body">
+          投資家全体がどれだけ恐怖を感じているか。恐怖が極端に高い→短期的に危険だが、長期投資家には買い場。恐怖が極端に低い→油断している市場は急落しやすい。
+        </div>
+      </div>
+      <div class="card blue">
+        <div class="card-title">信用市場の健全性</div>
+        <div class="card-body">
+          企業がお金を借りやすい環境かどうか。信用市場が崩れると、株式市場も必ず影響を受けます。「炭鉱のカナリア」として最も早く異変を察知できる指標です。
+        </div>
+      </div>
+      <div class="card gold">
+        <div class="card-title">金利環境</div>
+        <div class="card-body">
+          中央銀行が金利を上げているか、下げているか。金利が下がる局面→株式に有利。逆イールド（長短金利の逆転）は景気後退の先行指標です。
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>目先判断の限界</h3>
+      <p>
+        3ヶ月先の予測精度は高くありません。しかし<strong>「明らかに危険な時期」を避ける</strong>だけで、長期リターンは大幅に改善します。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 03: 4つのレンズで市場を診断する -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 03 · 短期判断</p>
+    <h2>4つのレンズで市場を診断する</h2>
+    <p class="lead">市場全体が今どんな状態にあるかを、4つの視点から総合的に判断します。個別銘柄ではなく、「環境」の診断です。</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>リスク環境</h4>
+          <p>今、嵐の中にいるのか、晴天なのか。恐怖指数・信用スプレッド・金利差など、市場全体のストレスレベルを測定します。これが赤信号なら、どんな優良銘柄も新規買いは控えます。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>金融政策</h4>
+          <p>お金の蛇口は開いているか、閉じているか。中央銀行がお金を増やしている（緩和）→株に有利。お金を減らしている（引き締め）→株に逆風。マネーサプライの変化は、15〜18ヶ月後に株価に影響します。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>経済活動</h4>
+          <p>実体経済のエンジンは回っているか。製造業の活動・雇用・消費者心理など、景気の体温を測ります。経済が減速し始めると、企業業績も遅れて悪化します。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>バリュエーション</h4>
+          <p>市場全体が割高か割安か。歴史的な平均と比べて、今の株価水準がどこにあるかを確認します。割高な市場では、良い銘柄でも買い時ではないことがあります。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>総合判断の重要性</h3>
+      <p>
+        4つのレンズを組み合わせることで、<strong>「今は積極的に買うべきか、待つべきか」</strong>を判断します。1つだけ見ても判断を誤ります。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 04: 株価ではなく、企業を見る -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 04 · 中期判断</p>
+    <h2>株価ではなく、企業を見る</h2>
+    <p class="lead">3年という時間軸では、株価のノイズが消え、企業の本質的な価値が浮かび上がります。私たちが見ているのは3つの柱です。</p>
+
+    <div class="grid-3">
+      <div class="card gold">
+        <div class="card-title">収益の質</div>
+        <div class="card-body">
+          売上が大きいだけでは不十分です。利益をどれだけ効率よく生み出しているか。利益が「本物のお金（キャッシュ）」として手元に残っているか。会計上の利益と実際のキャッシュが乖離している企業は要注意です。
+        </div>
+      </div>
+      <div class="card green">
+        <div class="card-title">成長の持続性</div>
+        <div class="card-body">
+          一時的なブームではなく、持続的に成長しているか。3〜4年のトレンドを見て、改善傾向にあるかを判断します。急激な改善よりも、着実な改善を重視します。V字回復局面では、過去のトレンドが逆転することもあります（実証済み）。
+        </div>
+      </div>
+      <div class="card blue">
+        <div class="card-title">価格の妥当性</div>
+        <div class="card-body">
+          どんなに良い企業でも、高すぎる値段で買えば損をします。成長性に対して今の株価が割高か割安かを判断します。企業が生み出すキャッシュに対する利回りも確認します。株価が下がると、この指標は自動的に改善します。
+        </div>
+      </div>
+    </div>
+
+    <div class="rebuttal-item" style="margin-top:32px;">
+      <div class="rebuttal-q">具体的にどの指標を使っているのか？</div>
+      <div class="rebuttal-a">
+        独自のスコアリングモデルの詳細は非公開です。ただし、全ての指標は公開財務データから計算されており、「ブラックボックス」ではありません。企業が毎年公開する<strong>決算書</strong>から、誰でも確認できる数値だけを使っています。
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>賢者の審判</h3>
+      <p>
+        さらに深く：ダッシュボードで銘柄をクリックすると、EDINET（金融庁の電子開示システム）から取得した決算短信をAIが分析する<strong>「賢者の審判」</strong>機能があります。スコアの裏にある決算書の中身を、AIが初心者にもわかる言葉で解説します。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 05: 3つの変数を一目で把握する -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 05 · マトリックス分析</p>
+    <h2>3つの変数を一目で把握する</h2>
+    <p class="lead">中期判断の3つの柱（収益の質・成長の持続性・価格の妥当性）を、それぞれ2つの指標で構成し、マトリックス図として可視化しています。</p>
+
+    <div class="grid-3">
+      <div class="card gold">
+        <div class="card-title">変数1：複利エンジン</div>
+        <div class="card-body">
+          企業が資本をどれだけ効率よく回しているか。収益率とキャッシュ変換率の2軸で評価します。マトリックス図の右上にプロットされる企業ほど、複利の力が強い。
+        </div>
+      </div>
+      <div class="card green">
+        <div class="card-title">変数2：トレンド</div>
+        <div class="card-body">
+          収益の質が改善傾向にあるか、悪化傾向にあるか。収益率の傾きとキャッシュ変換率の傾きの2軸で評価します。右上＝改善中、左下＝悪化中。方向が大事です。
+        </div>
+      </div>
+      <div class="card blue">
+        <div class="card-title">変数3：価格</div>
+        <div class="card-body">
+          企業の成長力に対して、今の株価は割安か割高か。成長倍率とキャッシュ利回りの2軸で評価します。右上ほど割安。株価下落時には自動的にスコアが改善します。
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>可視化の意義</h3>
+      <p>
+        マトリックス図を見ることで、<strong>「なぜこのスコアなのか」が直感的にわかります</strong>。総合スコアだけでは見えない企業の特徴（例：収益は高いが成長が鈍化、など）を一目で把握できます。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 06: 永久保有という選択肢 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 06 · 長期判断</p>
+    <h2>永久保有という選択肢</h2>
+    <p class="lead">5年以上の時間軸では、個人投資家だけが持つ構造的な優位性が最大限に発揮されます。</p>
+
+    <div class="grid-3">
+      <div class="card gold">
+        <div class="card-title">小型株へのアクセス</div>
+        <div class="card-body">
+          機関投資家は数百億円を動かすため、小さな企業には投資できません。個人投資家は、まだ注目されていない優良企業に先に投資できます。これは構造的な優位性であり、永続的に存在します。
+        </div>
+      </div>
+      <div class="card green">
+        <div class="card-title">迅速な意思決定</div>
+        <div class="card-body">
+          機関投資家は投資委員会の承認が必要です。数週間かかることもあります。個人投資家は、今日決めて今日買えます。暴落時にこの速度差が、大きなリターン差を生みます。
+        </div>
+      </div>
+      <div class="card blue">
+        <div class="card-title">時間的優位性</div>
+        <div class="card-body">
+          機関投資家は四半期ごとに成績を問われ、損切りを強いられます。個人投資家は、5年でも10年でも待てます。本システムが選んだ銘柄を5年保有した場合、88%がインデックスを上回りました。
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>待つ力</h3>
+      <p>
+        長期投資の本質は<strong>「待つ力」</strong>です。企業の価値が市場に認識されるまでには時間がかかります。しかし、質の高い企業を適正な価格で買い、忍耐強く保有すれば、市場は必ず報いてくれます。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 07: AIが定量、人間が定性 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 07</p>
+    <h2>AIが定量、人間が定性</h2>
+    <p class="lead">このシステムは、銘柄発掘ツールではありません。投資家自身が10年以上の経験で選んだ保有・監視銘柄を、AIが毎日定量評価するシステムです。</p>
+
+    <div class="grid-2">
+      <div class="card gold">
+        <div class="card-title">AIの役割：定量評価</div>
+        <div class="card-body">
+          投資家が選んだ保有・監視銘柄を毎日自動スコアリング。32のマクロ指標を毎日追跡し、市場環境を数値化。暴落・急騰を自動検知し、割安度の変化をアラート。マトリックス図で3変数を可視化し、スコアの根拠を透明化。EDINET連携で決算短信を自動取得し、AIが決算書を分析（賢者の審判）。AIが弾いた銘柄は見ない――これが最大の時間節約。
+        </div>
+      </div>
+      <div class="card green">
+        <div class="card-title">人間の役割：定性判断</div>
+        <div class="card-body">
+          銘柄選定は人間の仕事。10年以上の投資経験と業界知識で判断。AIが通した銘柄を、経営者の質・競合環境・ビジネスモデルから深掘り。AIスコアが高くても、定性面で不安があれば見送る。「数字に表れない」情報を加味して最終判断を行う。
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 08: 仮説を立て、検証し、進化する -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 08 · 継続的検証</p>
+    <h2>仮説を立て、検証し、進化する</h2>
+    <p class="lead">このシステムは完成品ではありません。科学的手法に基づいて仮説を立て、データで検証し、結果に基づいてモデルを改善し続けます。</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>仮説を事前登録する</h4>
+          <p>「この変数は投資判断に有効だ」という仮説を、検証前に登録します。後から都合の良い結果だけを拾う「チェリーピッキング」を防ぐためです。現在、6つの仮説（H001〜H006）が登録されています。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>バックテストで統計検証する</h4>
+          <p>過去7年・3つの異なる相場局面で、仮説が実際に機能したかを検証します。統計的有意性（p値）・超過リターン・勝率の3つの基準で判定します。基準を満たさない仮説は、どんなに良さそうでも棄却します。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>学習用銘柄で精度を継続検証する</h4>
+          <p>実運用とは別に、33業種の100銘柄を学習用として追跡しています。業種の偏りを排除し、モデルが特定の業種でだけ機能していないかを監視します。これらの銘柄は投資対象ではなく、純粋な検証用です。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>週次で自動モニタリングする</h4>
+          <p>毎週月曜日に自動実行される検証スクリプトが、モデルの健全性を確認します。因子劣化チェック：スコアリングの各変数が依然として有効かを監視。異常値検知：32のマクロ指標に通常範囲を超える変動がないかを自動チェック。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>棄却された仮説も記録する</h4>
+          <p>失敗した仮説も全て記録として残します。例：トレンド戦略（H003）は棄却されましたが、「V字回復局面ではモメンタムが逆転する」という重要な知見を得ました。失敗から学ぶことで、システムは着実に進化します。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <h3>自己修正能力</h3>
+      <p>
+        このシステムの本質は<strong>「自己修正能力」</strong>にあります。市場環境は変わりますが、仮説を立て、検証し、改善するサイクルが動き続ける限り、システムは環境変化に適応し続けます。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- CONCLUSION -->
+<section class="section">
+  <div class="container">
+    <div class="conclusion">
+      <h2>AIがフィルター、<span>人間が最終判断</span></h2>
+      <p>
+        定量的な分析はAIに任せ、定性的な判断は人間が行う。銘柄は人間が選び、AIが評価し、人間が最終決定する。そして仮説→検証→改善のサイクルがシステムを進化させ続ける。その三段構えこそが、研究の精度を高める鍵です。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  ※本ページの内容は個人的な投資研究の記録であり、投資助言・推奨を目的としたものではありません。投資に関する最終決定は、ご自身の判断と責任において行ってください。
+  <p>検証手法: 仮説事前登録 / Bonferroni補正 / ウォークフォワード検証 / 因子劣化監視 · 検証銘柄: 保有46 + 監視73 + 学習用100 = 219銘柄</p>
+</footer>
+
+<script>
+// ── SCROLL FADE ──
+var obs = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.card, .rebuttal-item, .finding, .step').forEach(function(el) {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(16px)';
+  el.style.transition = 'opacity .5s ease, transform .5s ease';
+  obs.observe(el);
+});
+</script>
+</body>
+</html>

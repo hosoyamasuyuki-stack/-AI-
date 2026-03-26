@@ -163,6 +163,10 @@ H004_complete_record.txt : H004完全記録
 sheet_manager.py       : SheetManagementLedger生成（毎月1日9:00 JST）
 record_changelog.py    : 変更履歴記録
 evidence_page.html     : 科学的根拠ページ（H002・H003バックテスト結果を視覚的に表示）
+framework_page.html    : 判断フレームワークページ（4時間軸の判断材料を初心者向けに解説）
+                         URL: https://hosoyamasuyuki-stack.github.io/-AI-/framework_page.html
+                         ダッシュボードヘッダー「判断フレームワーク」ボタンから別タブで開く
+                         ※具体的閾値・ウェイト・計算式は非公開（知的財産保護）
                          URL: https://hosoyamasuyuki-stack.github.io/-AI-/evidence_page.html
                          ダッシュボードヘッダー「科学的根拠」ボタンから別タブで開く
                          Chart.jsで統計グラフ表示・ダークテーマ・ゴールドカラー設計
