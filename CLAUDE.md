@@ -1,5 +1,5 @@
 # AI投資判断システム 開発パートナー設定 完全版
-# 最終更新：2026/03/26
+# 最終更新：2026/03/26（セッション2）
 
 ================================================================
 ## セッション開始時の定型動作
@@ -177,12 +177,17 @@ framework_page.html    : 判断フレームワークページ（4時間軸の判
 
 稼働中：
 - daily_price_update.py：毎日7:30 JST（Variable3価格スコア再計算）
-- weekly_update_v4.py：毎週月曜・J-Quants V2ベース完全版
+- weekly_update.py：毎週月曜10:00 JST・J-Quants V2ベース完全版（v4.3スコア全変数計算+書き戻し）
+- daily_update.py：毎日7:00 JST（平日のみ・FRED 25指標+MacroPhase 4層スコア）
 - sheet_manager.py：毎月1日9:00 JST（SheetManagementLedger生成）
 - verify_0415.py v3：2026/04/15自動実行（列バグ修正済み）
 - verify_monday.py：毎週月曜（初回2026/03/30）
 
-YAMLファイル：daily_price_update.yml / dashboard_update.yml
+YAMLファイル：
+- daily_price_update.yml / daily_update.yml / weekly_update.yml / dashboard_update.yml / full_update.yml
+- 全YAMLにTZ: Asia/Tokyo設定済み（2026/03/26セッション2で統一）
+
+注意：weekly_update_v4.pyは旧版（孤立ファイル・どのYAMLからも参照されていない）
 
 J-Quants V2仕様：
 - エンドポイント：/v2/equities/bars/daily
@@ -257,8 +262,26 @@ J-Quants V2仕様：
 2026/03/26進捗：
   - GASプロキシv2をデプロイ済み（バージョン12・全更新+賢者の審判統合）
   - EDINET_API_KEY設定済み
-  - CLAUDE_API_KEY未設定（Anthropicコンソール一時障害中）
+  - CLAUDE_API_KEY未設定（Anthropicコンソール一時障害中・2026/03/26時点）
   - 次回：コンソール復旧後にAPIキー取得→GASに設定→Analyzeテスト
+  注意：EDINET分析自体はClaude API不要で動作。APIキーは賢者の審判のAI分析機能に必要
+
+### Priority 1【計画済み】銘柄管理機能（ダッシュボードから追加・削除・移動）
+
+設計（2026/03/26合意）：
+  ダッシュボード「銘柄管理」ボタン → モーダル（コード入力+保有/監視選択）
+  → GASプロキシ → GitHub Actions (manage_stock.yml)
+  → manage_stock.py（スコア即時計算+シート更新）
+  → generate_dashboard.py（HTML再生成）→ git push
+
+実装ステップ：
+  Step 1: manage_stock.py新規作成（calc_v43_scoreをweekly_updateから共有）
+  Step 2: manage_stock.yml新規作成（workflow_dispatch）
+  Step 3: GASプロキシにmanage_stockアクション追加
+  Step 4: ダッシュボードに銘柄管理モーダルUI追加
+  Step 5: generate_dashboard.pyにUI埋め込み
+処理時間：追加時約2-3分（GitHub Actions起動含む）
+計画ファイル：.claude/plans/stock_management.md
 
 ### Priority 2：2026/04/15 STEP0検証
 
@@ -290,21 +313,24 @@ verify_0415.py が完全自動化済み
 ### Priority 4（handoverより）：次回優先タスク
 
 【最優先】
-1. H004完全ウォークフォワード再検証（J-Quants v1認証解決後）
-2. J-Quantsサポートへv1財務データ認証問題を問い合わせ
-3. 2026/03/30 verify_monday.py初回結果確認
-4. 2026/04/15 STEP0目先予測自動検証（verify_0415.py v3）
+1. 銘柄管理機能の実装（計画済み・上記参照）
+2. 2026/03/30 verify_monday.py初回結果確認
+3. 2026/04/15 STEP0目先予測自動検証（verify_0415.py v3）
+4. Anthropicコンソール復旧後にCLAUDE_API_KEY取得→GASに設定
 
 【通常優先】
 5. ヘッダー日時バッジの動的更新（generate_dashboard.pyで更新日時を反映）
-6. マクロフェーズ判断ロジック実装（H005・32指標・4層・100点）
-7. docs/フォルダのGitHubコミット問題を解決
-8. generate_handover.pyのGitHub Actions自動化設定
-9. エビデンスページにH004検証結果を追加（年率+9.13%・5/5勝ち・p=0.0321）
+6. H005マクロフェーズ判断のバックテスト（J-Quants v1認証解決後）
+7. 売り判断ルールの体系化（天才投資家からの指摘）
+8. H004完全ウォークフォワード再検証（J-Quants v1認証解決後）
+9. J-Quantsサポートへv1財務データ認証問題を問い合わせ
+10. エビデンスページにH004検証結果を追加（年率+9.13%・5/5勝ち・p=0.0321）
+11. 学習用100銘柄の月次バッチ初回実行
 
 【将来的な大きなタスク】
-8. GitHubをdocs/フォルダで完全構造化（第三者引き継ぎ対応）
-9. WEB上で完結するシステムとしての販売準備
+12. ポートフォリオ全体バランスチェック機能
+13. GitHubをdocs/フォルダで完全構造化（第三者引き継ぎ対応）
+14. WEB上で完結するシステムとしての販売準備
 
 ================================================================
 ## 仮説登録簿（H001-H006）
@@ -619,7 +645,32 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
 ## 変更履歴サマリー
 ================================================================
 
-2026/03/26：
+2026/03/26（セッション2）：
+32. 全スクリプト再チェック（daily_price_update.py / weekly_update.py / generate_dashboard.py / 5つのYAML）
+33. 発見したバグ・問題点：
+    - 日本M2カードが国債金利を表示（generate_dashboard.py）
+    - バリュエーションカードクリック無反応（showMC→showVI）
+    - バリュエーション_日次の二重書き込み
+    - 4つのYAMLにTZ: Asia/Tokyo未設定
+    - dashboard_update.ymlにFRED_API_KEY/SPREADSHEET_ID未設定
+    - APIキーがソースコードにハードコード（セキュリティ）
+    - full_update.ymlのgit add -A（不要ファイル混入リスク）
+    - weekly_update.ymlにJQUANTS_API_KEY未設定
+34. 判断フレームワークページ新規作成（framework_page.html）
+    - 8セクション構成・evidence_page.htmlと同じデザイン
+    - 具体的閾値・ウェイト・計算式は非公開（知的財産保護）
+    - ダッシュボードヘッダーに紫色ボタンで追加
+35. 銘柄管理機能の設計完了（計画ファイル作成済み）
+    - ダッシュボードから保有/監視銘柄の追加・削除・移動
+    - 追加時にv4.3スコアを即時計算
+    - GASプロキシ → GitHub Actions → manage_stock.py
+36. 金融工学統計学者・天才投資家の総合評価：
+    - システム構築90%完了
+    - 残り10%は実データ検証フェーズ（3/30初回）
+    - 売り判断ルールの体系化が将来課題
+    - H005マクロフェーズのバックテストが未検証
+
+2026/03/26（セッション1）：
 1. マトリックスS★表示修正（kenja.jsインライン統合） SHA:0ebb6bb
 2. パネルスクロール復元（flex高さ制約チェーン修正） SHA:d1eecb8
 3. コモディティカード追加（WTI原油・金）Layer B-C間 SHA:c119820
