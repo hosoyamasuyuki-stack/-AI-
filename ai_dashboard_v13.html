@@ -2324,7 +2324,18 @@ function runKenja(){
   fetch(KENJA_GAS_URL,{method:'POST',body:JSON.stringify(payload),redirect:'follow'})
   .then(function(r){return r.json();})
   .then(function(data){
-    if(!data.ok)throw new Error(data.error||'GAS proxy error');
+    if(!data.ok){
+      if(data.error&&data.error.indexOf('CLAUDE_API_KEY')>=0){
+        res.innerHTML='<div style="color:#f59e0b;padding:10px;font-size:9px;line-height:1.6;">'
+          +'<div style="font-weight:800;margin-bottom:6px;">CLAUDE_API_KEY</div>'
+          +'Anthropic API is temporarily unavailable.<br>'
+          +'EDINET '+(data.edinet&&data.edinet.found?'<span style="color:#34d399;">connected</span>':'<span style="color:#f87171;">no data</span>')
+          +'</div>';
+        if(btn){btn.disabled=false;btn.textContent='Retry';}
+        return;
+      }
+      throw new Error(data.error||'GAS proxy error');
+    }
     renderKenjaResult(res,data,code,name);
     if(btn){btn.disabled=false;btn.textContent='Re-analyze';}
   }).catch(function(e){

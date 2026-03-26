@@ -448,14 +448,14 @@ def save_macro_phase(ss, score, label, detail):
         detail.get('LayerC',{}).get('score',''),
         detail.get('LayerD',{}).get('score',''),
         detail.get('VIX',{}).get('value',''),
-        detail.get('HYspread',{}).get('value',''),
-        detail.get('TEDspread',{}).get('value',''),
-        detail.get('LongShortSpread',{}).get('value',''),
+        detail.get('HYG',{}).get('value',''),
+        detail.get('TED',{}).get('value',''),
+        '',  # LongShortSpread（未実装）
         detail.get('JapanM2',{}).get('value',''),
-        detail.get('FRBbalance',{}).get('value',''),
-        detail.get('ISMPMI',{}).get('value',''),
-        detail.get('USUnemployment',{}).get('value',''),
-        detail.get('ShillerPER',{}).get('value',''),
+        detail.get('FRB',{}).get('value',''),
+        detail.get('ISM',{}).get('value',''),
+        detail.get('UNEMP',{}).get('value',''),
+        detail.get('CAPE',{}).get('value',''),
     ]
     all_vals = ws.get_all_values()
     next_row = len(all_vals) + 1

@@ -53,65 +53,27 @@ print(f"日次 変数3（価格）更新スクリプト")
 print(f"株価ソース: {PRICE_SOURCE}" + (" (リアルタイム)" if PRICE_SOURCE == 'yfinance' else " (前日終値)"))
 print('='*60)
 
-# ── 56銘柄マスタ（weekly_update_v4.pyと同一）────────────────
-STOCKS = [
-    {'code':'1605','name':'INPEX'},
-    {'code':'1847','name':'イチケン'},
-    {'code':'1879','name':'新日本建設'},
-    {'code':'1928','name':'積水ハウス'},
-    {'code':'1942','name':'関電工'},
-    {'code':'2768','name':'双日'},
-    {'code':'3496','name':'アズーム'},
-    {'code':'4221','name':'大倉工業'},
-    {'code':'6098','name':'リクルートHD'},
-    {'code':'6200','name':'インソース'},
-    {'code':'6501','name':'日立'},
-    {'code':'6637','name':'寺崎電気産業'},
-    {'code':'7187','name':'ジェイリース'},
-    {'code':'7741','name':'HOYA'},
-    {'code':'7974','name':'任天堂'},
-    {'code':'8058','name':'三菱商事'},
-    {'code':'8136','name':'サンリオ'},
-    {'code':'8331','name':'千葉銀行'},
-    {'code':'8386','name':'百十四銀行'},
-    {'code':'8541','name':'愛媛銀行'},
-    {'code':'8935','name':'FJネクストHD'},
-    {'code':'2003','name':'日東富士製粉'},
-    {'code':'2914','name':'JT'},
-    {'code':'4063','name':'信越化学'},
-    {'code':'5838','name':'楽天銀行'},
-    {'code':'6920','name':'レーザーテック'},
-    {'code':'8001','name':'伊藤忠'},
-    {'code':'8053','name':'住友商事'},
-    {'code':'8303','name':'SBI新生銀行'},
-    {'code':'8306','name':'三菱UFJ'},
-    {'code':'8316','name':'三井住友FG'},
-    {'code':'8343','name':'秋田銀行'},
-    {'code':'8410','name':'セブン銀行'},
-    {'code':'8473','name':'SBIホールディングス'},
-    {'code':'8591','name':'オリックス'},
-    {'code':'8593','name':'三菱HCキャピタル'},
-    {'code':'8600','name':'トモニHD'},
-    {'code':'8630','name':'SOMPO'},
-    {'code':'8771','name':'Eギャランティ'},
-    {'code':'9069','name':'センコーグループHD'},
-    {'code':'9432','name':'NTT'},
-    {'code':'9433','name':'KDDI'},
-    {'code':'9434','name':'ソフトバンク'},
-    {'code':'4519','name':'中外製薬'},
-    {'code':'9983','name':'ファーストリテイリング'},
-    {'code':'4307','name':'野村総研'},
-    {'code':'6273','name':'SMC'},
-    {'code':'2802','name':'味の素'},
-    {'code':'4188','name':'三菱ケミカル'},
-    {'code':'7751','name':'キヤノン'},
-    {'code':'8035','name':'東京エレクトロン'},
-    {'code':'3382','name':'セブン&アイHD'},
-    {'code':'9020','name':'JR東日本'},
-    {'code':'6857','name':'アドバンテスト'},
-    {'code':'6146','name':'ディスコ'},
-    {'code':'3436','name':'SUMCO'},
-]
+# ── 銘柄マスタ（v4.3シートから動的取得）──────────────────────
+# 保有+監視の全銘柄を自動取得（ハードコード廃止）
+STOCKS = []
+_seen = set()
+for _sheet_name in ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']:
+    try:
+        _ws = ss.worksheet(_sheet_name)
+        _rows = _ws.get_all_values()
+        if len(_rows) < 2: continue
+        _header = _rows[0]
+        _code_idx = _header.index('コード') if 'コード' in _header else 0
+        _name_idx = _header.index('銘柄名') if '銘柄名' in _header else 1
+        for _row in _rows[1:]:
+            _c = str(_row[_code_idx]).strip()
+            _n = str(_row[_name_idx]).strip()
+            if _c and _c not in _seen:
+                STOCKS.append({'code': _c, 'name': _n})
+                _seen.add(_c)
+    except Exception as _e:
+        print(f"  WARN: {_sheet_name} 読み込みエラー: {_e}")
+print(f"銘柄マスタ: {len(STOCKS)}銘柄（v4.3シートから自動取得）")
 
 # ── ヘルパー関数 ─────────────────────────────────────────────
 def safe(val, d=1):
@@ -122,13 +84,24 @@ def safe(val, d=1):
     except: return None
 
 def thr_high(val, thresholds):
+    """値が大きいほど高スコア（FCF利回り等）"""
     if val is None or (isinstance(val,float) and
        (np.isnan(val) or np.isinf(val))): return 50
     for t, s in thresholds:
         if val >= t: return s
     return 10
 
+def thr_low(val, thresholds):
+    """値が小さいほど高スコア（PEG等）"""
+    if val is None or (isinstance(val,float) and
+       (np.isnan(val) or np.isinf(val))): return 50
+    for t, s in thresholds:
+        if val <= t: return s
+    return 10
+
+# PEG: 小さいほど良い（thr_lowで使用）
 PEG_THR = [(0.5,100),(0.8,85),(1.0,72),(1.2,58),(1.5,42),(2.0,26),(999,12)]
+# FCF利回り: 大きいほど良い（thr_highで使用）
 FCY_THR = [(8,100),(6,85),(4,70),(3,55),(2,38),(1,22),(0,8)]
 
 # ── 株価取得（2営業日分：当日と前日）───────────────────────
@@ -255,22 +228,21 @@ def calc_s3(price, fcf, shares, eps, feps, ta):
         if eg > 0.01:
             peg = per / (eg * 100)
 
-    # FCF利回り（時価総額ベース）
+    # FCF利回り（時価総額ベース）— マイナスFCFはそのまま負の値にする
     fy = None
-    if fcf and shares and price and shares > 0:
+    if fcf is not None and shares and price and shares > 0:
         market_cap = float(price) * float(shares)
         if market_cap > 0:
-            fy = abs(fcf) / market_cap * 100
-    elif fcf and ta and ta > 0:
-        # 時価総額が取れない場合は総資産で代替
-        fy = abs(fcf) / float(ta) * 100
+            fy = float(fcf) / market_cap * 100
+    elif fcf is not None and ta and ta > 0:
+        fy = float(fcf) / float(ta) * 100
 
-    s3 = round(thr_high(peg, PEG_THR) * 0.50 +
-               thr_high(fy,  FCY_THR) * 0.50)
+    s3 = round(thr_low(peg, PEG_THR) * 0.50 +
+               thr_high(fy, FCY_THR) * 0.50)
     return s3, peg, fy
 
 # ── メイン処理 ───────────────────────────────────────────────
-print(f"\n【56銘柄の変数3（価格）を日次更新】")
+print(f"\n【{len(STOCKS)}銘柄の変数3（価格）を日次更新】")
 print(f"FCF利回りの計算：時価総額ベース（株価連動）")
 
 # 既存のv4.3スコアシートを読み込む（変数1・2を再利用）
