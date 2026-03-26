@@ -4,7 +4,7 @@
 .db{width:100%;height:100vh;background:#0b0f1a;font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;color:#f1f5f9;overflow:visible;display:flex;flex-direction:column;}
 ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#1e2d40;border-radius:2px;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
 
 /* HEADER */
@@ -340,7 +340,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
       <span class="r"><span style="background:#f59e0b22;color:#f59e0b;padding:1px 6px;border-radius:6px;font-weight:800;">43銘柄</span><span style="color:#34d399;font-weight:800;">A以上 3</span></span>
     </div>
     <div style="flex:1;overflow-y:auto;">
-                                                                                                                                                <table id="tH">
+                                                                                                                                                      <table id="tH">
         <tr>
           <th class="sh" onclick="srt('tH',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tH',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
@@ -352,7 +352,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6200','インソース','サービス',68.2,'A',50,'down','down','A','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均28.7%・FCR71%・ROEトレンド+1.99/年。','v4.3: 68.2点(A)=ROIC85*40%+Trend62*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6200</span><br><span style="font-weight:900;color:#f1f5f9;">インソース</span></td>
-          <td style="font-family:monospace;">689</td>
+          <td style="font-family:monospace;">691</td>
           <td style="color:#4ade80;font-weight:900;font-family:monospace;">68.2/A</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -362,7 +362,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8136','サンリオ','その他製品',71.1,'A',50,'down','down','A','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。その他製品業種の動向に注目。','ROE平均10.7%・FCR86%・ROEトレンド+6.42/年。','v4.3: 71.1点(A)=ROIC59*40%+Trend100*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8136</span><br><span style="font-weight:900;color:#f1f5f9;">サンリオ</span></td>
-          <td style="font-family:monospace;">5,178</td>
+          <td style="font-family:monospace;">5,183</td>
           <td style="color:#4ade80;font-weight:900;font-family:monospace;">71.1/A</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -372,7 +372,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6098','リクルートHD','サービス',69.0,'A',50,'down','down','A','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均16.6%・FCR97%・ROEトレンド+0.63/年。','v4.3: 69.0点(A)=ROIC73*40%+Trend78*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6098</span><br><span style="font-weight:900;color:#f1f5f9;">リクルートHD</span></td>
-          <td style="font-family:monospace;">6,389</td>
+          <td style="font-family:monospace;">6,403</td>
           <td style="color:#4ade80;font-weight:900;font-family:monospace;">69.0/A</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -382,7 +382,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6920','レーザーテック','半導体',69.2,'A',50,'down','down','A','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。半導体は逆相関・慎重に。','ROE平均28.3%・FCR62%・ROEトレンド+3.72/年。','v4.3: 69.2点(A)=ROIC85*40%+Trend65*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6920</span><br><span style="font-weight:900;color:#f1f5f9;">レーザーテック</span></td>
-          <td style="font-family:monospace;">34,280</td>
+          <td style="font-family:monospace;">34,530</td>
           <td style="color:#4ade80;font-weight:900;font-family:monospace;">69.2/A</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -392,7 +392,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('3496','アズーム','サービス',65.5,'A',50,'down','down','A','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均23.5%・FCR114%・ROEトレンド+3.62/年。','v4.3: 65.5点(A)=ROIC87*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">3496</span><br><span style="font-weight:900;color:#f1f5f9;">アズーム</span></td>
-          <td style="font-family:monospace;">4,405</td>
+          <td style="font-family:monospace;">4,420</td>
           <td style="color:#4ade80;font-weight:900;font-family:monospace;">65.5/A</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -402,7 +402,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7741','HOYA','精密機器',62.7,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。精密機器業種の動向に注目。','ROE平均19.2%・FCR94%・ROEトレンド+0.25/年。','v4.3: 62.7点(B)=ROIC73*40%+Trend60*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7741</span><br><span style="font-weight:900;color:#f1f5f9;">HOYA</span></td>
-          <td style="font-family:monospace;">27,705</td>
+          <td style="font-family:monospace;">27,770</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">62.7/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -412,7 +412,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8001','伊藤忠','商社',54.3,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。商社業種はM2加速の恩恵大。','ROE平均13.3%・FCR81%・ROEトレンド+0.18/年。','v4.3: 54.3点(B)=ROIC66*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8001</span><br><span style="font-weight:900;color:#f1f5f9;">伊藤忠</span></td>
-          <td style="font-family:monospace;">2,045</td>
+          <td style="font-family:monospace;">2,057</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">54.3/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -422,7 +422,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('5838','楽天銀行','銀行',53.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均13.0%・FCR0%・ROEトレンド+1.22/年。','v4.3: 53.0点(B)=ROIC47*40%+Trend62*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">5838</span><br><span style="font-weight:900;color:#f1f5f9;">楽天銀行</span></td>
-          <td style="font-family:monospace;">6,004</td>
+          <td style="font-family:monospace;">6,002</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">53.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -432,7 +432,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8771','Eギャランティ','金融',54.7,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。金融業種の動向に注目。','ROE平均14.4%・FCR65%・ROEトレンド-0.45/年。','v4.3: 54.7点(B)=ROIC60*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8771</span><br><span style="font-weight:900;color:#f1f5f9;">Eギャランティ</span></td>
-          <td style="font-family:monospace;">1,627</td>
+          <td style="font-family:monospace;">1,630</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">54.7/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -452,7 +452,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7187','ジェイリース','サービス',65.0,'A',50,'down','down','A','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均22.3%・FCR78%・ROEトレンド+8.17/年。','v4.3: 65.0点(A)=ROIC76*40%+Trend63*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7187</span><br><span style="font-weight:900;color:#f1f5f9;">ジェイリース</span></td>
-          <td style="font-family:monospace;">1,266</td>
+          <td style="font-family:monospace;">1,267</td>
           <td style="color:#4ade80;font-weight:900;font-family:monospace;">65.0/A</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -462,7 +462,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1879','新日本建設','建設',46.3,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均15.0%・FCR68%・ROEトレンド-0.86/年。','v4.3: 46.3点(C)=ROIC67*40%+Trend20*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1879</span><br><span style="font-weight:900;color:#f1f5f9;">新日本建設</span></td>
-          <td style="font-family:monospace;">1,975</td>
+          <td style="font-family:monospace;">1,985</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">46.3/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -472,7 +472,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8343','秋田銀行','銀行',45.1,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均2.6%・FCR92%・ROEトレンド+0.25/年。','v4.3: 45.1点(C)=ROIC36*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8343</span><br><span style="font-weight:900;color:#f1f5f9;">秋田銀行</span></td>
-          <td style="font-family:monospace;">5,030</td>
+          <td style="font-family:monospace;">5,050</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">45.1/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -482,7 +482,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8600','トモニHD','銀行',57.1,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均5.6%・FCR173%・ROEトレンド+0.16/年。','v4.3: 57.1点(B)=ROIC52*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8600</span><br><span style="font-weight:900;color:#f1f5f9;">トモニHD</span></td>
-          <td style="font-family:monospace;">842</td>
+          <td style="font-family:monospace;">844</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">57.1/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -492,7 +492,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8053','住友商事','商社',52.2,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。商社業種はM2加速の恩恵大。','ROE平均8.1%・FCR36%・ROEトレンド+0.66/年。','v4.3: 52.2点(B)=ROIC31*40%+Trend78*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8053</span><br><span style="font-weight:900;color:#f1f5f9;">住友商事</span></td>
-          <td style="font-family:monospace;">5,825</td>
+          <td style="font-family:monospace;">5,854</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">52.2/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -502,7 +502,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('277A','グロービング','サービス',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均21.5%・FCR50%・ROEトレンド+0.29/年。','v4.3: 50.0点(B)=ROIC69*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">277A</span><br><span style="font-weight:900;color:#f1f5f9;">グロービング</span></td>
-          <td style="font-family:monospace;">2,077</td>
+          <td style="font-family:monospace;">2,084</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -512,7 +512,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7974','任天堂','その他製品',57.1,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。その他製品業種の動向に注目。','ROE平均14.8%・FCR83%・ROEトレンド+0.33/年。','v4.3: 57.1点(B)=ROIC66*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7974</span><br><span style="font-weight:900;color:#f1f5f9;">任天堂</span></td>
-          <td style="font-family:monospace;">8,967</td>
+          <td style="font-family:monospace;">8,977</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">57.1/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -522,7 +522,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2914','JT','食品',47.4,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。食品業種の動向に注目。','ROE平均12.2%・FCR70%・ROEトレンド-0.48/年。','v4.3: 47.4点(C)=ROIC60*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2914</span><br><span style="font-weight:900;color:#f1f5f9;">JT</span></td>
-          <td style="font-family:monospace;">5,940</td>
+          <td style="font-family:monospace;">5,948</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">47.4/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -542,7 +542,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('212A','フィットイージー','サービス',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均31.2%・FCR45%・ROEトレンド+0.00/年。','v4.3: 50.0点(B)=ROIC78*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">212A</span><br><span style="font-weight:900;color:#f1f5f9;">フィットイージー</span></td>
-          <td style="font-family:monospace;">2,214</td>
+          <td style="font-family:monospace;">2,222</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -552,7 +552,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8386','百十四銀行','銀行',37.5,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均3.1%・FCR0%・ROEトレンド+0.17/年。','v4.3: 37.5点(C)=ROIC17*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8386</span><br><span style="font-weight:900;color:#f1f5f9;">百十四銀行</span></td>
-          <td style="font-family:monospace;">8,410</td>
+          <td style="font-family:monospace;">8,460</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">37.5/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -562,7 +562,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8058','三菱商事','商社',51.1,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。商社業種はM2加速の恩恵大。','ROE平均7.8%・FCR75%・ROEトレンド+0.34/年。','v4.3: 51.1点(B)=ROIC37*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8058</span><br><span style="font-weight:900;color:#f1f5f9;">三菱商事</span></td>
-          <td style="font-family:monospace;">5,603</td>
+          <td style="font-family:monospace;">5,624</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">51.1/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -572,7 +572,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1847','イチケン','建設',48.0,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均14.6%・FCR6%・ROEトレンド-1.21/年。','v4.3: 48.0点(C)=ROIC39*40%+Trend57*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1847</span><br><span style="font-weight:900;color:#f1f5f9;">イチケン</span></td>
-          <td style="font-family:monospace;">5,540</td>
+          <td style="font-family:monospace;">5,570</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">48.0/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -582,7 +582,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4063','信越化学','化学',51.5,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。化学業種の動向に注目。','ROE平均11.5%・FCR62%・ROEトレンド+0.24/年。','v4.3: 51.5点(B)=ROIC52*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4063</span><br><span style="font-weight:900;color:#f1f5f9;">信越化学</span></td>
-          <td style="font-family:monospace;">6,225</td>
+          <td style="font-family:monospace;">6,266</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">51.5/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -592,7 +592,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1928','積水ハウス','建設',38.5,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均10.6%・FCR35%・ROEトレンド+0.16/年。','v4.3: 38.5点(C)=ROIC38*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1928</span><br><span style="font-weight:900;color:#f1f5f9;">積水ハウス</span></td>
-          <td style="font-family:monospace;">3,511</td>
+          <td style="font-family:monospace;">3,512</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">38.5/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -602,7 +602,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8306','三菱UFJ','銀行',46.2,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均5.8%・FCR78%・ROEトレンド+0.60/年。','v4.3: 46.2点(C)=ROIC37*40%+Trend54*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8306</span><br><span style="font-weight:900;color:#f1f5f9;">三菱UFJ</span></td>
-          <td style="font-family:monospace;">2,680</td>
+          <td style="font-family:monospace;">2,689</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">46.2/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -622,7 +622,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2768','双日','商社',35.8,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。商社業種はM2加速の恩恵大。','ROE平均9.4%・FCR37%・ROEトレンド+0.35/年。','v4.3: 35.8点(C)=ROIC31*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2768</span><br><span style="font-weight:900;color:#f1f5f9;">双日</span></td>
-          <td style="font-family:monospace;">6,280</td>
+          <td style="font-family:monospace;">6,316</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">35.8/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -632,7 +632,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2003','日東富士製粉','食品',49.1,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。食品業種の動向に注目。','ROE平均8.0%・FCR71%・ROEトレンド-0.08/年。','v4.3: 49.1点(C)=ROIC46*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2003</span><br><span style="font-weight:900;color:#f1f5f9;">日東富士製粉</span></td>
-          <td style="font-family:monospace;">7,330</td>
+          <td style="font-family:monospace;">7,350</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">49.1/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -642,7 +642,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8935','FJネクストHD','不動産',32.3,'D',50,'down','down','D','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。不動産業種の動向に注目。','ROE平均11.6%・FCR1%・ROEトレンド-0.70/年。','v4.3: 32.3点(D)=ROIC32*40%+Trend20*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8935</span><br><span style="font-weight:900;color:#f1f5f9;">FJネクストHD</span></td>
-          <td style="font-family:monospace;">1,622</td>
+          <td style="font-family:monospace;">1,625</td>
           <td style="color:#f87171;font-weight:900;font-family:monospace;">32.3/D</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -652,7 +652,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8303','SBI新生銀行','銀行',33.2,'D',50,'down','down','D','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均5.3%・FCR-13%・ROEトレンド-0.56/年。','v4.3: 33.2点(D)=ROIC12*40%+Trend41*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8303</span><br><span style="font-weight:900;color:#f1f5f9;">SBI新生銀行</span></td>
-          <td style="font-family:monospace;">1,672</td>
+          <td style="font-family:monospace;">1,675</td>
           <td style="color:#f87171;font-weight:900;font-family:monospace;">33.2/D</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -662,7 +662,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('9433','KDDI','通信',54.3,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。通信業種の動向に注目。','ROE平均12.8%・FCR84%・ROEトレンド-0.33/年。','v4.3: 54.3点(B)=ROIC66*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">9433</span><br><span style="font-weight:900;color:#f1f5f9;">KDDI</span></td>
-          <td style="font-family:monospace;">2,689</td>
+          <td style="font-family:monospace;">2,691</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">54.3/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -672,7 +672,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8630','SOMPOホールディングス','保険',45.9,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。保険業種の動向に注目。','ROE平均9.1%・FCR91%・ROEトレンド+0.41/年。','v4.3: 45.9点(C)=ROIC52*40%+Trend36*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8630</span><br><span style="font-weight:900;color:#f1f5f9;">SOMPOホールディングス</span></td>
-          <td style="font-family:monospace;">6,042</td>
+          <td style="font-family:monospace;">6,074</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">45.9/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -682,7 +682,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8473','SBIホールディングス','証券',42.5,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。証券業種の動向に注目。','ROE平均9.9%・FCR-9%・ROEトレンド-1.08/年。','v4.3: 42.5点(C)=ROIC21*40%+Trend57*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8473</span><br><span style="font-weight:900;color:#f1f5f9;">SBIホールディングス</span></td>
-          <td style="font-family:monospace;">2,949</td>
+          <td style="font-family:monospace;">2,958</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">42.5/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -692,7 +692,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8593','三菱HCキャピタル','金融',29.8,'D',50,'down','down','D','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。金融業種の動向に注目。','ROE平均7.9%・FCR-77%・ROEトレンド-0.18/年。','v4.3: 29.8点(D)=ROIC12*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8593</span><br><span style="font-weight:900;color:#f1f5f9;">三菱HCキャピタル</span></td>
-          <td style="font-family:monospace;">1,428</td>
+          <td style="font-family:monospace;">1,433</td>
           <td style="color:#f87171;font-weight:900;font-family:monospace;">29.8/D</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -702,7 +702,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8331','千葉銀行','銀行',29.8,'D',50,'down','down','D','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均5.6%・FCR-49%・ROEトレンド+0.09/年。','v4.3: 29.8点(D)=ROIC12*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8331</span><br><span style="font-weight:900;color:#f1f5f9;">千葉銀行</span></td>
-          <td style="font-family:monospace;">2,027</td>
+          <td style="font-family:monospace;">2,032</td>
           <td style="color:#f87171;font-weight:900;font-family:monospace;">29.8/D</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -712,7 +712,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('9069','センコーグループHD','輸送',33.4,'D',50,'down','down','D','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。輸送業種の動向に注目。','ROE平均8.7%・FCR-4%・ROEトレンド-0.25/年。','v4.3: 33.4点(D)=ROIC21*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">9069</span><br><span style="font-weight:900;color:#f1f5f9;">センコーグループHD</span></td>
-          <td style="font-family:monospace;">1,795</td>
+          <td style="font-family:monospace;">1,798</td>
           <td style="color:#f87171;font-weight:900;font-family:monospace;">33.4/D</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -722,7 +722,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8591','オリックス','金融',40.7,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。金融業種の動向に注目。','ROE平均9.3%・FCR-15%・ROEトレンド-0.40/年。','v4.3: 40.7点(C)=ROIC21*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8591</span><br><span style="font-weight:900;color:#f1f5f9;">オリックス</span></td>
-          <td style="font-family:monospace;">4,716</td>
+          <td style="font-family:monospace;">4,728</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">40.7/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -732,7 +732,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6637','寺崎電気産業','電機',39.9,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均6.3%・FCR40%・ROEトレンド+0.49/年。','v4.3: 39.9点(C)=ROIC30*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6637</span><br><span style="font-weight:900;color:#f1f5f9;">寺崎電気産業</span></td>
-          <td style="font-family:monospace;">4,135</td>
+          <td style="font-family:monospace;">4,155</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">39.9/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -742,7 +742,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8541','愛媛銀行','銀行',26.9,'D',50,'down','down','D','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均4.4%・FCR-89%・ROEトレンド-0.09/年。','v4.3: 26.9点(D)=ROIC5*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8541</span><br><span style="font-weight:900;color:#f1f5f9;">愛媛銀行</span></td>
-          <td style="font-family:monospace;">1,594</td>
+          <td style="font-family:monospace;">1,600</td>
           <td style="color:#f87171;font-weight:900;font-family:monospace;">26.9/D</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -752,7 +752,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4221','大倉工業','化学',42.3,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。化学業種の動向に注目。','ROE平均6.4%・FCR89%・ROEトレンド+0.13/年。','v4.3: 42.3点(C)=ROIC43*40%+Trend36*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4221</span><br><span style="font-weight:900;color:#f1f5f9;">大倉工業</span></td>
-          <td style="font-family:monospace;">4,645</td>
+          <td style="font-family:monospace;">4,655</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">42.3/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -762,7 +762,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6501','日立','電機',44.4,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均7.6%・FCR98%・ROEトレンド+1.09/年。','v4.3: 44.4点(C)=ROIC43*40%+Trend42*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6501</span><br><span style="font-weight:900;color:#f1f5f9;">日立</span></td>
-          <td style="font-family:monospace;">4,728</td>
+          <td style="font-family:monospace;">4,743</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">44.4/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -782,7 +782,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1942','関電工','建設',33.9,'D',50,'down','down','D','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均7.8%・FCR40%・ROEトレンド+0.16/年。','v4.3: 33.9点(D)=ROIC22*40%+Trend36*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1942</span><br><span style="font-weight:900;color:#f1f5f9;">関電工</span></td>
-          <td style="font-family:monospace;">6,237</td>
+          <td style="font-family:monospace;">6,278</td>
           <td style="color:#f87171;font-weight:900;font-family:monospace;">33.9/D</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -792,7 +792,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8316','三井住友FG','銀行',42.7,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均6.4%・FCR-16%・ROEトレンド+0.30/年。','v4.3: 42.7点(C)=ROIC12*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8316</span><br><span style="font-weight:900;color:#f1f5f9;">三井住友FG</span></td>
-          <td style="font-family:monospace;">5,204</td>
+          <td style="font-family:monospace;">5,228</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">42.7/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -802,7 +802,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1605','INPEX','エネルギー',38.1,'C',50,'down','down','C','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。エネルギー業種の動向に注目。','ROE平均5.0%・FCR64%・ROEトレンド+0.09/年。','v4.3: 38.1点(C)=ROIC37*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1605</span><br><span style="font-weight:900;color:#f1f5f9;">INPEX</span></td>
-          <td style="font-family:monospace;">4,657</td>
+          <td style="font-family:monospace;">4,680</td>
           <td style="color:#fbbf24;font-weight:900;font-family:monospace;">38.1/C</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -822,7 +822,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
       <span class="r"><span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">14銘柄</span><span style="color:#34d399;font-weight:800;">購入候補 1</span></span>
     </div>
     <div style="flex:1;overflow-y:auto;">
-                                                                                                                                                <table id="tW">
+                                                                                                                                                      <table id="tW">
         <tr>
           <th class="sh" onclick="srt('tW',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
@@ -834,7 +834,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4058','トヨクモ','情報通信',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。情報通信業種の動向に注目。','ROE平均23.5%・FCR137%・ROEトレンド+2.72/年。','v4.3: 50.0点(B)=ROIC91*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4058</span><br><span style="font-weight:900;color:#f1f5f9;">トヨクモ</span></td>
-          <td style="font-family:monospace;">1,704</td>
+          <td style="font-family:monospace;">1,702</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -844,7 +844,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('3769','GMOペイメントGW','情報通信',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。情報通信業種の動向に注目。','ROE平均18.0%・FCR45%・ROEトレンド-0.05/年。','v4.3: 50.0点(B)=ROIC60*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">3769</span><br><span style="font-weight:900;color:#f1f5f9;">GMOペイメントGW</span></td>
-          <td style="font-family:monospace;">7,862</td>
+          <td style="font-family:monospace;">7,887</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -854,7 +854,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('5038','eWELL','サービス',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均35.7%・FCR88%・ROEトレンド-2.79/年。','v4.3: 50.0点(B)=ROIC91*40%+Trend39*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">5038</span><br><span style="font-weight:900;color:#f1f5f9;">eWELL</span></td>
-          <td style="font-family:monospace;">2,053</td>
+          <td style="font-family:monospace;">2,055</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -864,7 +864,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('3040','植木組','建設',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均14.8%・FCR107%・ROEトレンド+1.03/年。','v4.3: 50.0点(B)=ROIC71*40%+Trend42*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">3040</span><br><span style="font-weight:900;color:#f1f5f9;">植木組</span></td>
-          <td style="font-family:monospace;">1,743</td>
+          <td style="font-family:monospace;">1,751</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -874,7 +874,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7733','オリンパス','精密機器',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。精密機器業種の動向に注目。','ROE平均15.6%・FCR81%・ROEトレンド+2.57/年。','v4.3: 50.0点(B)=ROIC73*40%+Trend81*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7733</span><br><span style="font-weight:900;color:#f1f5f9;">オリンパス</span></td>
-          <td style="font-family:monospace;">1,422</td>
+          <td style="font-family:monospace;">1,425</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -894,7 +894,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4206','アイカ工業','化学',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。化学業種の動向に注目。','ROE平均8.5%・FCR80%・ROEトレンド-0.04/年。','v4.3: 50.0点(B)=ROIC52*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4206</span><br><span style="font-weight:900;color:#f1f5f9;">アイカ工業</span></td>
-          <td style="font-family:monospace;">3,666</td>
+          <td style="font-family:monospace;">3,670</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -924,7 +924,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1980','ダイダン','建設',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均9.1%・FCR32%・ROEトレンド+0.69/年。','v4.3: 50.0点(B)=ROIC31*40%+Trend78*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1980</span><br><span style="font-weight:900;color:#f1f5f9;">ダイダン</span></td>
-          <td style="font-family:monospace;">2,857</td>
+          <td style="font-family:monospace;">2,868</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -934,7 +934,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('5803','フジクラ','金属',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。金属業種の動向に注目。','ROE平均6.6%・FCR58%・ROEトレンド+4.42/年。','v4.3: 50.0点(B)=ROIC30*40%+Trend100*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">5803</span><br><span style="font-weight:900;color:#f1f5f9;">フジクラ</span></td>
-          <td style="font-family:monospace;">27,790</td>
+          <td style="font-family:monospace;">27,910</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -944,7 +944,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('3923','ラクス','情報通信',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。情報通信業種の動向に注目。','ROE平均24.1%・FCR48%・ROEトレンド+1.25/年。','v4.3: 50.0点(B)=ROIC69*40%+Trend70*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">3923</span><br><span style="font-weight:900;color:#f1f5f9;">ラクス</span></td>
-          <td style="font-family:monospace;">730</td>
+          <td style="font-family:monospace;">732</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -954,7 +954,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7047','ポート','サービス',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均18.8%・FCR8%・ROEトレンド+1.11/年。','v4.3: 50.0点(B)=ROIC46*40%+Trend42*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7047</span><br><span style="font-weight:900;color:#f1f5f9;">ポート</span></td>
-          <td style="font-family:monospace;">2,214</td>
+          <td style="font-family:monospace;">2,216</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -964,7 +964,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2329','東北新社','サービス',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均3.6%・FCR144%・ROEトレンド+1.06/年。','v4.3: 50.0点(B)=ROIC45*40%+Trend78*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2329</span><br><span style="font-weight:900;color:#f1f5f9;">東北新社</span></td>
-          <td style="font-family:monospace;">630</td>
+          <td style="font-family:monospace;">629</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -974,7 +974,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4527','ロート製薬','医薬品',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。医薬品業種の動向に注目。','ROE平均10.1%・FCR43%・ROEトレンド+0.71/年。','v4.3: 50.0点(B)=ROIC45*40%+Trend42*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4527</span><br><span style="font-weight:900;color:#f1f5f9;">ロート製薬</span></td>
-          <td style="font-family:monospace;">2,351</td>
+          <td style="font-family:monospace;">2,361</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -984,7 +984,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('5970','ジーテクト','金属',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。金属業種の動向に注目。','ROE平均6.3%・FCR81%・ROEトレンド+0.01/年。','v4.3: 50.0点(B)=ROIC43*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">5970</span><br><span style="font-weight:900;color:#f1f5f9;">ジーテクト</span></td>
-          <td style="font-family:monospace;">1,851</td>
+          <td style="font-family:monospace;">1,854</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1004,7 +1004,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8113','ユニ・チャーム','化学',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。化学業種の動向に注目。','ROE平均10.0%・FCR95%・ROEトレンド-0.32/年。','v4.3: 50.0点(B)=ROIC59*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8113</span><br><span style="font-weight:900;color:#f1f5f9;">ユニ・チャーム</span></td>
-          <td style="font-family:monospace;">918</td>
+          <td style="font-family:monospace;">920</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1014,7 +1014,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('5802','住友電工','金属',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。金属業種の動向に注目。','ROE平均5.7%・FCR61%・ROEトレンド+0.10/年。','v4.3: 50.0点(B)=ROIC37*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">5802</span><br><span style="font-weight:900;color:#f1f5f9;">住友電工</span></td>
-          <td style="font-family:monospace;">9,799</td>
+          <td style="font-family:monospace;">9,841</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1024,7 +1024,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('9449','GMOインターネットG','情報通信',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。情報通信業種の動向に注目。','ROE平均6.4%・FCR1%・ROEトレンド-0.25/年。','v4.3: 50.0点(B)=ROIC16*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">9449</span><br><span style="font-weight:900;color:#f1f5f9;">GMOインターネットG</span></td>
-          <td style="font-family:monospace;">2,818</td>
+          <td style="font-family:monospace;">2,826</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1034,7 +1034,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('5108','ブリヂストン','ゴム',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。ゴム業種の動向に注目。','ROE平均9.7%・FCR79%・ROEトレンド-0.23/年。','v4.3: 50.0点(B)=ROIC46*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">5108</span><br><span style="font-weight:900;color:#f1f5f9;">ブリヂストン</span></td>
-          <td style="font-family:monospace;">3,303</td>
+          <td style="font-family:monospace;">3,307</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1044,7 +1044,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6498','キッツ','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均7.7%・FCR63%・ROEトレンド+0.76/年。','v4.3: 50.0点(B)=ROIC37*40%+Trend70*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6498</span><br><span style="font-weight:900;color:#f1f5f9;">キッツ</span></td>
-          <td style="font-family:monospace;">1,788</td>
+          <td style="font-family:monospace;">1,793</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1054,7 +1054,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('3294','イー・グランド','不動産',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。不動産業種の動向に注目。','ROE平均12.7%・FCR27%・ROEトレンド+0.01/年。','v4.3: 50.0点(B)=ROIC45*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">3294</span><br><span style="font-weight:900;color:#f1f5f9;">イー・グランド</span></td>
-          <td style="font-family:monospace;">2,013</td>
+          <td style="font-family:monospace;">2,022</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1074,7 +1074,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1972','三晃金属工業','建設',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均10.6%・FCR89%・ROEトレンド-0.19/年。','v4.3: 50.0点(B)=ROIC59*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1972</span><br><span style="font-weight:900;color:#f1f5f9;">三晃金属工業</span></td>
-          <td style="font-family:monospace;">1,361</td>
+          <td style="font-family:monospace;">1,362</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1084,7 +1084,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6113','アマダ','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均6.3%・FCR94%・ROEトレンド+0.02/年。','v4.3: 50.0点(B)=ROIC43*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6113</span><br><span style="font-weight:900;color:#f1f5f9;">アマダ</span></td>
-          <td style="font-family:monospace;">2,286</td>
+          <td style="font-family:monospace;">2,291</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1104,7 +1104,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6861','キーエンス','電機',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均11.9%・FCR18%・ROEトレンド-0.10/年。','v4.3: 50.0点(B)=ROIC32*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6861</span><br><span style="font-weight:900;color:#f1f5f9;">キーエンス</span></td>
-          <td style="font-family:monospace;">57,410</td>
+          <td style="font-family:monospace;">57,480</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1114,7 +1114,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7735','SCREENホールディングス','電機',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均15.0%・FCR88%・ROEトレンド+1.82/年。','v4.3: 50.0点(B)=ROIC73*40%+Trend46*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7735</span><br><span style="font-weight:900;color:#f1f5f9;">SCREENホールディングス</span></td>
-          <td style="font-family:monospace;">19,420</td>
+          <td style="font-family:monospace;">19,455</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1124,7 +1124,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6638','ミマキエンジニアリング','電機',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均8.8%・FCR1%・ROEトレンド+1.80/年。','v4.3: 50.0点(B)=ROIC25*40%+Trend78*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6638</span><br><span style="font-weight:900;color:#f1f5f9;">ミマキエンジニアリング</span></td>
-          <td style="font-family:monospace;">1,603</td>
+          <td style="font-family:monospace;">1,616</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1134,7 +1134,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8892','日本エスコン','不動産',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。不動産業種の動向に注目。','ROE平均18.2%・FCR-81%・ROEトレンド-1.81/年。','v4.3: 50.0点(B)=ROIC42*40%+Trend57*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8892</span><br><span style="font-weight:900;color:#f1f5f9;">日本エスコン</span></td>
-          <td style="font-family:monospace;">1,132</td>
+          <td style="font-family:monospace;">1,134</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1144,7 +1144,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('5801','古河電気工業','金属',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。金属業種の動向に注目。','ROE平均6.3%・FCR58%・ROEトレンド-0.68/年。','v4.3: 50.0点(B)=ROIC30*40%+Trend57*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">5801</span><br><span style="font-weight:900;color:#f1f5f9;">古河電気工業</span></td>
-          <td style="font-family:monospace;">32,470</td>
+          <td style="font-family:monospace;">32,700</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1154,7 +1154,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1944','きんでん','建設',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均6.4%・FCR68%・ROEトレンド-0.02/年。','v4.3: 50.0点(B)=ROIC37*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1944</span><br><span style="font-weight:900;color:#f1f5f9;">きんでん</span></td>
-          <td style="font-family:monospace;">7,271</td>
+          <td style="font-family:monospace;">7,306</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1164,7 +1164,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6289','竹内製作所','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均7.7%・FCR62%・ROEトレンド-1.09/年。','v4.3: 50.0点(B)=ROIC37*40%+Trend57*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6289</span><br><span style="font-weight:900;color:#f1f5f9;">竹内製作所</span></td>
-          <td style="font-family:monospace;">2,015</td>
+          <td style="font-family:monospace;">2,024</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1184,7 +1184,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4684','オービック','情報通信',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。情報通信業種の動向に注目。','ROE平均14.4%・FCR78%・ROEトレンド+0.15/年。','v4.3: 50.0点(B)=ROIC60*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4684</span><br><span style="font-weight:900;color:#f1f5f9;">オービック</span></td>
-          <td style="font-family:monospace;">3,841</td>
+          <td style="font-family:monospace;">3,832</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1194,7 +1194,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6203','楽天銀行(6203)','銀行',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。銀行業種は金利上昇と連動。','ROE平均2.6%・FCR-29%・ROEトレンド-0.92/年。','v4.3: 50.0点(B)=ROIC5*40%+Trend57*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6203</span><br><span style="font-weight:900;color:#f1f5f9;">楽天銀行(6203)</span></td>
-          <td style="font-family:monospace;">1,526</td>
+          <td style="font-family:monospace;">1,543</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1204,7 +1204,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2802','味の素','食品',54.2,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。食品業種の動向に注目。','ROE平均8.2%・FCR112%・ROEトレンド+0.66/年。','v4.3: 54.2点(B)=ROIC57*40%+Trend54*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2802</span><br><span style="font-weight:900;color:#f1f5f9;">味の素</span></td>
-          <td style="font-family:monospace;">4,446</td>
+          <td style="font-family:monospace;">4,471</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">54.2/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1214,7 +1214,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6489','前澤工業','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均7.6%・FCR15%・ROEトレンド+0.98/年。','v4.3: 50.0点(B)=ROIC16*40%+Trend62*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6489</span><br><span style="font-weight:900;color:#f1f5f9;">前澤工業</span></td>
-          <td style="font-family:monospace;">2,006</td>
+          <td style="font-family:monospace;">2,015</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1224,7 +1224,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6863','ニレコ','電機',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均5.3%・FCR66%・ROEトレンド+0.62/年。','v4.3: 50.0点(B)=ROIC37*40%+Trend62*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6863</span><br><span style="font-weight:900;color:#f1f5f9;">ニレコ</span></td>
-          <td style="font-family:monospace;">2,096</td>
+          <td style="font-family:monospace;">2,095</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1234,7 +1234,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6594','ニデック','電機',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均9.4%・FCR31%・ROEトレンド-0.02/年。','v4.3: 50.0点(B)=ROIC31*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6594</span><br><span style="font-weight:900;color:#f1f5f9;">ニデック</span></td>
-          <td style="font-family:monospace;">2,132</td>
+          <td style="font-family:monospace;">2,135</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1244,7 +1244,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4503','アステラス製薬','医薬品',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。医薬品業種の動向に注目。','ROE平均11.1%・FCR100%・ROEトレンド-2.34/年。','v4.3: 50.0点(B)=ROIC59*40%+Trend47*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4503</span><br><span style="font-weight:900;color:#f1f5f9;">アステラス製薬</span></td>
-          <td style="font-family:monospace;">2,517</td>
+          <td style="font-family:monospace;">2,523</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1254,7 +1254,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4543','テルモ','精密機器',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。精密機器業種の動向に注目。','ROE平均10.8%・FCR45%・ROEトレンド-0.99/年。','v4.3: 50.0点(B)=ROIC45*40%+Trend49*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4543</span><br><span style="font-weight:900;color:#f1f5f9;">テルモ</span></td>
-          <td style="font-family:monospace;">2,081</td>
+          <td style="font-family:monospace;">2,082</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1264,7 +1264,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6869','シスメックス','精密機器',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。精密機器業種の動向に注目。','ROE平均14.1%・FCR47%・ROEトレンド-0.64/年。','v4.3: 50.0点(B)=ROIC52*40%+Trend41*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6869</span><br><span style="font-weight:900;color:#f1f5f9;">シスメックス</span></td>
-          <td style="font-family:monospace;">1,357</td>
+          <td style="font-family:monospace;">1,359</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1274,7 +1274,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7267','本田技研工業','輸送機器',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。輸送機器は逆相関・慎重に。','ROE平均7.2%・FCR82%・ROEトレンド+0.08/年。','v4.3: 50.0点(B)=ROIC43*40%+Trend36*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7267</span><br><span style="font-weight:900;color:#f1f5f9;">本田技研工業</span></td>
-          <td style="font-family:monospace;">1,309</td>
+          <td style="font-family:monospace;">1,312</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1284,7 +1284,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('3549','クスリのアオキHD','小売',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。小売・内需株が好転局面。','ROE平均15.6%・FCR-17%・ROEトレンド-0.92/年。','v4.3: 50.0点(B)=ROIC42*40%+Trend57*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">3549</span><br><span style="font-weight:900;color:#f1f5f9;">クスリのアオキHD</span></td>
-          <td style="font-family:monospace;">3,709</td>
+          <td style="font-family:monospace;">3,712</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1294,7 +1294,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6249','日精樹脂工業','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均4.6%・FCR5%・ROEトレンド+1.31/年。','v4.3: 50.0点(B)=ROIC9*40%+Trend78*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6249</span><br><span style="font-weight:900;color:#f1f5f9;">日精樹脂工業</span></td>
-          <td style="font-family:monospace;">2,821</td>
+          <td style="font-family:monospace;">2,820</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1304,7 +1304,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2267','ヤクルト本社','食品',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。食品業種の動向に注目。','ROE平均8.6%・FCR88%・ROEトレンド-0.17/年。','v4.3: 50.0点(B)=ROIC52*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2267</span><br><span style="font-weight:900;color:#f1f5f9;">ヤクルト本社</span></td>
-          <td style="font-family:monospace;">2,626</td>
+          <td style="font-family:monospace;">2,624</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1324,7 +1324,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2801','キッコーマン','食品',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。食品業種の動向に注目。','ROE平均10.1%・FCR95%・ROEトレンド+0.33/年。','v4.3: 50.0点(B)=ROIC59*40%+Trend36*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2801</span><br><span style="font-weight:900;color:#f1f5f9;">キッコーマン</span></td>
-          <td style="font-family:monospace;">1,402</td>
+          <td style="font-family:monospace;">1,409</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1334,7 +1334,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2413','エムスリー','サービス',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均18.0%・FCR38%・ROEトレンド-1.33/年。','v4.3: 50.0点(B)=ROIC52*40%+Trend49*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2413</span><br><span style="font-weight:900;color:#f1f5f9;">エムスリー</span></td>
-          <td style="font-family:monospace;">1,582</td>
+          <td style="font-family:monospace;">1,583</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1344,7 +1344,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7011','三菱重工業','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均5.9%・FCR159%・ROEトレンド+0.83/年。','v4.3: 50.0点(B)=ROIC52*40%+Trend42*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7011</span><br><span style="font-weight:900;color:#f1f5f9;">三菱重工業</span></td>
-          <td style="font-family:monospace;">4,491</td>
+          <td style="font-family:monospace;">4,510</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1364,7 +1364,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6622','愛知電機','電機',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均9.2%・FCR23%・ROEトレンド+0.30/年。','v4.3: 50.0点(B)=ROIC31*40%+Trend52*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6622</span><br><span style="font-weight:900;color:#f1f5f9;">愛知電機</span></td>
-          <td style="font-family:monospace;">12,320</td>
+          <td style="font-family:monospace;">12,370</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1374,7 +1374,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6954','ファナック','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均9.3%・FCR55%・ROEトレンド-0.28/年。','v4.3: 50.0点(B)=ROIC39*40%+Trend60*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6954</span><br><span style="font-weight:900;color:#f1f5f9;">ファナック</span></td>
-          <td style="font-family:monospace;">5,801</td>
+          <td style="font-family:monospace;">5,815</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1384,7 +1384,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('9616','共立メンテナンス','サービス',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。サービス業種の動向に注目。','ROE平均7.2%・FCR-40%・ROEトレンド+0.46/年。','v4.3: 50.0点(B)=ROIC12*40%+Trend68*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">9616</span><br><span style="font-weight:900;color:#f1f5f9;">共立メンテナンス</span></td>
-          <td style="font-family:monospace;">2,483</td>
+          <td style="font-family:monospace;">2,478</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1394,7 +1394,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('2897','日清食品HD','食品',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。食品業種の動向に注目。','ROE平均8.3%・FCR36%・ROEトレンド+0.58/年。','v4.3: 50.0点(B)=ROIC31*40%+Trend62*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">2897</span><br><span style="font-weight:900;color:#f1f5f9;">日清食品HD</span></td>
-          <td style="font-family:monospace;">2,906</td>
+          <td style="font-family:monospace;">2,912</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1404,7 +1404,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7309','シマノ','精密機器',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。精密機器業種の動向に注目。','ROE平均11.3%・FCR81%・ROEトレンド-0.96/年。','v4.3: 50.0点(B)=ROIC59*40%+Trend33*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7309</span><br><span style="font-weight:900;color:#f1f5f9;">シマノ</span></td>
-          <td style="font-family:monospace;">16,205</td>
+          <td style="font-family:monospace;">16,240</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1414,7 +1414,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6361','荏原製作所','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均10.1%・FCR53%・ROEトレンド+1.32/年。','v4.3: 50.0点(B)=ROIC45*40%+Trend42*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6361</span><br><span style="font-weight:900;color:#f1f5f9;">荏原製作所</span></td>
-          <td style="font-family:monospace;">4,621</td>
+          <td style="font-family:monospace;">4,636</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1424,7 +1424,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7269','スズキ','輸送機器',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。輸送機器は逆相関・慎重に。','ROE平均9.6%・FCR33%・ROEトレンド-0.25/年。','v4.3: 50.0点(B)=ROIC31*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7269</span><br><span style="font-weight:900;color:#f1f5f9;">スズキ</span></td>
-          <td style="font-family:monospace;">1,929</td>
+          <td style="font-family:monospace;">1,935</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1434,7 +1434,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7272','ヤマハ発動機','輸送機器',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。輸送機器は逆相関・慎重に。','ROE平均11.5%・FCR52%・ROEトレンド-0.85/年。','v4.3: 50.0点(B)=ROIC45*40%+Trend25*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7272</span><br><span style="font-weight:900;color:#f1f5f9;">ヤマハ発動機</span></td>
-          <td style="font-family:monospace;">1,113</td>
+          <td style="font-family:monospace;">1,114</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1444,7 +1444,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('1911','住友林業','建設',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。建設業種の動向に注目。','ROE平均10.3%・FCR-31%・ROEトレンド+0.48/年。','v4.3: 50.0点(B)=ROIC28*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">1911</span><br><span style="font-weight:900;color:#f1f5f9;">住友林業</span></td>
-          <td style="font-family:monospace;">1,414</td>
+          <td style="font-family:monospace;">1,420</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1454,7 +1454,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7012','川崎重工業','機械',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。機械業種の動向に注目。','ROE平均6.0%・FCR-26%・ROEトレンド+1.07/年。','v4.3: 50.0点(B)=ROIC12*40%+Trend42*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7012</span><br><span style="font-weight:900;color:#f1f5f9;">川崎重工業</span></td>
-          <td style="font-family:monospace;">15,260</td>
+          <td style="font-family:monospace;">15,295</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1464,7 +1464,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4368','扶桑化学工業','化学',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。化学業種の動向に注目。','ROE平均12.5%・FCR23%・ROEトレンド-0.17/年。','v4.3: 50.0点(B)=ROIC45*40%+Trend44*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4368</span><br><span style="font-weight:900;color:#f1f5f9;">扶桑化学工業</span></td>
-          <td style="font-family:monospace;">8,740</td>
+          <td style="font-family:monospace;">8,800</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1484,7 +1484,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('7203','トヨタ自動車','輸送機器',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。輸送機器は逆相関・慎重に。','ROE平均10.8%・FCR13%・ROEトレンド+0.55/年。','v4.3: 50.0点(B)=ROIC32*40%+Trend54*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">7203</span><br><span style="font-weight:900;color:#f1f5f9;">トヨタ自動車</span></td>
-          <td style="font-family:monospace;">3,349</td>
+          <td style="font-family:monospace;">3,363</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1494,7 +1494,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('4023','クレハ','化学',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。化学業種の動向に注目。','ROE平均6.5%・FCR64%・ROEトレンド-0.49/年。','v4.3: 50.0点(B)=ROIC37*40%+Trend31*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">4023</span><br><span style="font-weight:900;color:#f1f5f9;">クレハ</span></td>
-          <td style="font-family:monospace;">4,225</td>
+          <td style="font-family:monospace;">4,240</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1504,7 +1504,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('8725','MS&ADインシュアランス','保険',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。保険業種の動向に注目。','ROE平均7.5%・FCR71%・ROEトレンド+1.09/年。','v4.3: 50.0点(B)=ROIC37*40%+Trend42*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">8725</span><br><span style="font-weight:900;color:#f1f5f9;">MS&ADインシュアランス</span></td>
-          <td style="font-family:monospace;">4,100</td>
+          <td style="font-family:monospace;">4,132</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1514,7 +1514,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6752','パナソニックHD','電機',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均9.3%・FCR10%・ROEトレンド-0.46/年。','v4.3: 50.0点(B)=ROIC25*40%+Trend60*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6752</span><br><span style="font-weight:900;color:#f1f5f9;">パナソニックHD</span></td>
-          <td style="font-family:monospace;">2,679</td>
+          <td style="font-family:monospace;">2,692</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
@@ -1524,7 +1524,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
         <tr class="dr" onclick="sel(this);showD('6645','オムロン','電機',50.0,'B',50,'down','down','B','短期50点(中立)。SOX・SP500の動向に注目。','中期33点(弱気)。電機業種の動向に注目。','ROE平均8.7%・FCR58%・ROEトレンド-1.60/年。','v4.3: 50.0点(B)=ROIC39*40%+Trend20*35%+Price50*25%','1日')">
           <td><span style="font-size:9px;color:#475569;">6645</span><br><span style="font-weight:900;color:#f1f5f9;">オムロン</span></td>
-          <td style="font-family:monospace;">4,462</td>
+          <td style="font-family:monospace;">4,472</td>
           <td style="color:#60a5fa;font-weight:900;font-family:monospace;">50.0/B</td>
           <td style="color:#fbbf24;">中立</td>
           <td style="color:#fbbf24;">やや弱気</td>
