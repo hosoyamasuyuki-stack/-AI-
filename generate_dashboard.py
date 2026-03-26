@@ -641,6 +641,9 @@ if mstrip_start >= 0 and mstrip_end >= 0:
 else:
     print(f"WARN: 市場ストリップ置換スキップ (start={mstrip_start} end={mstrip_end})")
 
+# ティッカーHTML生成
+TICKER_HTML = '<div style="overflow:hidden;white-space:nowrap;background:#0a0e17;padding:3px 0;font-size:10px;border-bottom:1px solid #1e293b;"><div style="display:inline-block;animation:ticker_scroll 60s linear infinite;"><span style="color:#6ee7b7;margin:0 18px;">AI LEARNING</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">保有銘柄46 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">監視銘柄27 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">学習用99 月次バッチ学習</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">日次データ学習中(FRED 32指標)</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">全172銘柄 v4.3スコアリング稼働中</span></div></div>'
+
 # ティッカー挿入
 SL_ANCHOR    = '<div class="sl">市場体温計 &amp; 短期・中期シグナル</div>'
 MSTRIP_ANCHOR = '<div class="mstrip">'
@@ -898,10 +901,12 @@ if val_start >= 0 and val_end >= 0:
 else:
     print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
 
-# モーダル挿入（</body>直前）
-src = src = src.replace('<!-- MACRO_PHASE_GAUGE -->', PHASE_HTML, 1)
+# マクロフェーズゲージ挿入
+PHASE_HTML = build_phase_gauge_html(ss)
+src = src.replace('<!-- MACRO_PHASE_GAUGE -->', PHASE_HTML, 1)
 print('OK: マクロフェーズゲージ置換')
-src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
+# モーダル挿入（</body>直前）
+src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
 print("OK: モーダル挿入")
 
 out = 'ai_dashboard_v13.html'
