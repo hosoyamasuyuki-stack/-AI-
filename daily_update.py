@@ -431,12 +431,16 @@ def save_macro_phase(ss, score, label, detail):
     now = datetime.datetime.now().strftime('%Y/%m/%d %H:%M')
     try:
         ws = ss.worksheet('MacroPhase')
-    except:
+    except gspread.exceptions.WorksheetNotFound:
         ws = ss.add_worksheet(title='MacroPhase', rows=500, cols=16)
         ws.update('A1', [['日時','スコア','フェーズ','LayerA','LayerB','LayerC','LayerD',
                           'VIX','HYspread','TEDspread','LongShortSpread',
                           'JapanM2','FRBbalance','ISMPMI','失業率','ShillerPER']])
         print("  OK: MacroPhase シート作成")
+    except Exception as e:
+        print(f"  WARN: MacroPhase取得リトライ: {e}")
+        import time; time.sleep(10)
+        ws = ss.worksheet('MacroPhase')
     row = [
         now, score, label,
         detail.get('LayerA',{}).get('score',''),
