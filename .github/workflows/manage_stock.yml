@@ -1,0 +1,75 @@
+name: Stock Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: '銘柄コード（4桁）'
+        required: true
+      action:
+        description: '操作（add/remove/move）'
+        required: true
+      target:
+        description: '対象（保有/監視）'
+        required: true
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  manage-stock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: manage-stock
+      cancel-in-progress: false
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 依存パッケージをインストール
+        run: |
+          pip install requests gspread google-auth yfinance pandas numpy
+
+      - name: 銘柄管理実行
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          echo "=== 銘柄管理: ${{ github.event.inputs.action }} ${{ github.event.inputs.code }} -> ${{ github.event.inputs.target }} ==="
+          python manage_stock.py \
+            --code "${{ github.event.inputs.code }}" \
+            --action "${{ github.event.inputs.action }}" \
+            --target "${{ github.event.inputs.target }}"
+
+      - name: API制限回避（30秒待機）
+        run: sleep 30
+
+      - name: ダッシュボードHTML再生成
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          echo "=== ダッシュボード再生成 ==="
+          python generate_dashboard.py
+
+      - name: GitHubにプッシュ
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions [Stock Mgmt]"
+          git add ai_dashboard_v13.html
+          git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
+          git commit -m "stock: ${{ github.event.inputs.action }} ${{ github.event.inputs.code }} (${{ github.event.inputs.target }})"
+          git pull --rebase origin main || true
+          git push
+          echo "プッシュ完了"
