@@ -583,6 +583,9 @@ def get_sig(rank):
     if rank == 'B':        return '様子見',  '#fbbf24'
     return '時期尚早','#f87171'
 
+RANK_ORDER = {'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1}
+degradation_alerts = []  # abar用アラートリスト
+
 def short_label(s):
     return ('強気' if s>=70 else 'やや強気' if s>=55 else
             '中立' if s>=45 else 'やや弱気' if s>=30 else '弱気')
@@ -609,6 +612,7 @@ for row, stype in all_data:
     sect  = str(row.get('業種',      '')).strip()
     tot   =     sf(row.get('総合スコア'))
     rank  = str(row.get('ランク',   'D')).strip()
+    prev_rank = str(row.get('前回ランク', '')).strip()
     s1    =     sf(row.get('変数1'))
     s2    =     sf(row.get('変数2'))
     s3    =     sf(row.get('変数3'))
@@ -655,6 +659,14 @@ for row, stype in all_data:
         f'        </tr>'
     )
     (rows_h if stype == '保有' else rows_w).append(tr)
+
+    # ランク変動検知（保有銘柄のみ・B→C以下の転落をアラート）
+    if stype == '保有' and prev_rank and prev_rank in RANK_ORDER and rank in RANK_ORDER:
+        if RANK_ORDER[rank] < RANK_ORDER[prev_rank]:
+            degradation_alerts.append({
+                'code': code, 'name': name, 'prev': prev_rank,
+                'curr': rank, 'score': tot
+            })
 
 # スクリーニングTop50のテーブル行生成（簡素表示：銘柄・株価・スコア・シグナル）
 rows_s = []
@@ -845,6 +857,33 @@ if rows_s:
     print(f"OK: スクリーニングTop50テーブル置換（{len(rows_s)}銘柄）")
 else:
     print("SKIP: スクリーニングデータなし（初回スキャン前）")
+
+# abar動的生成（ランク変動アラート）
+if degradation_alerts:
+    abar_items = '<span class="al">&#x26A0; ランク変動</span>'
+    for a in degradation_alerts[:5]:
+        abar_items += (f'<span class="ai">{a["name"]} '
+                       f'{a["prev"]}&#x2192;{a["curr"]}({a["score"]:.0f}点)</span>')
+    src = src.replace(
+        '<!-- ABAR_DYNAMIC --><span class="al">&#x2714; ランク異常なし</span>',
+        abar_items
+    )
+    print(f"OK: abar動的生成（{len(degradation_alerts)}銘柄がランク下落）")
+else:
+    print("OK: abar ランク異常なし")
+
+# 四半期レビューリマインダー（sbar）
+import calendar
+now_month = datetime.now().month
+review_months = {1: '1月', 4: '4月', 7: '7月', 10: '10月'}
+next_review = None
+for m in sorted(review_months.keys()):
+    if m >= now_month:
+        next_review = review_months[m]
+        break
+if not next_review:
+    next_review = review_months[1]
+print(f"OK: 次回四半期レビュー: {next_review}第1週")
 
 # バリュエーションHTML生成（v20と同一ロジック・数値のみv21ソースに更新）
 def gauge_pct(mn, mx, v):

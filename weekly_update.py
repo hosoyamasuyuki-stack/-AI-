@@ -724,6 +724,7 @@ for _, r in df_scan.iterrows():
 SYNC_SHEETS = ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']
 SYNC_COLS   = ['総合スコア', 'ランク', '変数1', '変数2', '変数3',
                'ROE平均', 'FCR平均', 'ROEトレンド', 'PEG', 'FCF利回り', '株価']
+RANK_ORDER  = {'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1}
 
 for sheet_name in SYNC_SHEETS:
     try:
@@ -735,7 +736,7 @@ for sheet_name in SYNC_SHEETS:
 
         header = all_vals[0]
         col_idx = {}
-        for col_name in ['コード'] + SYNC_COLS:
+        for col_name in ['コード', '前回ランク'] + SYNC_COLS:
             if col_name in header:
                 col_idx[col_name] = header.index(col_name)
 
@@ -743,7 +744,15 @@ for sheet_name in SYNC_SHEETS:
             print(f"  {sheet_name}: コード列なし（スキップ）")
             continue
 
+        # 前回ランク列がなければ追加
+        if '前回ランク' not in col_idx:
+            new_col = len(header) + 1
+            ws.update_cell(1, new_col, '前回ランク')
+            col_idx['前回ランク'] = new_col - 1
+            print(f"  {sheet_name}: 前回ランク列を追加（列{new_col}）")
+
         updates = 0
+        degrades = 0
         batch_updates = []
 
         for row_num in range(1, len(all_vals)):
@@ -752,7 +761,20 @@ for sheet_name in SYNC_SHEETS:
             if code not in scan_map:
                 continue
 
+            # 現在のランクを前回ランクとして保存
+            if 'ランク' in col_idx:
+                current_rank = str(row[col_idx['ランク']]).strip()
+                if current_rank in RANK_ORDER:
+                    prev_ci = col_idx['前回ランク']
+                    cell_label = gspread.utils.rowcol_to_a1(row_num + 1, prev_ci + 1)
+                    batch_updates.append({
+                        'range': cell_label,
+                        'values': [[current_rank]]
+                    })
+
+            # 新しいスコア・ランクを書き込み
             sr = scan_map[code]
+            new_rank = str(sr.get('ランク', 'D'))
             for col_name in SYNC_COLS:
                 if col_name not in col_idx:
                     continue
@@ -764,11 +786,21 @@ for sheet_name in SYNC_SHEETS:
                         'range': cell_label,
                         'values': [[float(new_val) if isinstance(new_val, (int, float, np.integer, np.floating)) else str(new_val)]]
                     })
+
+            # ランク変動検知
+            if current_rank in RANK_ORDER and new_rank in RANK_ORDER:
+                if RANK_ORDER[new_rank] < RANK_ORDER[current_rank]:
+                    name = str(row[1]).strip() if len(row) > 1 else code
+                    print(f"    DEGRADE: {code} {name} {current_rank}->{new_rank}")
+                    degrades += 1
+
             updates += 1
 
         if batch_updates:
             ws.batch_update(batch_updates)
             print(f"  {sheet_name}: {updates}銘柄を更新（{len(batch_updates)}セル）")
+            if degrades > 0:
+                print(f"  WARNING: {degrades}銘柄がランク下落")
         else:
             print(f"  {sheet_name}: 更新対象なし")
 
