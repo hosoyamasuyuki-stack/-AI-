@@ -1883,6 +1883,29 @@ function execMgmt(action){
 }
 /* === /銘柄管理 === */
 
+/* === ヘッダーツールチップ（初心者向け説明） === */
+var TIP_MAP={
+  '銘柄':'銘柄コードと会社名です',
+  '株価':'現在の株価（円）です。クリックで並び替え',
+  'v4.3':'AIスコア（0-100点）。S=80以上/A=65以上/B=50以上。高いほど投資に向いています',
+  '短期':'今後1年の市場環境スコア。強気/中立/弱気で表示',
+  '中期':'今後3年の市場環境スコア。業種ごとの見通しを反映',
+  '長期':'企業の収益力（ROE・FCR・トレンド）。長期保有の判断材料',
+  '日数':'最後にデータを更新してからの経過日数',
+  '判定':'総合判断。買い検討(緑)/様子見(黄)/時期尚早(橙)/要見直し(赤)',
+  'シグナル':'総合判断。買い検討(緑)/様子見(黄)/時期尚早(橙)/要見直し(赤)'
+};
+(function(){
+  var style=document.createElement('style');
+  style.textContent='.th-tip{position:relative;cursor:help}.th-tip:hover::after{content:attr(data-tip);position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:4px;background:#1e293b;color:#e2e8f0;border:1px solid #f59e0b;padding:4px 8px;border-radius:4px;font-size:9px;font-weight:400;white-space:nowrap;z-index:50;pointer-events:none}';
+  document.head.appendChild(style);
+  document.querySelectorAll('#tH th, #tW th, #tS th').forEach(function(th){
+    var txt=th.textContent.trim().replace(/[▲▼]/g,'');
+    if(TIP_MAP[txt]){th.classList.add('th-tip');th.setAttribute('data-tip',TIP_MAP[txt]);}
+  });
+})();
+/* === /ヘッダーツールチップ === */
+
 /* === スクリーニングTop50（上下分割・常時表示） === */
 const arrowMap={
   '↑↑':'<span class="ar-uu">↑↑</span>',
