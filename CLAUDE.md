@@ -160,6 +160,9 @@ backtest_H002_v1.py    : H002バックテスト
 backtest_H004_v1.py    : H004バックテスト（枠組み）
 backtest_H004_v2.py    : H004バックテスト（本番計算）
 H004_complete_record.txt : H004完全記録
+manage_stock.py        : 銘柄管理（追加・削除・移動 + v4.3スコア即時計算）
+full_scan.py           : 全日本株スクリーニング（全上場~3,800社→Top50書き出し）
+gas_manage_stock_addition.js : GASプロキシ追加コード（参考用）
 sheet_manager.py       : SheetManagementLedger生成（毎月1日9:00 JST）
 record_changelog.py    : 変更履歴記録
 evidence_page.html     : 科学的根拠ページ（H002・H003バックテスト結果を視覚的に表示）
@@ -179,13 +182,16 @@ framework_page.html    : 判断フレームワークページ（4時間軸の判
 - daily_price_update.py：毎日7:30 JST（Variable3価格スコア再計算）
 - weekly_update.py：毎週月曜10:00 JST・J-Quants V2ベース完全版（v4.3スコア全変数計算+書き戻し）
 - daily_update.py：毎日7:00 JST（平日のみ・FRED 25指標+MacroPhase 4層スコア）
+- full_scan.py：毎週日曜22:00 JST（全上場~3,800社スクリーニング→Top50書き出し）
+- manage_stock.py：銘柄管理（ダッシュボードから追加・削除・移動・workflow_dispatch）
 - sheet_manager.py：毎月1日9:00 JST（SheetManagementLedger生成）
 - verify_0415.py v3：2026/04/15自動実行（列バグ修正済み）
 - verify_monday.py：毎週月曜（初回2026/03/30）
 
 YAMLファイル：
 - daily_price_update.yml / daily_update.yml / weekly_update.yml / dashboard_update.yml / full_update.yml
-- 全YAMLにTZ: Asia/Tokyo設定済み（2026/03/26セッション2で統一）
+- manage_stock.yml（workflow_dispatch・銘柄管理）/ full_scan.yml（週次全市場スキャン）
+- 全YAMLにTZ: Asia/Tokyo設定済み
 
 注意：weekly_update_v4.pyは旧版（孤立ファイル・どのYAMLからも参照されていない）
 
@@ -280,6 +286,21 @@ J-Quants V2仕様：
     - GASプロキシv2: バージョン13にデプロイ済み（triggerManageStock_関数追加）
   PR #1でmainにマージ済み・ダッシュボードで動作確認完了
 
+### Priority 1【実装済み・初回実行待ち】全日本株スクリーニング（週次Top50）
+
+2026/03/27実装：
+  全上場約3,800社をv4.3スコアでスキャン→上位50銘柄をダッシュボードに表示
+  目的：Sランク銘柄の見落とし防止。気になったら銘柄管理で監視に追加
+  実装：
+    - full_scan.py: J-Quants全銘柄マスター→v4.3スコア計算→Top50書き出し
+    - full_scan.yml: 毎週日曜22:00 JST（timeout 180分）
+    - generate_dashboard.py: スクリーニング_Top50シート読み込み+テーブル生成
+    - ai_dashboard_v13.html: 監視銘柄下に折りたたみ式Top50セクション
+  ダッシュボード階層：保有銘柄→監視銘柄→スクリーニング50社
+  表示項目：銘柄・株価・スコア・判定（簡素表示）
+  PR #3でmainにマージ済み・初回手動実行2026/03/27起動済み（結果待ち90-120分）
+  スプレッドシート新シート：スクリーニング_Top50
+
 ### Priority 2：2026/04/15 STEP0検証
 
 verify_0415.py が完全自動化済み
@@ -308,14 +329,16 @@ verify_0415.py が完全自動化済み
 
 ### Priority 4（handoverより）：次回優先タスク
 
+【解決済み】
+1. 銘柄管理機能 → 2026/03/27解決（全フロー完成・GASv13デプロイ・削除テスト成功）
+5. ヘッダー日時バッジ → 2026/03/27解決（generate_dashboard.pyにre.sub追加）
+※ 全日本株スクリーニング → 2026/03/27実装（full_scan.py・毎週日曜22:00 JST・初回実行待ち）
+
 【最優先】
-1. 銘柄管理機能の実装 → 2026/03/27解決（全フロー完成・GASバージョン13デプロイ済み）
 2. 2026/03/30 verify_monday.py初回結果確認
 3. 2026/04/15 STEP0目先予測自動検証（verify_0415.py v3）
 4. Anthropicコンソール復旧後にCLAUDE_API_KEY取得→GASに設定
-
-【通常優先】
-5. ヘッダー日時バッジの動的更新 → 2026/03/27解決（generate_dashboard.pyにre.sub追加）
+※ 全市場スキャン初回結果確認（2026/03/27夜 or 次回日曜22:00 JST）
 6. H005マクロフェーズ判断のバックテスト（J-Quants v1認証解決後）
 7. 売り判断ルールの体系化（天才投資家からの指摘）
 8. H004完全ウォークフォワード再検証（J-Quants v1認証解決後）
@@ -517,6 +540,7 @@ Handover_v3.0 / Handover_Base / Handover_ChangeLog / Handover_v2.9 / Handover_v2
 スコアデータシート：
 保有銘柄_v4.3スコア / 監視銘柄_v4.3スコア / 学習用銘柄_v4.2スコア
 コアスキャン_v4.3 / コアスキャン_日次 / 統合スコア_週次
+スクリーニング_Top50（2026/03/27新設・full_scan.pyが毎週日曜に更新）
 
 検証シート：週次検証アラート / 因子劣化チェック / 異常値スコア / EDINETスコア
 
@@ -602,7 +626,11 @@ docs/フォルダ：ERR404問題で未完了
 
 7d81e27 : feat: 銘柄管理機能実装（追加・削除・移動 + v4.3スコア即時計算）
 7ba702a : Merge PR #1 銘柄管理機能をmainにマージ
-（本コミット）: fix: ヘッダー日時バッジ動的更新 + docs: CLAUDE.md更新
+377cdc2 : fix: ヘッダー日時バッジ動的更新 + docs: CLAUDE.mdセッション3記録
+1f38cab : Merge PR #2 日時バッジ+CLAUDE.mdをmainにマージ
+4f66cc8 : feat: 全日本株スクリーニング機能（週次Top50）
+f9e2e4c : Merge PR #3 全市場スキャンをmainにマージ
+（本コミット）: docs: CLAUDE.md完全更新（全チーム再チェック済み）
 
 ================================================================
 ## 2026/03/26のコミット履歴
@@ -661,7 +689,20 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
     - triggerManageStock_関数追加（workflow_dispatch発火）
 39. ヘッダー日時バッジの動的更新
     - generate_dashboard.pyにre.sub追加（「2026-03-18 04:30 JST」固定値→実行日時に更新）
-40. CLAUDE.md更新（本セッション全作業記録）
+40. 銘柄管理機能テスト
+    - 7203（トヨタ）監視追加テスト→重複チェック正常動作確認
+    - 4195 監視銘柄削除テスト→全フロー成功（シート削除→HTML再生成→push→Pages反映）
+41. 全日本株スクリーニング機能（週次Top50）
+    - full_scan.py: J-Quants全銘柄マスター（~3,800社）→v4.3スコア計算→Top50書き出し
+    - full_scan.yml: 毎週日曜22:00 JST（timeout 180分）・workflow_dispatch対応
+    - generate_dashboard.py: スクリーニング_Top50シート読み込み+テーブル生成追加
+    - ai_dashboard_v13.html: 監視銘柄下に折りたたみ式「AI Market Scan Top 50」セクション
+    - PR #3作成→mainにマージ→初回手動実行起動済み（結果待ち）
+42. ダッシュボード階層完成
+    - 保有銘柄（46社）→監視銘柄（27社→26社・4195削除済み）→スクリーニング50社
+    - 銘柄管理ボタンで監視↔保有の移動・追加・削除が可能
+    - Top50で見つけたSランクを銘柄管理で監視に追加するワークフロー確立
+43. CLAUDE.md完全更新（全チーム再チェック済み）
 
 2026/03/26（セッション2）：
 32. 全スクリプト再チェック（daily_price_update.py / weekly_update.py / generate_dashboard.py / 5つのYAML）
