@@ -40,7 +40,7 @@
 
 /* 短期・中期シグナルボックス（強調） */
 .mc-signal{background:#0a0d16;border-width:1.5px;}
-.mc-signal .mc-v{font-size:15px;}
+.mc-signal .mc-v{font-size:var(--fs-xl);}
 
 /* バリュエーション */
 .vp{background:#0f1420;border:1px solid #1e2d40;border-radius:4px;padding:5px 8px;}
@@ -49,9 +49,9 @@
 .vi:last-child{border-right:none;}
 .vi-l{color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;margin-bottom:3px;}
 .vi-r{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
-.vi-c{color:#6b7280;font-size:8px;font-weight:800;}
-.vi-n{font-size:12px;font-weight:900;}
-.vi-j{font-size:8px;font-weight:800;margin-top:3px;padding:1px 5px;border-radius:2px;display:inline-block;}
+.vi-c{color:#6b7280;font-size:var(--fs-xs);font-weight:800;}
+.vi-n{font-size:var(--fs-lg);font-weight:900;}
+.vi-j{font-size:var(--fs-xs);font-weight:800;margin-top:3px;padding:1px 5px;border-radius:2px;display:inline-block;}
 .jg{background:#064e3b;color:#34d399;}.jr{background:#7f1d1d;color:#f87171;}
 
 /* BODY */
@@ -74,22 +74,22 @@ tr.dr.sel td:first-child{border-left:2px solid #f59e0b;}
 .nm{color:#f1f5f9;font-size:9.5px;font-weight:800;line-height:1.2;}
 
 /* v4.2スコア */
-.v42s{color:#f1f5f9;font-size:9px;font-weight:900;}
-.rk-s{color:#34d399;font-size:8px;font-weight:900;}
-.rk-a{color:#5eead4;font-size:8px;font-weight:900;}
-.rk-b{color:#fbbf24;font-size:8px;font-weight:900;}
-.rk-c{color:#fb923c;font-size:8px;font-weight:900;}
-.rk-d{color:#f87171;font-size:8px;font-weight:900;}
+.v42s{color:#f1f5f9;font-size:var(--fs-sm);font-weight:900;}
+.rk-s{color:#34d399;font-size:var(--fs-xs);font-weight:900;}
+.rk-a{color:#5eead4;font-size:var(--fs-xs);font-weight:900;}
+.rk-b{color:#fbbf24;font-size:var(--fs-xs);font-weight:900;}
+.rk-c{color:#fb923c;font-size:var(--fs-xs);font-weight:900;}
+.rk-d{color:#f87171;font-size:var(--fs-xs);font-weight:900;}
 
 /* 短期・中期・長期 矢印 */
-.ar-uu{color:#34d399;font-size:10px;font-weight:900;}
-.ar-u{color:#6ee7b7;font-size:10px;font-weight:900;}
-.ar-n{color:#94a3b8;font-size:10px;font-weight:900;}
-.ar-d{color:#fb923c;font-size:10px;font-weight:900;}
-.ar-dd{color:#f87171;font-size:10px;font-weight:900;}
+.ar-uu{color:#34d399;font-size:var(--fs-md);font-weight:900;}
+.ar-u{color:#6ee7b7;font-size:var(--fs-md);font-weight:900;}
+.ar-n{color:#94a3b8;font-size:var(--fs-md);font-weight:900;}
+.ar-d{color:#fb923c;font-size:var(--fs-md);font-weight:900;}
+.ar-dd{color:#f87171;font-size:var(--fs-md);font-weight:900;}
 
 /* 学習日数 */
-.days{color:#5eead4;font-size:8px;font-weight:800;}
+.days{color:#5eead4;font-size:var(--fs-xs);font-weight:800;}
 
 /* 判定バッジ */
 .s-buy{background:#064e3b;color:#34d399;font-size:var(--fs-xs);font-weight:800;padding:1px 5px;border-radius:2px;border:1px solid #065f46;white-space:nowrap;}
@@ -105,7 +105,11 @@ tr.dr.sel td:first-child{border-left:2px solid #f59e0b;}
 /* DETAIL */
 #d-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
 #d-content{flex:1;overflow-y:auto;padding:9px;display:none;flex-direction:column;gap:5px;animation:fadeIn .25s ease;font-size:var(--fs-sm);}
-#d-content [style*="font-size:8px"],#d-content [style*="font-size:8.5px"],#d-content [style*="font-size:9px"],#d-content [style*="font-size:7px"]{font-size:var(--fs-sm) !important;}
+/* インラインstyleの固定pxをレスポンシブに上書き */
+[style*="font-size:7px"],[style*="font-size:7.5px"],[style*="font-size:8px"],[style*="font-size:8.5px"]{font-size:var(--fs-xs) !important;}
+[style*="font-size:9px"],[style*="font-size:9.5px"],[style*="font-size:10px"]{font-size:var(--fs-sm) !important;}
+[style*="font-size:11px"],[style*="font-size:12px"],[style*="font-size:13px"]{font-size:var(--fs-md) !important;}
+[style*="font-size:14px"],[style*="font-size:15px"],[style*="font-size:16px"]{font-size:var(--fs-lg) !important;}
 .dh{background:#0d1117;border:1px solid #1e2d40;border-radius:6px;padding:8px 10px;}
 .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
 .sc{background:#0d1117;border:1px solid #1e2d40;border-radius:5px;padding:6px 7px;text-align:center;}
