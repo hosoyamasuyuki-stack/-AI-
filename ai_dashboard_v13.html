@@ -1897,7 +1897,7 @@ var TIP_MAP={
 };
 (function(){
   var style=document.createElement('style');
-  style.textContent='.th-tip{position:relative;cursor:help}.th-tip:hover::after{content:attr(data-tip);position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:4px;background:#1e293b;color:#e2e8f0;border:1px solid #f59e0b;padding:4px 8px;border-radius:4px;font-size:9px;font-weight:400;white-space:nowrap;z-index:50;pointer-events:none}';
+  style.textContent='.th-tip{position:relative;cursor:pointer}.th-tip:hover::after{content:attr(data-tip);position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:4px;background:#1e293b;color:#e2e8f0;border:1px solid #f59e0b;padding:4px 8px;border-radius:4px;font-size:9px;font-weight:400;white-space:nowrap;z-index:50;pointer-events:none}';
   document.head.appendChild(style);
   document.querySelectorAll('#tH th, #tW th, #tS th').forEach(function(th){
     var txt=th.textContent.trim().replace(/[▲▼]/g,'');
