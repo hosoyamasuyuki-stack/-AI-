@@ -735,7 +735,10 @@ PR #6 : feat: ヘッダーツールチップ（初心者向け説明）
 PR #7 : fix: ツールチップのカーソルをhelp(?)からpointerに変更
 PR #8 : fix: ツールチップをCSS::afterからtitle属性に変更（overflow問題解消）
 PR #9 : fix: 日数・判定・シグナルにclass=sh追加（カーソル+ツールチップ統一）
-（本コミット）: docs: CLAUDE.md完全更新+思考モデル・設計論理の詳細記録
+PR #10 : docs: CLAUDE.md完全更新+思考モデル・設計論理の詳細記録
+PR #11 : feat: 四半期レビュー+ランク劣化アラート実装（weekly_update.py+generate_dashboard.py+abar動的化）
+PR #12 : docs: MacroPhase転換条件の明文化（RED/YELLOW/GREEN行動ルール）
+（本コミット）: docs: セッション3最終記録（全チーム漏れチェック完了・書記官記載）
 
 ================================================================
 ## 2026/03/26のコミット履歴
@@ -820,6 +823,20 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
     - 10年長期保有が原則。感情的判断を排除する機械的仕組み
     - MacroPhase RED→GREEN転換条件の明文化が必要
 46. CLAUDE.md完全更新+思考モデル・設計論理の詳細記録
+47. 四半期レビュー+ランク劣化アラート実装
+    - weekly_update.py: 前回ランク保存ロジック追加（SYNC前に現ランクを前回ランク列に退避）
+    - weekly_update.py: ランク変動検知（RANK_ORDER辞書で転落を自動検出・ログ出力）
+    - weekly_update.py: 前回ランク列が存在しない場合は自動追加
+    - generate_dashboard.py: degradation_alerts リスト生成（保有銘柄のB→C以下転落を検知）
+    - generate_dashboard.py: abar動的生成（ハードコード→プレースホルダー+動的置換）
+    - ai_dashboard_v13.html: abarを<!-- ABAR_DYNAMIC -->プレースホルダーに変更
+48. MacroPhase転換条件の明文化
+    - RED→YELLOW: マクロ総合30点以上+VIX<25+HYG反発
+    - YELLOW→GREEN: マクロ総合60点以上+VIX<20+長短金利差>0
+    - GREEN→YELLOW: 総合59点以下 or VIX>25
+    - YELLOW→RED: 総合30点未満 or VIX>30
+    - daily_update.py行424のPhase判定閾値と整合性確認済み
+49. セッション3最終記録（全チーム漏れチェック完了・書記官記載）
 
 2026/03/26（セッション2）：
 32. 全スクリプト再チェック（daily_price_update.py / weekly_update.py / generate_dashboard.py / 5つのYAML）
