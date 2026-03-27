@@ -816,14 +816,16 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
     <div class="abar"><span class="al">⚠ 要見直し</span><span class="ai">オリックス D(20点)</span><span class="ai">大倉工業 D(20点)・売却検討</span></div>
   </div>
 
-  <!-- 列2：監視銘柄 -->
-  <div class="panel">
+  <!-- 列2：監視銘柄 + スクリーニングTop50（上下分割） -->
+  <div class="panel" style="display:flex;flex-direction:column;gap:0;">
+    <!-- 上半分：監視銘柄 -->
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
     <div class="ph">
-      <span class="t">👁️ 監視銘柄</span>
+      <span class="t">&#x1F441;&#xFE0F; 監視銘柄</span>
       <span class="r"><span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">14銘柄</span><span style="color:#34d399;font-weight:800;">購入候補 1</span></span>
     </div>
-    <div style="flex:1;overflow-y:auto;">
-                                                                                                                                                            <table id="tW">
+    <div style="flex:1;overflow-y:auto;min-height:0;">
+                                                                                                                                                      <table id="tW">
         <tr>
           <th class="sh" onclick="srt('tW',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
@@ -1555,21 +1557,27 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:8px;font
         </tr>
       </table>
     </div>
-    <!-- スクリーニングTop50セクション（折りたたみ式） -->
-    <div class="ph" style="cursor:pointer;border-top:1px solid #f59e0b33;margin-top:4px;padding:4px 8px;" onclick="toggleScreen()">
-      <span class="t" style="color:#f59e0b;font-size:9px;">&#x1F50D; AI Market Scan Top 50</span>
-      <span class="r" id="screen-toggle" style="font-size:8px;color:#f59e0b;">&#x25BC; 展開</span>
     </div>
-    <div id="screen-section" style="display:none;flex:1;overflow-y:auto;min-height:0;">
+    <!-- 下半分：スクリーニングTop50 -->
+    <div style="flex:1;display:flex;flex-direction:column;min-height:0;border-top:1px solid #f59e0b33;">
+    <div class="ph" style="padding:4px 8px;">
+      <span class="t" style="color:#f59e0b;">&#x1F50D; スクリーニング Top 50</span>
+      <span class="r" style="color:#f59e0b;font-size:8px;">全市場スキャン</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;min-height:0;">
       <table id="tS">
         <tr>
           <th class="sh" onclick="srt('tS',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',2,this)" style="color:#f59e0b;">v4.3<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th>判定</th>
+          <th class="sh" onclick="srt('tS',3,this)" style="color:#93c5fd;">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',4,this)" style="color:#93c5fd;">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th>日数</th><th>シグナル</th>
         </tr>
-        <tr><td colspan="4" style="color:#475569;font-size:9px;text-align:center;padding:12px;">日曜夜のスキャン後に表示されます</td></tr>
+        <tr><td colspan="8" style="color:#475569;font-size:9px;text-align:center;padding:12px;">日曜夜のスキャン後に表示されます</td></tr>
       </table>
+    </div>
     </div>
     <div class="gbar"><span class="gl">現在の環境</span><span class="gi">短期29点・中期25点ともに弱気</span><span class="gi">押し目形成後に再評価</span></div>
   </div>
@@ -1875,17 +1883,7 @@ function execMgmt(action){
 }
 /* === /銘柄管理 === */
 
-/* === スクリーニングTop50 折りたたみ === */
-function toggleScreen(){
-  var sec=document.getElementById('screen-section');
-  var tog=document.getElementById('screen-toggle');
-  if(sec.style.display==='none'){
-    sec.style.display='';tog.innerHTML='&#x25B2; 閉じる';
-  }else{
-    sec.style.display='none';tog.innerHTML='&#x25BC; 展開';
-  }
-}
-/* === /スクリーニング === */
+/* === スクリーニングTop50（上下分割・常時表示） === */
 const arrowMap={
   '↑↑':'<span class="ar-uu">↑↑</span>',
   '↑':'<span class="ar-u">↑</span>',

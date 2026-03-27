@@ -689,6 +689,7 @@ for row, stype in screen_data:
     lb2 = e2(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt2 = e2(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
+    rb2 = rbg(rank)
     tr_s = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
@@ -699,6 +700,11 @@ for row, stype in screen_data:
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
+        f'          <td style="color:#fbbf24;">{short_label(SHORT_SCORE)}</td>\n'
+        f'          <td style="color:#fbbf24;">{short_label(MID_SCORE)}</td>\n'
+        f'          <td><span style="background:{rb2};color:{rc};padding:1px 6px;'
+        f'border-radius:4px;font-weight:900;font-size:10px;">{rank}</span></td>\n'
+        f'          <td>scan</td>\n'
         f'          <td><span class="s-buy" style="background:{rbg(rank)};color:{sc};">'
         f'{st}</span></td>\n'
         f'        </tr>'
@@ -828,7 +834,10 @@ if rows_s:
           <th class="sh" onclick="srt('tS',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',2,this)" style="color:#f59e0b;">v4.3<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th>判定</th>
+          <th class="sh" onclick="srt('tS',3,this)" style="color:#93c5fd;">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',4,this)" style="color:#93c5fd;">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th>日数</th><th>シグナル</th>
         </tr>
 """ + '\n'.join(rows_s) + "\n      </table>"
     src = re.sub(r'<table id="tS">.*?</table>',
