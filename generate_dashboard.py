@@ -802,7 +802,7 @@ hold_open = """      <table id="tH">
           <th class="sh" onclick="srt('tH',3,this)" style="color:#93c5fd;">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tH',4,this)" style="color:#93c5fd;">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tH',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th>日数</th><th>判定</th>
+          <th class="sh">日数</th><th class="sh">判定</th>
         </tr>
 """ + '\n'.join(rows_h) + "\n      </table>"
 
@@ -819,7 +819,7 @@ watch_open = """      <table id="tW">
           <th class="sh" onclick="srt('tW',3,this)" style="color:#93c5fd;">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',4,this)" style="color:#93c5fd;">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th>日数</th><th>シグナル</th>
+          <th class="sh">日数</th><th class="sh">シグナル</th>
         </tr>
 """ + '\n'.join(rows_w) + "\n      </table>"
 
@@ -837,7 +837,7 @@ if rows_s:
           <th class="sh" onclick="srt('tS',3,this)" style="color:#93c5fd;">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',4,this)" style="color:#93c5fd;">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th>日数</th><th>シグナル</th>
+          <th class="sh">日数</th><th class="sh">シグナル</th>
         </tr>
 """ + '\n'.join(rows_s) + "\n      </table>"
     src = re.sub(r'<table id="tS">.*?</table>',
