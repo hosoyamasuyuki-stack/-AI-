@@ -2282,18 +2282,17 @@ function updateDetailLinks(c,n){
   var eu='https://disclosure2.edinet-fsa.go.jp/WZEK0040.aspx?S1='+c;
   var ku='https://kabutan.jp/stock/?code='+c;
   s.innerHTML=
-    '<div class="rb-t" style="color:#475569;">External Links</div>'
+    '<div class="rb-t" style="color:#475569;">外部リンク</div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">'
-    +'<a href="'+eu+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#1e2d40;border:1px solid #3b82f6;border-radius:5px;color:#60a5fa;font-size:10px;font-weight:700;text-decoration:none;">EDINET</a>'
-    +'<a href="'+ku+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#1e2d40;border:1px solid #374151;border-radius:5px;color:#94a3b8;font-size:10px;font-weight:700;text-decoration:none;">Kabutan</a>'
+    +'<a href="'+eu+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#1e2d40;border:1px solid #3b82f6;border-radius:5px;color:#60a5fa;font-size:11px;font-weight:700;text-decoration:none;">EDINET\uFF08\u6709\u5831\u30FB\u6C7A\u7B97\uFF09</a>'
     +'</div>'
     +'<div style="margin-top:12px;border:1px solid #f59e0b;border-radius:8px;overflow:hidden;">'
-    +'<div style="background:#1c1400;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">'
-    +'<span style="color:#f59e0b;font-weight:800;font-size:11px;">Deep Insight Analysis</span>'
-    +'<button id="kenja-btn" onclick="runKenja()" style="background:#f59e0b;color:#0d1117;border:none;border-radius:4px;padding:4px 12px;font-size:10px;font-weight:800;cursor:pointer;">Analyze</button>'
+    +'<div style="background:#1c1400;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">'
+    +'<span style="color:#f59e0b;font-weight:800;font-size:13px;">\u8CE2\u8005\u306E\u5BE9\u5224\uFF08AI\u5206\u6790\uFF09</span>'
+    +'<button id="kenja-btn" onclick="runKenja()" style="background:#f59e0b;color:#0d1117;border:none;border-radius:6px;padding:6px 16px;font-size:12px;font-weight:800;cursor:pointer;">\u5206\u6790\u3059\u308B</button>'
     +'</div>'
-    +'<div id="kenja-result" style="padding:10px 12px;min-height:40px;background:#0d1117;color:#94a3b8;font-size:9px;">'
-    +'Click Analyze to start AI analysis.'
+    +'<div id="kenja-result" style="padding:12px 14px;min-height:40px;background:#0d1117;color:#94a3b8;font-size:11px;">'
+    +'\u300C\u5206\u6790\u3059\u308B\u300D\u30DC\u30BF\u30F3\u3092\u62BC\u3059\u3068\u3001AI\u304C\u3053\u306E\u9298\u67C4\u3092\uFF17\u3064\u306E\u8996\u70B9\u3067\u5206\u6790\u3057\u307E\u3059\u3002'
     +'</div></div>';
   var dc=document.getElementById('d-content');
   if(dc)dc.appendChild(s);
@@ -2343,17 +2342,24 @@ function renderKenjaResult(el,data,code,name){
   var vc={S:'#34d399',A:'#5eead4',B:'#fbbf24',C:'#fb923c',D:'#f87171'};
   var vCol=vc[a.verdict]||'#94a3b8';
   var rl={high:'#34d399',medium:'#fbbf24',low:'#f87171'};
-  function bar(sc){var w=Math.max(0,Math.min(5,sc||0))*20;var c=w>=80?'#34d399':w>=60?'#5eead4':w>=40?'#fbbf24':'#f87171';return '<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;background:#1e2d40;border-radius:2px;height:6px;"><div style="width:'+w+'%;height:6px;border-radius:2px;background:'+c+';"></div></div><span style="color:'+c+';font-size:8px;font-weight:800;min-width:20px;">'+sc+'/5</span></div>';}
-  function row(emoji,label,item){return '<div style="padding:6px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="font-size:11px;">'+emoji+'</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">'+escH(label)+'</span><span style="color:#475569;font-size:8px;margin-left:auto;">'+escH(item.title||'')+'</span></div>'+bar(item.score)+'<div style="color:#94a3b8;font-size:8px;margin-top:3px;line-height:1.5;">'+escH(item.summary||'')+'</div></div>';}
+  function bar(sc){var w=Math.max(0,Math.min(5,sc||0))*20;var c=w>=80?'#34d399':w>=60?'#5eead4':w>=40?'#fbbf24':'#f87171';return '<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;background:#1e2d40;border-radius:3px;height:8px;"><div style="width:'+w+'%;height:8px;border-radius:3px;background:'+c+';"></div></div><span style="color:'+c+';font-size:11px;font-weight:800;min-width:28px;">'+sc+'/5</span></div>';}
+  function row(emoji,label,item){return '<div style="padding:8px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;"><span style="font-size:13px;">'+emoji+'</span><span style="color:#cbd5e1;font-size:11px;font-weight:800;">'+escH(label)+'</span><span style="color:#64748b;font-size:10px;margin-left:auto;">'+escH(item.title||'')+'</span></div>'+bar(item.score)+'<div style="color:#94a3b8;font-size:10px;margin-top:4px;line-height:1.6;">'+escH(item.summary||'')+'</div></div>';}
   var pA=a.partA||{};
   var html='';
   // EDINET badge
-  if(ed.found){html+='<div style="display:flex;align-items:center;gap:5px;padding:5px 0;margin-bottom:4px;"><span style="background:#064e3b;color:#34d399;font-size:7px;font-weight:800;padding:2px 6px;border-radius:3px;">EDINET</span><span style="color:#475569;font-size:7.5px;">'+escH(ed.docType||'')+' '+escH((ed.submitDate||'').substring(0,10))+'</span></div>';}
-  else{html+='<div style="padding:4px 0;margin-bottom:4px;"><span style="background:#1e2d40;color:#94a3b8;font-size:7px;font-weight:800;padding:2px 6px;border-radius:3px;">EDINET: no recent filing</span></div>';}
-  // Verdict header
-  html+='<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#0a0d16;border-radius:6px;margin-bottom:8px;">'
-    +'<div style="background:'+vCol+'22;border:2px solid '+vCol+';border-radius:6px;padding:4px 10px;"><span style="color:'+vCol+';font-size:16px;font-weight:900;">'+escH(a.verdict)+'</span></div>'
-    +'<div style="flex:1;"><div style="color:#cbd5e1;font-size:9px;font-weight:800;">AI\u7DCF\u5408\u5224\u5B9A</div></div></div>';
+  if(ed.found){html+='<div style="display:flex;align-items:center;gap:5px;padding:5px 0;margin-bottom:6px;"><span style="background:#064e3b;color:#34d399;font-size:9px;font-weight:800;padding:3px 8px;border-radius:3px;">EDINET</span><span style="color:#64748b;font-size:9px;">'+escH(ed.docType||'')+' '+escH((ed.submitDate||'').substring(0,10))+'</span></div>';}
+  else{html+='<div style="padding:4px 0;margin-bottom:6px;"><span style="background:#1e2d40;color:#94a3b8;font-size:9px;font-weight:800;padding:3px 8px;border-radius:3px;">\u76F4\u8FD190\u65E5\u4EE5\u5185\u306E\u958B\u793A\u66F8\u985E\u306A\u3057</span></div>';}
+  // Score total (sum of partA scores / 30)
+  var scoreSum=0;var scoreCnt=0;
+  ['businessResults','growthQuality','sustainability','outlook','cashFlow'].forEach(function(k){if(pA[k]&&pA[k].score){scoreSum+=pA[k].score;scoreCnt++;}});
+  var scoreTotal=scoreCnt>0?scoreSum:0;var scoreMax=scoreCnt*5;
+  // Verdict header with score
+  html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#0a0d16;border-radius:8px;margin-bottom:10px;">'
+    +'<div style="background:'+vCol+'22;border:2px solid '+vCol+';border-radius:8px;padding:6px 14px;"><span style="color:'+vCol+';font-size:20px;font-weight:900;">'+escH(a.verdict)+'</span></div>'
+    +'<div style="flex:1;">'
+    +'<div style="color:#cbd5e1;font-size:12px;font-weight:800;">AI\u7DCF\u5408\u5224\u5B9A</div>'
+    +'<div style="color:#64748b;font-size:10px;margin-top:2px;">'+scoreTotal+'\u70B9 / '+scoreMax+'\u70B9\u6E80\u70B9</div>'
+    +'</div></div>';
   // Part A rows
   html+=row('📈','業績（売上・利益の動き）',pA.businessResults||{});
   html+=row('📊','成長の質（何で伸びているか）',pA.growthQuality||{});
@@ -2361,22 +2367,24 @@ function renderKenjaResult(el,data,code,name){
   html+=row('🔮','今後の見通し',pA.outlook||{});
   // Risks (special)
   var rsk=pA.risks||{};var rLvl=rsk.level||'medium';
-  html+='<div style="padding:6px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="font-size:11px;">⚠️</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">リスク</span><span style="background:'+(rl[rLvl]||'#fbbf24')+'22;color:'+(rl[rLvl]||'#fbbf24')+';font-size:7px;font-weight:900;padding:1px 6px;border-radius:3px;margin-left:auto;">'+rLvl.toUpperCase()+'</span></div><div style="color:#94a3b8;font-size:8px;line-height:1.5;">'+escH(rsk.summary||'')+'</div></div>';
+  var rLvlJp={high:'\u9AD8\u3044',medium:'\u4E2D\u7A0B\u5EA6',low:'\u4F4E\u3044'};
+  html+='<div style="padding:8px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;"><span style="font-size:13px;">\u26A0\uFE0F</span><span style="color:#cbd5e1;font-size:11px;font-weight:800;">\u30EA\u30B9\u30AF</span><span style="background:'+(rl[rLvl]||'#fbbf24')+'22;color:'+(rl[rLvl]||'#fbbf24')+';font-size:10px;font-weight:900;padding:2px 8px;border-radius:3px;margin-left:auto;">'+(rLvlJp[rLvl]||rLvl)+'</span></div><div style="color:#94a3b8;font-size:10px;line-height:1.6;">'+escH(rsk.summary||'')+'</div></div>';
   html+=row('💰','お金の流れ（現金は残っているか）',pA.cashFlow||{});
   // Alert (score discrepancy warning)
-  if(a.alert){html+='<div style="margin:6px 0;padding:6px 8px;background:#7f1d1d44;border:1px solid #f8717188;border-radius:4px;"><div style="color:#f87171;font-size:8px;font-weight:900;margin-bottom:2px;">⚠ スコアとの乖離を検知</div><div style="color:#fca5a5;font-size:8px;line-height:1.5;">'+escH(a.alert)+'</div></div>';}
+  if(a.alert){html+='<div style="margin:8px 0;padding:8px 10px;background:#7f1d1d44;border:1px solid #f8717188;border-radius:6px;"><div style="color:#f87171;font-size:11px;font-weight:900;margin-bottom:3px;">\u26A0 \u30B9\u30B3\u30A2\u3068\u306E\u4E56\u96E2\u3092\u691C\u77E5</div><div style="color:#fca5a5;font-size:10px;line-height:1.6;">'+escH(a.alert)+'</div></div>';}
   // Final verdict
   var fv=pA.finalVerdict||{};
-  html+='<div style="padding:8px;background:#0a0d16;border-radius:6px;margin-top:8px;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;"><span style="font-size:11px;">📋</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">結論：この会社は信頼できるか</span><span style="background:'+(rl[fv.credibility]||'#fbbf24')+'22;color:'+(rl[fv.credibility]||'#fbbf24')+';font-size:7px;font-weight:900;padding:1px 6px;border-radius:3px;">'+escH((fv.credibility||'').toUpperCase())+'</span></div>';
-  var reasons=fv.reasons||[];for(var i=0;i<reasons.length;i++){html+='<div style="color:#94a3b8;font-size:8px;line-height:1.5;padding-left:8px;">✅ '+escH(reasons[i])+'</div>';}
+  var credJp={high:'\u4FE1\u983C\u3067\u304D\u308B',medium:'\u69D8\u5B50\u898B',low:'\u8981\u6CE8\u610F'};
+  html+='<div style="padding:10px;background:#0a0d16;border-radius:8px;margin-top:10px;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:6px;"><span style="font-size:13px;">\uD83D\uDCCB</span><span style="color:#cbd5e1;font-size:12px;font-weight:800;">\u7D50\u8AD6\uFF1A\u3053\u306E\u4F1A\u793E\u306F\u4FE1\u983C\u3067\u304D\u308B\u304B</span><span style="background:'+(rl[fv.credibility]||'#fbbf24')+'22;color:'+(rl[fv.credibility]||'#fbbf24')+';font-size:10px;font-weight:900;padding:2px 8px;border-radius:3px;">'+(credJp[fv.credibility]||fv.credibility||'')+'</span></div>';
+  var reasons=fv.reasons||[];for(var i=0;i<reasons.length;i++){html+='<div style="color:#94a3b8;font-size:10px;line-height:1.6;padding-left:8px;">\u2705 '+escH(reasons[i])+'</div>';}
   html+='</div>';
   // Beginner advice
-  if(a.beginnerAdvice){html+='<div style="margin-top:8px;padding:8px;background:#1c1400;border:1px solid #f59e0b44;border-radius:6px;"><div style="color:#f59e0b;font-size:9px;font-weight:800;margin-bottom:4px;">💡 初心者向けアドバイス</div><div style="color:#fbbf24;font-size:8.5px;line-height:1.6;">'+escH(a.beginnerAdvice)+'</div></div>';}
+  if(a.beginnerAdvice){html+='<div style="margin-top:10px;padding:10px;background:#1c1400;border:1px solid #f59e0b44;border-radius:8px;"><div style="color:#f59e0b;font-size:12px;font-weight:800;margin-bottom:4px;">\uD83D\uDCA1 \u521D\u5FC3\u8005\u5411\u3051\u30A2\u30C9\u30D0\u30A4\u30B9</div><div style="color:#fbbf24;font-size:11px;line-height:1.7;">'+escH(a.beginnerAdvice)+'</div></div>';}
   // Part B (collapsible)
   var pB=a.partB||{};
   var bKeys=[['overview','業績の全体像'],['growth','成長の中身を読み解く'],['sustainability','この成長は続くのか'],['future','会社が描く未来'],['risks','見落としてはいけないリスク'],['cashflow','お金の流れから見る健全性'],['conclusion','結論：この会社をどう見るか']];
-  var bHtml='';for(var j=0;j<bKeys.length;j++){var v=pB[bKeys[j][0]];if(v)bHtml+='<div style="margin-bottom:6px;"><div style="color:#5eead4;font-size:8px;font-weight:800;">'+bKeys[j][1]+'</div><div style="color:#94a3b8;font-size:8px;line-height:1.6;">'+escH(v)+'</div></div>';}
-  if(bHtml){html+='<details style="margin-top:8px;"><summary style="color:#f59e0b;cursor:pointer;font-size:9px;font-weight:700;padding:4px 0;">詳細レポート (Part B)</summary><div style="padding:6px 0;">'+bHtml+'</div></details>';}
+  var bHtml='';for(var j=0;j<bKeys.length;j++){var v=pB[bKeys[j][0]];if(v)bHtml+='<div style="margin-bottom:10px;"><div style="color:#5eead4;font-size:11px;font-weight:800;margin-bottom:3px;">'+bKeys[j][1]+'</div><div style="color:#94a3b8;font-size:10px;line-height:1.7;">'+escH(v)+'</div></div>';}
+  if(bHtml){html+='<details style="margin-top:10px;"><summary style="color:#f59e0b;cursor:pointer;font-size:12px;font-weight:700;padding:6px 0;">\u25BC \u8A73\u7D30\u30EC\u30DD\u30FC\u30C8\uFF08\u3058\u3063\u304F\u308A\u8AAD\u3080\uFF09</summary><div style="padding:8px 0;">'+bHtml+'</div></details>';}
   el.innerHTML=html;
 }
 
