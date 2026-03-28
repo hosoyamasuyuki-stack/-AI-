@@ -107,10 +107,12 @@ stocks = []
 JPX_URL = 'https://www.jpx.co.jp/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_j.xls'
 print(f"  試行: JPX公式Excel ({JPX_URL})")
 try:
+    import io
     r = requests.get(JPX_URL, timeout=30,
                      headers={'User-Agent': 'Mozilla/5.0'})
+    print(f"  HTTP status: {r.status_code}, size: {len(r.content)} bytes")
     if r.status_code == 200:
-        df_jpx = pd.read_excel(r.content, dtype=str)
+        df_jpx = pd.read_excel(io.BytesIO(r.content), dtype=str)
         # 列名: 日付, コード, 銘柄名, 市場・商品区分, 33業種コード, 33業種区分, ...
         code_col = [c for c in df_jpx.columns if 'コード' in str(c)]
         name_col = [c for c in df_jpx.columns if '銘柄名' in str(c)]
@@ -139,7 +141,9 @@ try:
     else:
         print(f"  失敗: JPX Excel status={r.status_code}")
 except Exception as e:
+    import traceback
     print(f"  エラー: JPX Excel {e}")
+    traceback.print_exc()
 
 # --- 方法B: J-Quants APIフォールバック ---
 if not stocks:
