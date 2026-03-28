@@ -1,3 +1,11 @@
+"""
+app.py - Streamlit dashboard for local development
+
+A lightweight Streamlit interface for viewing spreadsheet data locally.
+Not used in production (GitHub Pages serves ai_dashboard_v13.html).
+
+Usage: streamlit run app.py
+"""
 import streamlit as st
 import gspread
 import json

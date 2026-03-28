@@ -6,6 +6,7 @@
 #   from google.colab import auth
 #   auth.authenticate_user()
 
+import os
 import gspread
 import numpy as np
 import pandas as pd
@@ -56,7 +57,7 @@ else:
     print(f"  V1列: {v1_col}")
 
 import requests
-JQUANTS_API_KEY = '7bEWg3-b2MPc0DWG1vjSugW48LahAiVi622Nxy8S7PA'
+JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY', '')
 
 def get_price(code, start, end):
     try:
