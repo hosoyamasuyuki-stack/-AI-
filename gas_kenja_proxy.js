@@ -3,7 +3,7 @@
  *
  * スクリプトプロパティに以下を設定:
  *   EDINET_API_KEY  : EDINET APIキー
- *   CLAUDE_API_KEY  : Anthropic APIキー
+ *   OPENAI_API_KEY  : OpenAI APIキー（GPT-4o使用）
  *
  * デプロイ: ウェブアプリ → 誰でもアクセス可 → 新バージョン
  */
@@ -21,8 +21,8 @@ function doPost(e) {
     // 2. プロンプト構築
     var prompt = buildPrompt(secCode, name, scores, edinetData);
 
-    // 3. Claude API呼び出し
-    var analysis = callClaude(prompt);
+    // 3. AI API呼び出し（OpenAI GPT-4o）
+    var analysis = callAI(prompt);
 
     // 4. レスポンス
     return ContentService.createTextOutput(JSON.stringify({
@@ -201,24 +201,30 @@ function buildPrompt(secCode, name, scores, edinetData) {
 }
 
 /**
- * Claude API呼び出し
+ * AI API呼び出し（OpenAI GPT-4o）
+ *
+ * スクリプトプロパティ OPENAI_API_KEY が必要。
+ * レスポンスからJSON部分を抽出してパースする。
  */
-function callClaude(prompt) {
+function callAI(prompt) {
   var props = PropertiesService.getScriptProperties();
-  var apiKey = props.getProperty('CLAUDE_API_KEY');
-  if (!apiKey) throw new Error('CLAUDE_API_KEY not set');
+  var apiKey = props.getProperty('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
-  var resp = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+  var resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
     method: 'post',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
+      'Authorization': 'Bearer ' + apiKey
     },
     payload: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'gpt-4o',
       max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }]
+      temperature: 0.3,
+      messages: [
+        { role: 'system', content: 'You are "The Sage" - a professional securities analyst. Always respond with valid JSON only, no markdown.' },
+        { role: 'user', content: prompt }
+      ]
     }),
     muteHttpExceptions: true
   });
@@ -227,18 +233,18 @@ function callClaude(prompt) {
   var body = JSON.parse(resp.getContentText());
 
   if (code !== 200) {
-    throw new Error('Claude API error ' + code + ': ' + (body.error ? body.error.message : 'unknown'));
+    throw new Error('OpenAI API error ' + code + ': ' + (body.error ? body.error.message : 'unknown'));
   }
 
-  var text = body.content && body.content[0] ? body.content[0].text : '';
+  var text = body.choices && body.choices[0] ? body.choices[0].message.content : '';
 
   // JSON部分を抽出（前後の余分なテキストを除去）
   var jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Claude response is not valid JSON');
+  if (!jsonMatch) throw new Error('AI response is not valid JSON');
 
   try {
     return JSON.parse(jsonMatch[0]);
   } catch (e) {
-    throw new Error('Failed to parse Claude JSON: ' + e.message);
+    throw new Error('Failed to parse AI JSON: ' + e.message);
   }
 }

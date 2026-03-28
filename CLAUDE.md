@@ -274,9 +274,13 @@ J-Quants V2仕様：
 2026/03/26進捗：
   - GASプロキシv2をデプロイ済み（バージョン12・全更新+賢者の審判統合）
   - EDINET_API_KEY設定済み
-  - CLAUDE_API_KEY未設定（Anthropicコンソール一時障害中・2026/03/26時点）
-  - 次回：コンソール復旧後にAPIキー取得→GASに設定→Analyzeテスト
-  注意：EDINET分析自体はClaude API不要で動作。APIキーは賢者の審判のAI分析機能に必要
+2026/03/28変更：
+  - Claude API → OpenAI GPT-4oに切替（Anthropicコンソール一時障害のため）
+  - gas_kenja_proxy.js: callClaude()→callAI()、OpenAI Chat Completions API使用
+  - ai_dashboard_v13.html: エラーメッセージ更新（OPENAI_API_KEY対応）
+  - 次回：GASスクリプトプロパティにOPENAI_API_KEYを設定→Analyzeテスト
+  手順：GASプロジェクト設定→スクリプトプロパティ→OPENAI_API_KEY追加
+  注意：EDINET分析自体はAPI不要で動作。APIキーは賢者の審判のAI分析機能に必要
 
 ### Priority 1【解決済み】銘柄管理機能（ダッシュボードから追加・削除・移動）
 
