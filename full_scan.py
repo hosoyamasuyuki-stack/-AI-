@@ -101,13 +101,35 @@ print(f"\n{'='*60}")
 print("Phase 1: J-Quants全銘柄マスター取得")
 print('='*60)
 
-r = requests.get(f"{JQUANTS_BASE}/v2/equities/master",
-                 headers=JQUANTS_HEADERS, timeout=30)
-if r.status_code != 200:
-    print(f"ERROR: マスター取得失敗 status={r.status_code}")
-    sys.exit(1)
+# J-Quants V2: 上場銘柄一覧を取得
+# 複数エンドポイントをフォールバック方式で試行
+ENDPOINTS = [
+    '/v2/equities/listed',   # V2上場銘柄一覧
+    '/v2/equities/master',   # V2マスター
+    '/v1/listed/info',       # V1上場銘柄一覧
+]
+all_master = []
+for ep in ENDPOINTS:
+    print(f"  試行: {ep}")
+    try:
+        r = requests.get(f"{JQUANTS_BASE}{ep}",
+                         headers=JQUANTS_HEADERS, timeout=30)
+        if r.status_code == 200:
+            body = r.json()
+            # レスポンスキーはAPIバージョンによって異なる
+            all_master = (body.get('data') or body.get('info')
+                          or body.get('listed_info') or [])
+            if all_master:
+                print(f"  成功: {ep} ({len(all_master)}件)")
+                break
+        else:
+            print(f"  失敗: {ep} status={r.status_code}")
+    except Exception as e:
+        print(f"  エラー: {ep} {e}")
 
-all_master = r.json().get('data', [])
+if not all_master:
+    print("ERROR: 全エンドポイントで銘柄一覧取得に失敗")
+    sys.exit(1)
 print(f"  全データ: {len(all_master)}件")
 
 # TSE上場の普通株のみ（ETF/REIT/外国株除外）

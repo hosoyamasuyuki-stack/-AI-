@@ -52,7 +52,7 @@ def get_price(code):
         pass
     return None
 
-ws_pred = ss.worksheet("predict_record")
+ws_pred = ss.worksheet("予測記録")
 rows = ws_pred.get_all_values()
 data = rows[2:]  # skip header(0) and subheader(1)
 step0_rows = [r for r in data if "2026/03" in r[COL_DATE] or "2026-03" in r[COL_DATE]]
