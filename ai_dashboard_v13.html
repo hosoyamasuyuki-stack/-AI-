@@ -2351,7 +2351,9 @@ function renderKenjaResult(el,data,code,name){
   else{html+='<div style="padding:4px 0;margin-bottom:6px;"><span style="background:#1e2d40;color:#94a3b8;font-size:9px;font-weight:800;padding:3px 8px;border-radius:3px;">\u76F4\u8FD190\u65E5\u4EE5\u5185\u306E\u958B\u793A\u66F8\u985E\u306A\u3057</span></div>';}
   // Score total (sum of partA scores / 30)
   var scoreSum=0;var scoreCnt=0;
-  ['businessResults','growthQuality','sustainability','outlook','cashFlow'].forEach(function(k){if(pA[k]&&pA[k].score){scoreSum+=pA[k].score;scoreCnt++;}});
+  ['businessResults','growthQuality','sustainability','outlook','defense','cashFlow'].forEach(function(k){if(pA[k]&&pA[k].score){scoreSum+=pA[k].score;scoreCnt++;}});
+  // defenseがなくrisksがある場合（旧フォーマット互換）
+  if(!pA.defense&&pA.risks&&pA.risks.score){scoreSum+=pA.risks.score;scoreCnt++;}
   var scoreTotal=scoreCnt>0?scoreSum:0;var scoreMax=scoreCnt*5;
   // Verdict header with score
   html+='<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#0a0d16;border-radius:8px;margin-bottom:10px;">'
@@ -2365,10 +2367,7 @@ function renderKenjaResult(el,data,code,name){
   html+=row('📊','成長の質（何で伸びているか）',pA.growthQuality||{});
   html+=row('🏗️','その勢いは本物か',pA.sustainability||{});
   html+=row('🔮','今後の見通し',pA.outlook||{});
-  // Risks (special)
-  var rsk=pA.risks||{};var rLvl=rsk.level||'medium';
-  var rLvlJp={high:'\u9AD8\u3044',medium:'\u4E2D\u7A0B\u5EA6',low:'\u4F4E\u3044'};
-  html+='<div style="padding:8px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;"><span style="font-size:13px;">\u26A0\uFE0F</span><span style="color:#cbd5e1;font-size:11px;font-weight:800;">\u30EA\u30B9\u30AF</span><span style="background:'+(rl[rLvl]||'#fbbf24')+'22;color:'+(rl[rLvl]||'#fbbf24')+';font-size:10px;font-weight:900;padding:2px 8px;border-radius:3px;margin-left:auto;">'+(rLvlJp[rLvl]||rLvl)+'</span></div><div style="color:#94a3b8;font-size:10px;line-height:1.6;">'+escH(rsk.summary||'')+'</div></div>';
+  html+=row('🛡️','防御度（弱点の少なさ）',pA.defense||pA.risks||{});
   html+=row('💰','お金の流れ（現金は残っているか）',pA.cashFlow||{});
   // Alert (score discrepancy warning)
   if(a.alert){html+='<div style="margin:8px 0;padding:8px 10px;background:#7f1d1d44;border:1px solid #f8717188;border-radius:6px;"><div style="color:#f87171;font-size:11px;font-weight:900;margin-bottom:3px;">\u26A0 \u30B9\u30B3\u30A2\u3068\u306E\u4E56\u96E2\u3092\u691C\u77E5</div><div style="color:#fca5a5;font-size:10px;line-height:1.6;">'+escH(a.alert)+'</div></div>';}
@@ -2382,7 +2381,7 @@ function renderKenjaResult(el,data,code,name){
   if(a.beginnerAdvice){html+='<div style="margin-top:10px;padding:10px;background:#1c1400;border:1px solid #f59e0b44;border-radius:8px;"><div style="color:#f59e0b;font-size:12px;font-weight:800;margin-bottom:4px;">\uD83D\uDCA1 \u521D\u5FC3\u8005\u5411\u3051\u30A2\u30C9\u30D0\u30A4\u30B9</div><div style="color:#fbbf24;font-size:11px;line-height:1.7;">'+escH(a.beginnerAdvice)+'</div></div>';}
   // Part B (collapsible)
   var pB=a.partB||{};
-  var bKeys=[['overview','業績の全体像'],['growth','成長の中身を読み解く'],['sustainability','この成長は続くのか'],['future','会社が描く未来'],['risks','見落としてはいけないリスク'],['cashflow','お金の流れから見る健全性'],['conclusion','結論：この会社をどう見るか']];
+  var bKeys=[['overview','業績の全体像'],['growth','成長の中身を読み解く'],['sustainability','この成長は続くのか'],['future','会社が描く未来'],['defense','防御度：弱点と対策'],['cashflow','お金の流れから見る健全性'],['conclusion','結論：この会社をどう見るか']];
   var bHtml='';for(var j=0;j<bKeys.length;j++){var v=pB[bKeys[j][0]];if(v)bHtml+='<div style="margin-bottom:10px;"><div style="color:#5eead4;font-size:11px;font-weight:800;margin-bottom:3px;">'+bKeys[j][1]+'</div><div style="color:#94a3b8;font-size:10px;line-height:1.7;">'+escH(v)+'</div></div>';}
   if(bHtml){html+='<details style="margin-top:10px;"><summary style="color:#f59e0b;cursor:pointer;font-size:12px;font-weight:700;padding:6px 0;">\u25BC \u8A73\u7D30\u30EC\u30DD\u30FC\u30C8\uFF08\u3058\u3063\u304F\u308A\u8AAD\u3080\uFF09</summary><div style="padding:8px 0;">'+bHtml+'</div></details>';}
   el.innerHTML=html;
