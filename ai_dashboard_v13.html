@@ -2355,24 +2355,26 @@ function renderKenjaResult(el,data,code,name){
     +'<div style="background:'+vCol+'22;border:2px solid '+vCol+';border-radius:6px;padding:4px 10px;"><span style="color:'+vCol+';font-size:16px;font-weight:900;">'+escH(a.verdict)+'</span></div>'
     +'<div style="flex:1;"><div style="color:#cbd5e1;font-size:9px;font-weight:800;">AI\u7DCF\u5408\u5224\u5B9A</div></div></div>';
   // Part A rows
-  html+=row('📈','業績',pA.businessResults||{});
-  html+=row('📊','成長性',pA.growthQuality||{});
-  html+=row('🏗️','持続性',pA.sustainability||{});
-  html+=row('🔮','見通し',pA.outlook||{});
+  html+=row('📈','業績（売上・利益の動き）',pA.businessResults||{});
+  html+=row('📊','成長の質（何で伸びているか）',pA.growthQuality||{});
+  html+=row('🏗️','その勢いは本物か',pA.sustainability||{});
+  html+=row('🔮','今後の見通し',pA.outlook||{});
   // Risks (special)
   var rsk=pA.risks||{};var rLvl=rsk.level||'medium';
   html+='<div style="padding:6px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="font-size:11px;">⚠️</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">リスク</span><span style="background:'+(rl[rLvl]||'#fbbf24')+'22;color:'+(rl[rLvl]||'#fbbf24')+';font-size:7px;font-weight:900;padding:1px 6px;border-radius:3px;margin-left:auto;">'+rLvl.toUpperCase()+'</span></div><div style="color:#94a3b8;font-size:8px;line-height:1.5;">'+escH(rsk.summary||'')+'</div></div>';
-  html+=row('💰','キャッシュフロー',pA.cashFlow||{});
+  html+=row('💰','お金の流れ（現金は残っているか）',pA.cashFlow||{});
+  // Alert (score discrepancy warning)
+  if(a.alert){html+='<div style="margin:6px 0;padding:6px 8px;background:#7f1d1d44;border:1px solid #f8717188;border-radius:4px;"><div style="color:#f87171;font-size:8px;font-weight:900;margin-bottom:2px;">⚠ スコアとの乖離を検知</div><div style="color:#fca5a5;font-size:8px;line-height:1.5;">'+escH(a.alert)+'</div></div>';}
   // Final verdict
   var fv=pA.finalVerdict||{};
-  html+='<div style="padding:8px;background:#0a0d16;border-radius:6px;margin-top:8px;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;"><span style="font-size:11px;">📋</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">最終判定</span><span style="background:'+(rl[fv.credibility]||'#fbbf24')+'22;color:'+(rl[fv.credibility]||'#fbbf24')+';font-size:7px;font-weight:900;padding:1px 6px;border-radius:3px;">'+escH((fv.credibility||'').toUpperCase())+'</span></div>';
+  html+='<div style="padding:8px;background:#0a0d16;border-radius:6px;margin-top:8px;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;"><span style="font-size:11px;">📋</span><span style="color:#cbd5e1;font-size:9px;font-weight:800;">結論：この会社は信頼できるか</span><span style="background:'+(rl[fv.credibility]||'#fbbf24')+'22;color:'+(rl[fv.credibility]||'#fbbf24')+';font-size:7px;font-weight:900;padding:1px 6px;border-radius:3px;">'+escH((fv.credibility||'').toUpperCase())+'</span></div>';
   var reasons=fv.reasons||[];for(var i=0;i<reasons.length;i++){html+='<div style="color:#94a3b8;font-size:8px;line-height:1.5;padding-left:8px;">✅ '+escH(reasons[i])+'</div>';}
   html+='</div>';
   // Beginner advice
   if(a.beginnerAdvice){html+='<div style="margin-top:8px;padding:8px;background:#1c1400;border:1px solid #f59e0b44;border-radius:6px;"><div style="color:#f59e0b;font-size:9px;font-weight:800;margin-bottom:4px;">💡 初心者向けアドバイス</div><div style="color:#fbbf24;font-size:8.5px;line-height:1.6;">'+escH(a.beginnerAdvice)+'</div></div>';}
   // Part B (collapsible)
   var pB=a.partB||{};
-  var bKeys=[['overview','概要'],['growth','成長性'],['sustainability','持続性'],['future','将来展望'],['risks','リスク'],['cashflow','キャッシュフロー'],['conclusion','結論']];
+  var bKeys=[['overview','業績の全体像'],['growth','成長の中身を読み解く'],['sustainability','この成長は続くのか'],['future','会社が描く未来'],['risks','見落としてはいけないリスク'],['cashflow','お金の流れから見る健全性'],['conclusion','結論：この会社をどう見るか']];
   var bHtml='';for(var j=0;j<bKeys.length;j++){var v=pB[bKeys[j][0]];if(v)bHtml+='<div style="margin-bottom:6px;"><div style="color:#5eead4;font-size:8px;font-weight:800;">'+bKeys[j][1]+'</div><div style="color:#94a3b8;font-size:8px;line-height:1.6;">'+escH(v)+'</div></div>';}
   if(bHtml){html+='<details style="margin-top:8px;"><summary style="color:#f59e0b;cursor:pointer;font-size:9px;font-weight:700;padding:4px 0;">詳細レポート (Part B)</summary><div style="padding:6px 0;">'+bHtml+'</div></details>';}
   el.innerHTML=html;
