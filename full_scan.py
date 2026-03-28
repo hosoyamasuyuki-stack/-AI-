@@ -249,15 +249,17 @@ for i, s in enumerate(scan_targets):
         print(f"  [{i+1}/{len(scan_targets)}] {rate:.0f}銘柄/分 残り{remaining:.0f}分")
 
     try:
-        # デバッグ：最初の5件のコードを出力
-        if i < 5:
-            print(f"  DEBUG code={code!r} len={len(code)}")
+        # デバッグ：最初の3件でAPI応答を直接確認
+        if i < 3:
+            _c5 = code + '0' if len(code) == 4 else code
+            _r = requests.get(f"{JQUANTS_BASE}/v2/fins/summary",
+                              headers=JQUANTS_HEADERS,
+                              params={"code": _c5}, timeout=15)
+            print(f"  DEBUG {code} -> HTTP {_r.status_code} body={_r.text[:300]}")
         df_fin, price_info = get_fin_jq(code, cutoff_date=CUTOFF, today=TODAY)
-        time.sleep(0.35)
+        time.sleep(0.5)
 
         if df_fin is None or len(df_fin) < 2:
-            if i < 5:
-                print(f"  DEBUG {code}: df_fin={df_fin}, price_info={price_info}")
             errors += 1
             continue
 
