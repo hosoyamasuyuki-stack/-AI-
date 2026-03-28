@@ -14,22 +14,17 @@ import numpy as np
 from datetime import datetime, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
+from core.config import (SPREADSHEET_ID, JQUANTS_API_KEY, JQUANTS_HEADERS,
+                          JQUANTS_BASE, GSHEETS_SCOPE,
+                          ROE_THR, FCR_THR, RS_THR, FS_THR, PEG_THR, FCY_THR)
+from core.auth import get_spreadsheet
+from core.scoring import safe, thr_high, thr_low, slope_fn
+from core.api import get_price_jq, get_shares_jq, get_fin_jq
 
 warnings.filterwarnings('ignore')
 
 # ── 認証 ─────────────────────────────────────────────────────
-SPREADSHEET_ID  = os.environ.get('SPREADSHEET_ID',
-                    '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE')
-JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY', '')
-JQUANTS_HEADERS = {'x-api-key': JQUANTS_API_KEY}
-JQUANTS_BASE    = 'https://api.jquants.com'
-
-scope = ['https://spreadsheets.google.com/feeds',
-         'https://www.googleapis.com/auth/drive']
-creds_dict = json.loads(os.environ.get('GOOGLE_CREDENTIALS', '{}'))
-creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-gc    = gspread.authorize(creds)
-ss    = gc.open_by_key(SPREADSHEET_ID)
+ss = get_spreadsheet()
 
 NOW   = datetime.now().strftime('%Y/%m/%d %H:%M')
 TODAY = datetime.now()
@@ -43,116 +38,7 @@ CHECKPOINT_FILE = '/tmp/full_scan_checkpoint.csv'
 print(f"=== Full Market Scan ===")
 print(f"Date: {NOW}")
 
-# ── ヘルパー関数（weekly_update.pyと同一）────────────────────
-def safe(val, d=1):
-    if val is None: return None
-    try:
-        f = float(val)
-        return None if (np.isnan(f) or np.isinf(f)) else round(f, d)
-    except: return None
-
-def thr_high(val, thresholds):
-    if val is None or (isinstance(val, float) and
-       (np.isnan(val) or np.isinf(val))): return 50
-    for t, s in thresholds:
-        if val >= t: return s
-    return 10
-
-def thr_low(val, thresholds):
-    if val is None or (isinstance(val, float) and
-       (np.isnan(val) or np.isinf(val))): return 50
-    for t, s in thresholds:
-        if val <= t: return s
-    return 10
-
-def slope_fn(series):
-    v = pd.Series(series).replace([np.inf, -np.inf], np.nan).dropna().values
-    if len(v) < 2: return 0.0
-    return float(np.polyfit(range(len(v)), v, 1)[0])
-
-# ── J-Quants V2 データ取得 ───────────────────────────────────
-def get_price_jq(code):
-    try:
-        code5 = code + '0' if len(code) == 4 else code
-        for days_ago in range(1, 8):
-            date_str = (TODAY - timedelta(days=days_ago)).strftime('%Y-%m-%d')
-            r = requests.get(f"{JQUANTS_BASE}/v2/equities/bars/daily",
-                             headers=JQUANTS_HEADERS,
-                             params={"code": code5, "date": date_str},
-                             timeout=10)
-            if r.status_code == 200:
-                data = r.json().get('data', [])
-                if data:
-                    d = data[0]
-                    price = d.get('AdjC') or d.get('C')
-                    shares = get_shares_jq(code5)
-                    market_cap = float(price) * shares if price and shares else None
-                    return {'price': price, 'market_cap': market_cap, 'date': date_str}
-        return {}
-    except: return {}
-
-def get_shares_jq(code5):
-    try:
-        r = requests.get(f"{JQUANTS_BASE}/v2/equities/master",
-                         headers=JQUANTS_HEADERS,
-                         params={"code": code5}, timeout=10)
-        if r.status_code == 200:
-            data = r.json().get('data', [])
-            if data:
-                shares = data[0].get('TotalMarketValue')
-                if shares: return float(shares)
-        return None
-    except: return None
-
-def get_fin_jq(code):
-    try:
-        code5 = code + '0' if len(code) == 4 else code
-        r = requests.get(f"{JQUANTS_BASE}/v2/fins/summary",
-                         headers=JQUANTS_HEADERS,
-                         params={"code": code5}, timeout=15)
-        if r.status_code != 200: return None, {}
-        data = r.json().get('data', [])
-        if not data: return None, {}
-        df = pd.DataFrame(data)
-        if 'CurPerEn' in df.columns:
-            df['CurPerEn'] = pd.to_datetime(df['CurPerEn'], errors='coerce')
-            df = df[df['CurPerEn'] >= pd.Timestamp(CUTOFF)].copy()
-            df = df.sort_values('CurPerEn').reset_index(drop=True)
-        if len(df) < 2: return None, {}
-        if 'DocType' in df.columns:
-            annual = df[
-                df['DocType'].str.contains('FinancialStatements', na=False) &
-                ~df['DocType'].str.contains('2Q|3Q|1Q|HalfYear|Quarter', na=False)
-            ].copy()
-            if len(annual) >= 2: df = annual
-        for col in ['Sales','OP','NP','EPS','DEPS','TA','Eq','EqAR',
-                    'CFO','CFI','FEPS','FOP','FNP','ShOutFY']:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-        if 'NP' in df.columns and 'Eq' in df.columns:
-            df['ROE'] = df['NP'] / df['Eq'].replace(0, np.nan) * 100
-        if 'CFO' in df.columns and 'CFI' in df.columns:
-            df['FCF'] = df['CFO'] + df['CFI']
-        if 'FCF' in df.columns and 'NP' in df.columns:
-            df['FCR'] = df['FCF'] / df['NP'].replace(0, np.nan) * 100
-        price_info = get_price_jq(code)
-        if 'ShOutFY' in df.columns:
-            shares_latest = df['ShOutFY'].dropna()
-            if len(shares_latest) > 0:
-                price_info['shares'] = float(shares_latest.iloc[-1])
-                if price_info.get('price'):
-                    price_info['market_cap'] = float(price_info['price']) * float(shares_latest.iloc[-1])
-        return df.replace([np.inf, -np.inf], np.nan).dropna(how='all'), price_info
-    except: return None, {}
-
 # ── v4.3スコア計算 ──────────────────────────────────────────
-ROE_THR = [(25,100),(20,85),(15,70),(12,58),(10,46),(8,35),(5,20),(0,8)]
-FCR_THR = [(120,100),(100,90),(80,78),(60,62),(40,44),(20,26),(0,10)]
-RS_THR  = [(4.0,100),(2.0,82),(0.5,64),(-0.5,46),(-2.0,28),(-999,12)]
-FS_THR  = [(8.0,100),(4.0,80),(0.0,60),(-4.0,40),(-8.0,20),(-999,8)]
-PEG_THR = [(0.5,100),(0.8,85),(1.0,72),(1.2,58),(1.5,42),(2.0,26),(999,12)]
-FCY_THR = [(8,100),(6,85),(4,70),(3,55),(2,38),(1,22),(0,8)]
-
 def calc_v43_score(df, price_info):
     if df is None or len(df) < 2: return 0, 'D', {}
     roe_s = df['ROE'].dropna() if 'ROE' in df.columns else pd.Series()
@@ -306,7 +192,7 @@ for i, s in enumerate(scan_targets):
         print(f"  [{i+1}/{len(scan_targets)}] {rate:.0f}銘柄/分 残り{remaining:.0f}分")
 
     try:
-        df_fin, price_info = get_fin_jq(code)
+        df_fin, price_info = get_fin_jq(code, cutoff_date=CUTOFF, today=TODAY)
         time.sleep(0.35)
 
         if df_fin is None or len(df_fin) < 2:

@@ -24,23 +24,17 @@ import yfinance as yf
 from datetime import datetime, timedelta
 import gspread
 from google.oauth2.service_account import Credentials
+from core.config import (SPREADSHEET_ID, JQUANTS_API_KEY, JQUANTS_HEADERS,
+                          JQUANTS_BASE, PEG_THR, FCY_THR)
+from core.auth import get_spreadsheet
+from core.scoring import safe, thr_high, thr_low
 warnings.filterwarnings('ignore')
 
 # ── 認証・設定 ─────────────────────────────────────────────
-SPREADSHEET_ID  = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE'
-JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY', '')
-JQUANTS_HEADERS = {'x-api-key': JQUANTS_API_KEY}
-JQUANTS_BASE    = 'https://api.jquants.com'
-
 # 株価取得ソース切替：jquants（自動更新・前日終値）/ yfinance（手動更新・リアルタイム）
 PRICE_SOURCE = os.environ.get('PRICE_SOURCE', 'jquants')
 
-scope      = ['https://spreadsheets.google.com/feeds',
-              'https://www.googleapis.com/auth/drive']
-creds_dict = json.loads(os.environ.get('GOOGLE_CREDENTIALS', '{}'))
-creds      = Credentials.from_service_account_info(creds_dict, scopes=scope)
-gc         = gspread.authorize(creds)
-ss         = gc.open_by_key(SPREADSHEET_ID)
+ss = get_spreadsheet()
 
 NOW   = datetime.now().strftime('%Y/%m/%d %H:%M')
 TODAY = datetime.now()
@@ -74,34 +68,7 @@ for _sheet_name in ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']:
         print(f"  WARN: {_sheet_name} 読み込みエラー: {_e}")
 print(f"銘柄マスタ: {len(STOCKS)}銘柄（v4.3シートから自動取得）")
 
-# ── ヘルパー関数 ─────────────────────────────────────────────
-def safe(val, d=1):
-    if val is None: return None
-    try:
-        f = float(val)
-        return None if (np.isnan(f) or np.isinf(f)) else round(f, d)
-    except: return None
-
-def thr_high(val, thresholds):
-    """値が大きいほど高スコア（FCF利回り等）"""
-    if val is None or (isinstance(val,float) and
-       (np.isnan(val) or np.isinf(val))): return 50
-    for t, s in thresholds:
-        if val >= t: return s
-    return 10
-
-def thr_low(val, thresholds):
-    """値が小さいほど高スコア（PEG等）"""
-    if val is None or (isinstance(val,float) and
-       (np.isnan(val) or np.isinf(val))): return 50
-    for t, s in thresholds:
-        if val <= t: return s
-    return 10
-
-# PEG: 小さいほど良い（thr_lowで使用）
-PEG_THR = [(0.5,100),(0.8,85),(1.0,72),(1.2,58),(1.5,42),(2.0,26),(999,12)]
-# FCF利回り: 大きいほど良い（thr_highで使用）
-FCY_THR = [(8,100),(6,85),(4,70),(3,55),(2,38),(1,22),(0,8)]
+# ── ヘルパー関数・閾値はcore/scoring.py, core/config.pyからimport済み ──
 
 # ── 株価取得（2営業日分：当日と前日）───────────────────────
 def get_price_jquants(code):

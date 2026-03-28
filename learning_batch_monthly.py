@@ -14,17 +14,14 @@ import numpy as np
 from datetime import datetime, timedelta
 from google.oauth2.service_account import Credentials
 import gspread
+from core.config import (SPREADSHEET_ID, ROE_THR, FCR_THR, RS_THR,
+                          FS_THR, PEG_THR, FCY_THR)
+from core.auth import get_spreadsheet
 
 warnings.filterwarnings('ignore')
 
 # ── 認証 ────────────────────────────────────────────────────
-SPREADSHEET_ID  = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE'
-scope           = ['https://spreadsheets.google.com/feeds',
-                   'https://www.googleapis.com/auth/drive']
-creds_dict      = json.loads(os.environ['GOOGLE_CREDENTIALS'])
-creds           = Credentials.from_service_account_info(creds_dict, scopes=scope)
-gc              = gspread.authorize(creds)
-ss              = gc.open_by_key(SPREADSHEET_ID)
+ss = get_spreadsheet()
 NOW             = datetime.now().strftime('%Y/%m/%d %H:%M')
 TODAY           = datetime.now()
 print(f"✅ 接続完了: {ss.title}  実行日時: {NOW}")
@@ -65,13 +62,7 @@ STOCKS = [
     ('半導体','8035','東京エレクトロン','大'),('半導体','6857','アドバンテスト','中'),('半導体','6146','ディスコ','小'),
 ]
 
-# ── v4.2スコア計算 ───────────────────────────────────────────
-ROE_THR = [(25,100),(20,85),(15,70),(12,58),(10,46),(8,35),(5,20),(0,8)]
-FCR_THR = [(120,100),(100,90),(80,78),(60,62),(40,44),(20,26),(0,10)]
-RS_THR  = [(4.0,100),(2.0,82),(0.5,64),(-0.5,46),(-2.0,28),(-999,12)]
-FS_THR  = [(8.0,100),(4.0,80),(0.0,60),(-4.0,40),(-8.0,20),(-999,8)]
-PEG_THR = [(0.5,100),(0.8,85),(1.0,72),(1.2,58),(1.5,42),(2.0,26),(999,12)]
-FCY_THR = [(8,100),(6,85),(4,70),(3,55),(2,38),(1,22),(0,8)]
+# ── v4.2スコア計算（閾値はcore/config.pyからimport済み）─────
 
 def thr(v,t):
     if v is None or (isinstance(v,float) and (np.isnan(v) or np.isinf(v))): return 0

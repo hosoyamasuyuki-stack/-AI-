@@ -42,7 +42,7 @@ def get_price(code):
         pass
     try:
         import requests as req
-        API_KEY = "Lyj7s8vuAU1Cdyz3kaySt2h96EAwA2DGfnTZu3C5L1A"
+        API_KEY = os.environ.get('JQUANTS_API_KEY', '')
         today = datetime.now().strftime("%Y%m%d")
         url = f"https://api.jquants.com/v2/equities/bars/daily?code={code}0&from={today}&to={today}"
         r = req.get(url, headers={"x-api-key": API_KEY})

@@ -1,5 +1,5 @@
 # AI投資判断システム 開発パートナー設定 完全版
-# 最終更新：2026/03/26（セッション2）
+# 最終更新：2026/03/28（セッション4）
 
 ================================================================
 ## セッション開始時の定型動作
@@ -146,6 +146,12 @@ FCF利回り：8%以上→100pt / 4%→70pt / 2%→38pt / 0%以下→8pt
 ## リポジトリ構成
 ================================================================
 
+core/                  : 共通モジュール（2026/03/28新設）
+  __init__.py          :   パッケージ初期化
+  config.py            :   定数・閾値・API設定（SPREADSHEET_ID・ROE_THR等）
+  auth.py              :   Google Sheets認証（get_spreadsheet()）
+  scoring.py           :   スコア計算ヘルパー（safe/thr_high/thr_low/slope_fn）
+  api.py               :   J-Quants API（get_price_jq/get_fin_jq/get_shares_jq）
 ai_dashboard_v13.html  : メインダッシュボード（GitHub Pages公開中）
 kenja.js               : 賢者の審判JS（現在問題あり・後述）
 generate_dashboard.py  : ダッシュボード生成スクリプト
@@ -784,6 +790,26 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
 ================================================================
 ## 変更履歴サマリー
 ================================================================
+
+2026/03/28（セッション4）：
+50. データ管理・保守性改善（第三者引き継ぎ対応）
+    Phase 1: .gitignore標準化（Python/OS/IDEパターン追加）
+    Phase 2: .env.example新規作成（全環境変数テンプレート・取得先コメント付き）
+    Phase 3: requirements.txt完全版（8パッケージ・最低バージョン指定）
+    Phase 4: ハードコードAPIキー除去（verify_0415.py:45 / backtest_H002_v1.py:59）
+    Phase 5: core/共通モジュール新設
+      - core/config.py: SPREADSHEET_ID・6閾値定数・J-Quants設定を一元管理
+      - core/auth.py: Google Sheets認証を1関数に統合（get_spreadsheet()）
+      - core/scoring.py: safe/thr_high/thr_low/slope_fnを7ファイルから統合
+      - core/api.py: get_price_jq/get_fin_jq/get_shares_jqを3ファイルから統合
+      - 修正対象: weekly_update.py / daily_price_update.py / full_scan.py /
+                  manage_stock.py / learning_batch_monthly.py / verify_monday.py
+    Phase 6: 旧ファイル削除（5ファイル・計764KB削減）
+      - ai_dashboard_v10_final.html / v11_fixed / v11_latest / v12_edinet
+      - weekly_update_v4.py（孤立・未使用）
+    Phase 7: README.md作成（アーキテクチャ図・ファイル構成・セットアップ手順・スケジュール一覧）
+    Phase 8: app.pyにdocstring追加
+51. CLAUDE.md更新（リポジトリ構成にcore/追加・変更履歴記録）
 
 2026/03/27（セッション3）：
 37. 銘柄管理機能の完全実装
