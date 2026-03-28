@@ -619,6 +619,15 @@ for row, stype in all_data:
     price =     sf(row.get('株価'))
     if not code: continue
 
+    # 総合スコアを変数から再計算（スプレッドシートの値が古い場合の保護）
+    if s1 is not None and s2 is not None and s3 is not None:
+        calc_tot = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)
+        if tot is None or abs(tot - calc_tot) > 1.0:
+            print(f"  RECALC: {code} 総合スコア {tot} -> {calc_tot}")
+            tot = calc_tot
+            rank = ('S' if tot >= 80 else 'A' if tot >= 65 else
+                    'B' if tot >= 50 else 'C' if tot >= 35 else 'D')
+
     SCORES[code] = [s1, s2, s3, tot, roe, fcr, roeT, 0, peg, fy]
     ps = f"{int(price):,}" if price > 0 else '-'
     vs = f"{tot:.1f}/{rank}" if tot > 0 else '-'
@@ -681,6 +690,14 @@ for row, stype in screen_data:
     fy    =     sf(row.get('FCF利回り'))
     price =     sf(row.get('株価'))
     if not code: continue
+
+    # 総合スコアを変数から再計算（スプレッドシートの値が古い場合の保護）
+    if s1 is not None and s2 is not None and s3 is not None:
+        calc_tot = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)
+        if tot is None or abs(tot - calc_tot) > 1.0:
+            tot = calc_tot
+            rank = ('S' if tot >= 80 else 'A' if tot >= 65 else
+                    'B' if tot >= 50 else 'C' if tot >= 35 else 'D')
 
     SCORES[code] = [s1, s2, s3, tot, roe, fcr, roeT, 0, peg, fy]
     ps = f"{int(price):,}" if price > 0 else '-'
