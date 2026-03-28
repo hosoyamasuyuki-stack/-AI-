@@ -23,24 +23,30 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install gspread google-auth pandas
+          pip install gspread google-auth pandas yfinance requests
 
       - name: Run verify_monday (毎週月曜)
         if: github.event.schedule == '0 2 * * 1'
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python verify_monday.py
 
       - name: Run verify_0415 (4/15のみ)
         if: github.event.schedule == '0 0 15 4 *'
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python verify_0415.py
 
       - name: Run both (手動実行時)
         if: github.event_name == 'workflow_dispatch'
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: |
           python verify_monday.py
           echo "---"
