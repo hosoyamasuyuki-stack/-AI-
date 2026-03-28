@@ -19,6 +19,7 @@
 - Colab             : https://colab.research.google.com/drive/1D99_hP0eyFw9GPp92sD2zeYPmiLeung3
 - GASプロジェクト   : https://script.google.com/u/0/home/projects/10AJhsVjzs6dUsSu9f-NCIE0F9Dbt1ECykKPSaRkppCtRz_XQpu7EQ6lo/edit
 - GAS URL（2026/03/25デプロイ済み）: https://script.google.com/macros/s/AKfycbwVDZ9IhuGEz7onU9uCvhSFd7N84cGQouIcnBMQO5iIlFwbNbVP4J8_tPtOj8X7yxAw/exec
+- 賢者の審判AI : OpenAI GPT-4o（2026/03/28切替・GASプロパティにOPENAI_API_KEY設定要）
 - 機密情報          : .envファイル参照（GITHUB_TOKEN / EDINET_API_KEY / SPREADSHEET_ID / JQUANTS_EMAIL）
 - FRED APIキー      : .envファイル参照
 - 実運用口座        : SBI証券・楽天証券（2口座合計46銘柄保有）
