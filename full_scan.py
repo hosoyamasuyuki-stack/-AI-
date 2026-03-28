@@ -98,46 +98,77 @@ def calc_v43_score(df, price_info):
 # Phase 1: 全上場銘柄リスト取得
 # ============================================================
 print(f"\n{'='*60}")
-print("Phase 1: J-Quants全銘柄マスター取得")
+print("Phase 1: 上場銘柄一覧取得")
 print('='*60)
 
-# J-Quants V2: 上場銘柄一覧を取得
-# 複数エンドポイントをフォールバック方式で試行
-ENDPOINTS = [
-    '/v2/equities/listed',   # V2上場銘柄一覧
-    '/v2/equities/master',   # V2マスター
-    '/v1/listed/info',       # V1上場銘柄一覧
-]
-all_master = []
-for ep in ENDPOINTS:
-    print(f"  試行: {ep}")
-    try:
-        r = requests.get(f"{JQUANTS_BASE}{ep}",
-                         headers=JQUANTS_HEADERS, timeout=30)
-        if r.status_code == 200:
-            body = r.json()
-            # レスポンスキーはAPIバージョンによって異なる
-            all_master = (body.get('data') or body.get('info')
-                          or body.get('listed_info') or [])
-            if all_master:
-                print(f"  成功: {ep} ({len(all_master)}件)")
-                break
-        else:
-            print(f"  失敗: {ep} status={r.status_code}")
-    except Exception as e:
-        print(f"  エラー: {ep} {e}")
+stocks = []
 
-if not all_master:
-    print("ERROR: 全エンドポイントで銘柄一覧取得に失敗")
+# --- 方法A: JPX公式 東証上場銘柄一覧（Excel） ---
+JPX_URL = 'https://www.jpx.co.jp/markets/statistics-equities/misc/tvdivq0000001vg2-att/data_j.xls'
+print(f"  試行: JPX公式Excel ({JPX_URL})")
+try:
+    r = requests.get(JPX_URL, timeout=30,
+                     headers={'User-Agent': 'Mozilla/5.0'})
+    if r.status_code == 200:
+        df_jpx = pd.read_excel(r.content, dtype=str)
+        # 列名: 日付, コード, 銘柄名, 市場・商品区分, 33業種コード, 33業種区分, ...
+        code_col = [c for c in df_jpx.columns if 'コード' in str(c)]
+        name_col = [c for c in df_jpx.columns if '銘柄名' in str(c)]
+        market_col = [c for c in df_jpx.columns if '市場' in str(c)]
+        sector_col = [c for c in df_jpx.columns if '33業種区分' in str(c) or '業種' in str(c)]
+        if code_col:
+            cc = code_col[0]
+            nc = name_col[0] if name_col else cc
+            mc = market_col[0] if market_col else None
+            sc = sector_col[0] if sector_col else None
+            for _, row in df_jpx.iterrows():
+                code = str(row[cc]).strip()
+                if not code or not code.isdigit() or len(code) != 4:
+                    continue
+                # プライム・スタンダード・グロースのみ（ETF/REIT除外）
+                market = str(row[mc]) if mc else ''
+                if mc and not any(m in market for m in ['プライム', 'スタンダード', 'グロース']):
+                    continue
+                stocks.append({
+                    'Code': code,
+                    'CompanyName': str(row[nc]).strip() if nc else '',
+                    'Sector33CodeName': str(row[sc]).strip() if sc else '',
+                    'MarketCodeName': market,
+                })
+            print(f"  成功: JPX Excel ({len(stocks)}銘柄)")
+    else:
+        print(f"  失敗: JPX Excel status={r.status_code}")
+except Exception as e:
+    print(f"  エラー: JPX Excel {e}")
+
+# --- 方法B: J-Quants APIフォールバック ---
+if not stocks:
+    print("  JPX Excel失敗 → J-Quants APIにフォールバック")
+    for ep in ['/v2/equities/listed', '/v2/equities/master']:
+        print(f"  試行: {ep}")
+        try:
+            r = requests.get(f"{JQUANTS_BASE}{ep}",
+                             headers=JQUANTS_HEADERS, timeout=30)
+            if r.status_code == 200:
+                body = r.json()
+                all_master = (body.get('data') or body.get('info')
+                              or body.get('listed_info') or [])
+                if all_master:
+                    VALID_MARKETS = ['0111', '0112', '0113']
+                    stocks = [d for d in all_master
+                              if d.get('MarketCode') in VALID_MARKETS]
+                    print(f"  成功: {ep} ({len(stocks)}銘柄)")
+                    break
+            else:
+                print(f"  失敗: {ep} status={r.status_code}")
+        except Exception as e:
+            print(f"  エラー: {ep} {e}")
+
+if not stocks:
+    print("ERROR: 銘柄一覧取得に全て失敗")
     sys.exit(1)
-print(f"  全データ: {len(all_master)}件")
 
-# TSE上場の普通株のみ（ETF/REIT/外国株除外）
-# MarketCode: 0111=プライム, 0112=スタンダード, 0113=グロース
-VALID_MARKETS = ['0111', '0112', '0113']
-stocks = [d for d in all_master
-          if d.get('MarketCode') in VALID_MARKETS]
-print(f"  TSE普通株: {len(stocks)}件")
+print(f"  TSE普通株: {len(stocks)}銘柄")
 
 # ============================================================
 # Phase 2: 保有/監視銘柄を除外
