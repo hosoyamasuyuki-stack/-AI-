@@ -824,7 +824,16 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
     - セクション番号リナンバリング（旧04反論→05）
 56. 賢者の審判CLAUDE_API_KEY設定手順書を細矢さんに提供
 57. CLAUDE.md最終更新（全作業記録）
-58. 本番検証結果：
+58. 追加リファクタリング：残り8ファイルのcore/移行
+    - generate_dashboard.py: 認証→core/auth.get_spreadsheet()
+    - sheet_manager.py: 認証→core/auth.get_spreadsheet()
+    - record_changelog.py: 認証→core/auth.get_spreadsheet()
+    - verify_0415.py: 認証→core/auth.get_spreadsheet()
+    - generate_handover.py: SPREADSHEET_ID→core/config.SPREADSHEET_ID
+    - app.py: SPREADSHEET_ID→core/config.SPREADSHEET_ID
+    - evidence_page.html: Section 05重複→Section 06に修正
+    これにより本番稼働する全Pythonスクリプト（12ファイル）がcore/を使用
+59. 本番検証結果：
     - weekly_update: SUCCESS（core/ import正常動作）
     - daily_price_update: SUCCESS（core/ import正常動作）
     - verify_monday: SUCCESS（シート名修正後）

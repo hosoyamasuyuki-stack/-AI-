@@ -13,7 +13,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # === 設定 ===
-SPREADSHEET_ID = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE'
+from core.config import SPREADSHEET_ID
 SHEET_NAME = 'Handover_v3.0'
 GITHUB_REPO = 'hosoyamasuyuki-stack/-AI-'
 GITHUB_FILE = 'handover.txt'

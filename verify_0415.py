@@ -7,12 +7,8 @@ from google.oauth2.service_account import Credentials
 import yfinance as yf
 warnings.filterwarnings("ignore")
 
-SPREADSHEET_ID = "1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE"
-scope = ["https://spreadsheets.google.com/feeds","https://www.googleapis.com/auth/drive"]
-creds_dict = json.loads(os.environ.get("GOOGLE_CREDENTIALS","{}"))
-creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-gc = gspread.authorize(creds)
-ss = gc.open_by_key(SPREADSHEET_ID)
+from core.auth import get_spreadsheet
+ss = get_spreadsheet()
 NOW = datetime.now().strftime("%Y/%m/%d %H:%M")
 print(f"OK: {ss.title} ({NOW})")
 

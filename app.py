@@ -12,6 +12,7 @@ import json
 import os
 import pandas as pd
 from google.oauth2.service_account import Credentials
+from core.config import SPREADSHEET_ID
 
 # ============================================================
 # 認証
@@ -29,8 +30,7 @@ def get_spreadsheet():
     ]
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     gc   = gspread.authorize(creds)
-    ss   = gc.open_by_key(os.environ.get("SPREADSHEET_ID",
-           "1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE"))
+    ss   = gc.open_by_key(SPREADSHEET_ID)
     return ss
 
 # ============================================================
