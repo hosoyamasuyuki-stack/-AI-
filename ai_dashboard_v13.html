@@ -2317,7 +2317,7 @@ function runKenja(){
   .then(function(r){return r.json();})
   .then(function(data){
     if(!data.ok){
-      if(data.error&&(data.error.indexOf('OPENAI_API_KEY')>=0||data.error.indexOf('CLAUDE_API_KEY')>=0)){
+      if(data.error&&(data.error.indexOf('kenja-rich-api')>=0||data.error.indexOf('OPENAI_API_KEY')>=0||data.error.indexOf('CLAUDE_API_KEY')>=0)){
         res.innerHTML='<div style="color:#f59e0b;padding:10px;font-size:9px;line-height:1.6;">'
           +'<div style="font-weight:800;margin-bottom:6px;">API KEY</div>'
           +'AI API is temporarily unavailable.<br>'

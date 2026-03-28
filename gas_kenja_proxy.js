@@ -3,7 +3,7 @@
  *
  * スクリプトプロパティに以下を設定:
  *   EDINET_API_KEY  : EDINET APIキー
- *   OPENAI_API_KEY  : OpenAI APIキー（GPT-4o使用）
+ *   kenja-rich-api  : OpenAI APIキー（GPT-4o使用）
  *
  * デプロイ: ウェブアプリ → 誰でもアクセス可 → 新バージョン
  */
@@ -203,13 +203,13 @@ function buildPrompt(secCode, name, scores, edinetData) {
 /**
  * AI API呼び出し（OpenAI GPT-4o）
  *
- * スクリプトプロパティ OPENAI_API_KEY が必要。
+ * スクリプトプロパティ kenja-rich-api が必要。
  * レスポンスからJSON部分を抽出してパースする。
  */
 function callAI(prompt) {
   var props = PropertiesService.getScriptProperties();
-  var apiKey = props.getProperty('OPENAI_API_KEY');
-  if (!apiKey) throw new Error('OPENAI_API_KEY not set');
+  var apiKey = props.getProperty('kenja-rich-api');
+  if (!apiKey) throw new Error('kenja-rich-api not set');
 
   var resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
     method: 'post',
