@@ -292,20 +292,18 @@ J-Quants V2仕様：
     - GASプロキシv2: バージョン13にデプロイ済み（triggerManageStock_関数追加）
   PR #1でmainにマージ済み・ダッシュボードで動作確認完了
 
-### Priority 1【実装済み・初回実行待ち】全日本株スクリーニング（週次Top50）
+### Priority 1【修正中】全日本株スクリーニング（週次Top50）
 
-2026/03/27実装：
+2026/03/27実装・2026/03/28修正：
   全上場約3,800社をv4.3スコアでスキャン→上位50銘柄をダッシュボードに表示
   目的：Sランク銘柄の見落とし防止。気になったら銘柄管理で監視に追加
-  実装：
-    - full_scan.py: J-Quants全銘柄マスター→v4.3スコア計算→Top50書き出し
-    - full_scan.yml: 毎週日曜22:00 JST（timeout 180分）
-    - generate_dashboard.py: スクリーニング_Top50シート読み込み+テーブル生成
-    - ai_dashboard_v13.html: 監視銘柄下に折りたたみ式Top50セクション
-  ダッシュボード階層：保有銘柄→監視銘柄→スクリーニング50社
-  表示項目：銘柄・株価・スコア・判定（簡素表示）
-  PR #3でmainにマージ済み・初回手動実行2026/03/27起動済み（結果待ち90-120分）
-  スプレッドシート新シート：スクリーニング_Top50
+
+  2026/03/28修正（J-Quants API 403問題）：
+    - J-Quants /v2/equities/master（パラメータなし）が403 → 無料プランでは一括取得不可
+    - JPX公式 東証上場銘柄一覧（data_j.xls）から銘柄コード取得に変更
+    - J-Quants APIはフォールバックとして残す
+    - full_scan.yml: xlrd/openpyxl追加（Excel読み込み用）
+    - 2026/03/28 14:15 JST再実行中（Phase3スコア計算に進んだ模様・90分待ち）
 
 ### Priority 2：2026/04/15 STEP0検証
 
@@ -340,16 +338,20 @@ verify_0415.py が完全自動化済み
 5. ヘッダー日時バッジ → 2026/03/27解決（generate_dashboard.pyにre.sub追加）
 ※ 全日本株スクリーニング → 2026/03/27実装（full_scan.py・毎週日曜22:00 JST・初回実行待ち）
 
+【解決済み（2026/03/28）】
+10. エビデンスページにH004検証結果を追加 → 完了（Section 04・グラフ・サマリーカード追加）
+※ verify_0415.pyシート名修正 → "predict_record"→"予測記録"に修正・verify SUCCESS確認
+※ verify.ymlにyfinance/requests/環境変数追加 → PR #17でマージ済み
+
 【最優先】
 2. 2026/03/30 verify_monday.py初回結果確認
-3. 2026/04/15 STEP0目先予測自動検証（verify_0415.py v3）
-4. Anthropicコンソール復旧後にCLAUDE_API_KEY取得→GASに設定
-※ 全市場スキャン初回結果確認（2026/03/27夜 or 次回日曜22:00 JST）
+3. 2026/04/15 STEP0目先予測自動検証（verify_0415.py v3 → シート名修正済み）
+4. CLAUDE_API_KEY取得→GASに設定（手順書は細矢さんに提供済み）
+※ 全市場スキャン初回結果確認（JPX Excel方式に変更・2026/03/28実行中）
 6. H005マクロフェーズ判断のバックテスト（J-Quants v1認証解決後）
 7. 売り判断ルールの体系化（天才投資家からの指摘）
 8. H004完全ウォークフォワード再検証（J-Quants v1認証解決後）
 9. J-Quantsサポートへv1財務データ認証問題を問い合わせ
-10. エビデンスページにH004検証結果を追加（年率+9.13%・5/5勝ち・p=0.0321）
 11. 学習用100銘柄の月次バッチ初回実行
 
 【将来的な大きなタスク】
@@ -810,6 +812,24 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
     Phase 7: README.md作成（アーキテクチャ図・ファイル構成・セットアップ手順・スケジュール一覧）
     Phase 8: app.pyにdocstring追加
 51. CLAUDE.md更新（リポジトリ構成にcore/追加・変更履歴記録）
+52. verify_0415.pyシート名修正（"predict_record"→"予測記録"）→ verify SUCCESS確認
+53. verify.ymlにyfinance/requests + SPREADSHEET_ID/JQUANTS_API_KEY環境変数追加（PR #17）
+54. full_scan.py: J-Quants API 403問題修正
+    - JPX公式Excel（data_j.xls）から銘柄一覧取得に変更
+    - J-Quants APIはフォールバックとして残す
+    - full_scan.yml: xlrd/openpyxl追加
+55. エビデンスページ（evidence_page.html）にH004セクション追加
+    - Section 04: 5期間全勝グラフ（Chart.js）+ テーブル + 結論
+    - サマリーカードにH004追加（条件付き採択・年率+9.13%）
+    - セクション番号リナンバリング（旧04反論→05）
+56. 賢者の審判CLAUDE_API_KEY設定手順書を細矢さんに提供
+57. CLAUDE.md最終更新（全作業記録）
+58. 本番検証結果：
+    - weekly_update: SUCCESS（core/ import正常動作）
+    - daily_price_update: SUCCESS（core/ import正常動作）
+    - verify_monday: SUCCESS（シート名修正後）
+    - verify_0415: SUCCESS（シート名修正後）→ predict_recordシート未存在は別問題
+    - full_scan: 実行中（JPX Excel方式・Phase3スコア計算中）
 
 2026/03/27（セッション3）：
 37. 銘柄管理機能の完全実装
