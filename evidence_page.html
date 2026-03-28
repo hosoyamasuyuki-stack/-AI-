@@ -630,10 +630,95 @@
   </div>
 </section>
 
-<!-- SECTION 4: 反論 -->
+<!-- SECTION 4: H004 -->
 <section class="section">
   <div class="container">
-    <p class="section-label">Section 04 · よくある反論</p>
+    <p class="section-label">Section 04 · 実験H004</p>
+    <h2>「割安かつ現金を稼ぐ企業」は<br>5つの時代すべてで勝つ</h2>
+    <p class="lead">PEG（成長に対する割安度）とFCF利回り（現金創出力）を組み合わせた価格スコアが、5つの異なる市場環境すべてで日経平均を上回ることが証明されました。</p>
+
+    <div class="chart-wrap">
+      <div class="chart-title">◆ ウォークフォワード5期間：価格スコア上位25% vs 日経225（3年累積リターン）</div>
+      <canvas id="h004chart" height="280"></canvas>
+    </div>
+
+    <table class="phase-table" style="margin-top:32px;">
+      <thead>
+        <tr>
+          <th>期間</th>
+          <th>上位25%（3年）</th>
+          <th>日経225（3年）</th>
+          <th>超過リターン</th>
+          <th>判定</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>W1: 2017〜2020（コロナ直前）</td>
+          <td><span class="big-num pos">+22.5%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+0.9%</span></td>
+          <td><span class="big-num pos">+21.6%</span></td>
+          <td><span class="tag adopted">WIN</span></td>
+        </tr>
+        <tr>
+          <td>W2: 2018〜2021（コロナ回復）</td>
+          <td><span class="big-num pos">+40.5%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+37.6%</span></td>
+          <td><span class="big-num neu">+2.9%</span></td>
+          <td><span class="tag adopted">WIN</span></td>
+        </tr>
+        <tr>
+          <td>W3: 2019〜2022（コロナ後急騰）</td>
+          <td><span class="big-num pos">+55.7%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+30.3%</span></td>
+          <td><span class="big-num pos">+25.4%</span></td>
+          <td><span class="tag adopted">WIN</span></td>
+        </tr>
+        <tr>
+          <td>W4: 2020〜2023（底値→回復）</td>
+          <td><span class="big-num pos">+78.6%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+46.9%</span></td>
+          <td><span class="big-num pos">+31.7%</span></td>
+          <td><span class="tag adopted">WIN</span></td>
+        </tr>
+        <tr>
+          <td>W5: 2021〜2024（金利上昇局面）</td>
+          <td><span class="big-num pos">+93.7%</span></td>
+          <td><span class="mono" style="color:var(--text-dim)">+38.4%</span></td>
+          <td><span class="big-num pos">+55.3%</span></td>
+          <td><span class="tag adopted">WIN</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="grid-2" style="margin-top:24px; gap:16px;">
+      <div class="finding" style="margin-top:0;">
+        <div class="finding-icon">📌</div>
+        <h3 style="font-size:17px;">5戦5勝・年率+9.13%超過</h3>
+        <p>
+          価格スコア上位25%の銘柄群は、コロナ直前・コロナ回復・急騰・底値回復・金利上昇という
+          <strong>5つの全く異なる市場環境</strong>で日経225を上回りました。
+          平均超過リターンは3年間で+27.4%（年率+9.13%）、統計検定p値=0.032で有意です。
+        </p>
+      </div>
+      <div class="finding" style="margin-top:0;">
+        <div class="finding-icon">⚠️</div>
+        <h3 style="font-size:17px;">条件付き採択（留保事項あり）</h3>
+        <p>
+          現在のバックテストは「現在のスコアで過去リターンを検証」しているため、
+          look-ahead bias（先読みバイアス）が含まれます。
+          J-Quants v1財務データ認証問題が解決次第、
+          各期間開始時点のスコアで再検証する予定です。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: 反論 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 05 · よくある反論</p>
     <h2>想定される批判への<br>先回り回答</h2>
     <p class="lead">科学的な検証ほど、批判への答えを最初から用意しておく必要があります。</p>
 
@@ -718,6 +803,15 @@
           V字回復相場では約94%の超過リターンを損失します。
           マクロ環境の判断なしに使うことは危険であると結論付けました。
           このシステムがマクロ環境を常時監視する理由がここにあります。
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">条件付き採択 · H004</div>
+        <div class="card-title">「割安+高FCF」は<br>5つの時代で全勝</div>
+        <div class="card-body" style="margin-top:12px;">
+          PEGと FCF利回りを組み合わせた価格スコアは、
+          5つの異なる市場環境すべてで日経225を上回りました。
+          年率+9.13%超過、p=0.032。ただしlook-ahead biasの留保あり。
         </div>
       </div>
     </div>
@@ -861,6 +955,54 @@ new Chart(document.getElementById('h003chart'), {
         grid: { color: gridColor },
         ticks: { callback: v => '+' + v + '%' },
         title: { display: true, text: '3年累積リターン', color: '#7888aa' }
+      }
+    }
+  }
+});
+
+// ── H004 CHART ──
+new Chart(document.getElementById('h004chart'), {
+  type: 'bar',
+  data: {
+    labels: ['W1\n2017\u20132020', 'W2\n2018\u20132021', 'W3\n2019\u20132022', 'W4\n2020\u20132023', 'W5\n2021\u20132024'],
+    datasets: [
+      {
+        label: '\u4fa1\u683c\u30b9\u30b3\u30a2 \u4e0a\u4f4d25%',
+        data: [22.5, 40.5, 55.7, 78.6, 93.7],
+        backgroundColor: 'rgba(61,214,140,.75)',
+        borderColor: 'rgba(61,214,140,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: '\u65e5\u7d4c225',
+        data: [0.9, 37.6, 30.3, 46.9, 38.4],
+        backgroundColor: 'rgba(201,168,76,.35)',
+        borderColor: 'rgba(201,168,76,.8)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { padding: 20, usePointStyle: true }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: +${ctx.parsed.y}%`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { maxRotation: 0 } },
+      y: {
+        grid: { color: gridColor },
+        ticks: { callback: v => '+' + v + '%' },
+        title: { display: true, text: '3\u5e74\u7d2f\u7a4d\u30ea\u30bf\u30fc\u30f3', color: '#7888aa' }
       }
     }
   }
