@@ -170,7 +170,6 @@ function buildPrompt(secCode, name, scores, edinetData) {
     + 'Output ONLY valid JSON (no markdown, no code fences). Use this exact structure:\n'
     + '{\n'
     + '  "verdict": "S" or "A" or "B" or "C" or "D",\n'
-    + '  "confidence": 0-100,\n'
     + '  "partA": {\n'
     + '    "businessResults": {"score":1-5,"title":"short title in Japanese","summary":"1-2 sentences in Japanese"},\n'
     + '    "growthQuality": {"score":1-5,"title":"...","summary":"..."},\n'
