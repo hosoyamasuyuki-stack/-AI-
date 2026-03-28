@@ -249,10 +249,15 @@ for i, s in enumerate(scan_targets):
         print(f"  [{i+1}/{len(scan_targets)}] {rate:.0f}銘柄/分 残り{remaining:.0f}分")
 
     try:
+        # デバッグ：最初の5件のコードを出力
+        if i < 5:
+            print(f"  DEBUG code={code!r} len={len(code)}")
         df_fin, price_info = get_fin_jq(code, cutoff_date=CUTOFF, today=TODAY)
         time.sleep(0.35)
 
         if df_fin is None or len(df_fin) < 2:
+            if i < 5:
+                print(f"  DEBUG {code}: df_fin={df_fin}, price_info={price_info}")
             errors += 1
             continue
 
@@ -299,6 +304,11 @@ print('='*60)
 
 results_sorted = sorted(results, key=lambda x: float(x.get('total', 0)), reverse=True)
 top50 = results_sorted[:TOP_N]
+
+if not top50:
+    print(f"  WARNING: スコア計算結果が0件。{errors}件エラー。")
+    print("  J-Quants APIの認証・レート制限を確認してください。")
+    sys.exit(1)
 
 print(f"  Top {TOP_N} スコア範囲: {top50[0]['total']}〜{top50[-1]['total']}")
 print(f"  ランク分布:")
