@@ -113,13 +113,13 @@ def build_phase_gauge_html(ss):
         f'padding:6px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">'
         f'<span style="width:8px;height:8px;border-radius:50%;background:{cm};'
         f'display:inline-block;flex-shrink:0;box-shadow:0 0 6px {cm};"></span>'
-        f'<span style="font-size:11px;font-weight:800;color:{cm};white-space:nowrap;">'
+        f'<span style="font-size:var(--fs-md);font-weight:800;color:{cm};white-space:nowrap;">'
         f'マクロ {st}</span>'
         + bar +
-        f'<span style="font-size:12px;font-weight:900;color:{cm};font-family:monospace;'
+        f'<span style="font-size:var(--fs-lg);font-weight:900;color:{cm};font-family:monospace;'
         f'white-space:nowrap;">{score}'
-        f'<span style="font-size:8px;color:#475569;">/100</span></span>'
-        f'<span style="font-size:8px;color:#475569;white-space:nowrap;">{updated}</span>'
+        f'<span style="font-size:var(--fs-xs);color:#475569;">/100</span></span>'
+        f'<span style="font-size:var(--fs-xs);color:#475569;white-space:nowrap;">{updated}</span>'
         f'</div>'
     )
 
@@ -403,7 +403,7 @@ def fmt_52w(p):
     return (f'<div style="background:#1e2d40;border-radius:2px;height:3px;margin-top:2px;position:relative;">'
             f'<div style="position:absolute;left:0;width:{p}%;height:3px;background:{color};border-radius:2px;"></div>'
             f'</div>'
-            f'<div style="font-size:6.5px;color:#475569;margin-top:1px;">52W {p}%</div>')
+            f'<div style="font-size:var(--fs-micro);color:#475569;margin-top:1px;">52W {p}%</div>')
 
 nk_bc,  nk_vc  = ('bg','cg') if MKT['nk_chg']  >= 0 else ('br','cr')
 sp_bc,  sp_vc  = ('bg','cg') if MKT['sp_chg']  >= 0 else ('br','cr')
@@ -449,7 +449,7 @@ pbr_bc  = 'br' if pbr_jp > 2.0 else 'ba' if pbr_jp > 1.5 else 'bg'
 buf_bc  = 'br' if buf_jp > 160 else 'ba' if buf_jp > 130 else 'bg'
 yld_bc  = 'bg' if yld_jp > 4.0 else 'ba' if yld_jp > 2.5 else 'br'
 MSTRIP_HTML = f"""    <div class="mstrip">
-      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-right:1px solid #374151;min-width:24px;"><div style="font-size:8px;color:#ef4444;font-weight:700;writing-mode:vertical-rl;">🔴 リスク環境</div></div>
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-right:1px solid #374151;min-width:24px;"><div style="font-size:var(--fs-xs);color:#ef4444;font-weight:700;writing-mode:vertical-rl;">🔴 リスク環境</div></div>
       <div class="mc {vix_bc}" onclick="showMC('vix')" style="cursor:pointer;">
         <div class="mc-l">VIX 恐怖指数 ⓘ</div>
         <div class="mc-v {vix_vc}">{MKT['vix_v']}</div>
@@ -467,10 +467,10 @@ MSTRIP_HTML = f"""    <div class="mstrip">
       </div>
       <div class="mc {_mp_bc}">
         <div class="mc-l">マクロスコア</div>
-        <div class="mc-v {_mp_vc}" style="font-size:16px;">{_mp_score}点</div>
+        <div class="mc-v {_mp_vc}" style="font-size:var(--fs-xl);">{_mp_score}点</div>
         <div class="mc-s {_mp_vc}">{_mp_txt}</div>
       </div>
-      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-left:1px solid #374151;border-right:1px solid #374151;min-width:24px;"><div style="font-size:8px;color:#f59e0b;font-weight:700;writing-mode:vertical-rl;">🟡 バリュエーション</div></div>
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-left:1px solid #374151;border-right:1px solid #374151;min-width:24px;"><div style="font-size:var(--fs-xs);color:#f59e0b;font-weight:700;writing-mode:vertical-rl;">🟡 バリュエーション</div></div>
       <div class="mc {cape_bc}" onclick="showMC('cape')" style="cursor:pointer;">
         <div class="mc-l">シラーPER ⓘ</div>
         <div class="mc-v {'cr' if cape_jp>25 else 'ca' if cape_jp>18 else 'cg'}">{cape_jp:.0f}倍</div>
@@ -491,7 +491,7 @@ MSTRIP_HTML = f"""    <div class="mstrip">
         <div class="mc-v {'cg' if yld_jp>4.0 else 'ca' if yld_jp>2.5 else 'cr'}">{yld_jp:.2f}%</div>
         <div class="mc-s ca">🇯🇵 日本</div>
       </div>
-      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-left:1px solid #374151;border-right:1px solid #374151;min-width:24px;"><div style="font-size:8px;color:#22c55e;font-weight:700;writing-mode:vertical-rl;">🟢 マクロ動向</div></div>
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-left:1px solid #374151;border-right:1px solid #374151;min-width:24px;"><div style="font-size:var(--fs-xs);color:#22c55e;font-weight:700;writing-mode:vertical-rl;">🟢 マクロ動向</div></div>
       <div class="mc {'bg' if _m2_yoy and _m2_yoy > 0 else 'br'}" onclick="showMC('m2')" style="cursor:pointer;">
         <div class="mc-l">日本M2 ⓘ</div>
         <div class="mc-v {'cg' if _m2_yoy and _m2_yoy > 0 else 'cr'}">{f'+{_m2_yoy:.2f}' if _m2_yoy and _m2_yoy > 0 else f'{_m2_yoy:.2f}' if _m2_yoy else '---'}%</div>
@@ -505,12 +505,12 @@ MSTRIP_HTML = f"""    <div class="mstrip">
       </div>
       <div class="mc mc-signal {short_bc}" style="border-color:{'#065f46' if SHORT_SCORE>=55 else '#92400e' if SHORT_SCORE>=45 else '#991b1b'}!important;">
         <div class="mc-l" style="color:{'#6ee7b7' if SHORT_SCORE>=55 else '#fcd34d' if SHORT_SCORE>=45 else '#fca5a5'};cursor:pointer;" onclick="showHelp('short_score')">短期スコア（1年）<span class="help-icon">?</span></div>
-        <div class="mc-v {short_vc}" style="font-size:15px;">{SHORT_SCORE}点</div>
+        <div class="mc-v {short_vc}" style="font-size:var(--fs-xl);">{SHORT_SCORE}点</div>
         <div class="mc-s {short_vc}">{short_lbl}</div>
       </div>
       <div class="mc mc-signal {mid_bc}" style="border-color:{'#065f46' if MID_SCORE>=55 else '#92400e' if MID_SCORE>=45 else '#7f2d1d'}!important;">
         <div class="mc-l" style="color:{'#6ee7b7' if MID_SCORE>=55 else '#fcd34d' if MID_SCORE>=45 else '#fca5a5'};cursor:pointer;" onclick="showHelp('medium_score')">中期スコア（3年）<span class="help-icon">?</span></div>
-        <div class="mc-v {mid_vc}" style="font-size:15px;">{MID_SCORE}点</div>
+        <div class="mc-v {mid_vc}" style="font-size:var(--fs-xl);">{MID_SCORE}点</div>
         <div class="mc-s {mid_vc}">{mid_lbl}</div>
       </div>
     </div>"""
@@ -521,9 +521,9 @@ MC_MODAL_HTML = f"""<style>
 </style>
 <div id="mc-modal" onclick="if(event.target===this)closeMC()">
   <div style="background:#111827;border:1px solid #374151;border-radius:10px;padding:18px 20px;max-width:320px;width:90%;">
-    <div id="mc-ttl" style="font-size:13px;font-weight:900;color:#f59e0b;margin-bottom:8px;"></div>
-    <div id="mc-body" style="font-size:11px;color:#d1d5db;line-height:1.75;white-space:pre-wrap;"></div>
-    <div style="margin-top:12px;text-align:right;font-size:10px;color:#94a3b8;cursor:pointer;" onclick="closeMC()">✕ 閉じる</div>
+    <div id="mc-ttl" style="font-size:var(--fs-lg);font-weight:900;color:#f59e0b;margin-bottom:8px;"></div>
+    <div id="mc-body" style="font-size:var(--fs-md);color:#d1d5db;line-height:1.75;white-space:pre-wrap;"></div>
+    <div style="margin-top:12px;text-align:right;font-size:var(--fs-base);color:#94a3b8;cursor:pointer;" onclick="closeMC()">✕ 閉じる</div>
   </div>
 </div>
 <script>
@@ -601,6 +601,12 @@ SCORES  = {}
 rows_h  = []
 rows_w  = []
 
+# STEP0予測記録日からの経過日数
+STEP0_DATE = datetime(2026, 3, 18)
+ELAPSED_DAYS = (datetime.now() - STEP0_DATE).days
+DAYS_LABEL = f"{ELAPSED_DAYS}日"
+print(f"  学習経過日数: {DAYS_LABEL}（STEP0: 2026/03/18）")
+
 for row, stype in all_data:
     code  = str(row.get('コード',    '')).strip()
     name  = str(row.get('銘柄名',    '')).strip()
@@ -618,6 +624,15 @@ for row, stype in all_data:
     fy    =     sf(row.get('FCF利回り'))
     price =     sf(row.get('株価'))
     if not code: continue
+
+    # 総合スコアを変数から再計算（スプレッドシートの値が古い場合の保護）
+    if s1 is not None and s2 is not None and s3 is not None:
+        calc_tot = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)
+        if tot is None or abs(tot - calc_tot) > 1.0:
+            print(f"  RECALC: {code} 総合スコア {tot} -> {calc_tot}")
+            tot = calc_tot
+            rank = ('S' if tot >= 80 else 'A' if tot >= 65 else
+                    'B' if tot >= 50 else 'C' if tot >= 35 else 'D')
 
     SCORES[code] = [s1, s2, s3, tot, roe, fcr, roeT, 0, peg, fy]
     ps = f"{int(price):,}" if price > 0 else '-'
@@ -638,17 +653,17 @@ for row, stype in all_data:
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{SHORT_SCORE},'down','down','{rank}',"
-        f"'{sb}','{mb}','{lb}','{nt}','1日'"
+        f"'{sb}','{mb}','{lb}','{nt}','{DAYS_LABEL}'"
         f')">\n'
-        f'          <td><span style="font-size:9px;color:#475569;">{code}</span><br>'
+        f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
         f'          <td style="color:#fbbf24;">{short_label(SHORT_SCORE)}</td>\n'
         f'          <td style="color:#fbbf24;">{short_label(MID_SCORE)}</td>\n'
         f'          <td><span style="background:{rb};color:{rc};padding:1px 6px;'
-        f'border-radius:4px;font-weight:900;font-size:10px;">{rank}</span></td>\n'
-        f'          <td>1日</td>\n'
+        f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
+        f'          <td>{DAYS_LABEL}</td>\n'
         f'          <td><span class="s-buy" style="background:{rbg(rank)};color:{sc};">'
         f'{st}</span></td>\n'
         f'        </tr>'
@@ -682,6 +697,14 @@ for row, stype in screen_data:
     price =     sf(row.get('株価'))
     if not code: continue
 
+    # 総合スコアを変数から再計算（スプレッドシートの値が古い場合の保護）
+    if s1 is not None and s2 is not None and s3 is not None:
+        calc_tot = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)
+        if tot is None or abs(tot - calc_tot) > 1.0:
+            tot = calc_tot
+            rank = ('S' if tot >= 80 else 'A' if tot >= 65 else
+                    'B' if tot >= 50 else 'C' if tot >= 35 else 'D')
+
     SCORES[code] = [s1, s2, s3, tot, roe, fcr, roeT, 0, peg, fy]
     ps = f"{int(price):,}" if price > 0 else '-'
     vs = f"{tot:.1f}/{rank}" if tot > 0 else '-'
@@ -701,17 +724,17 @@ for row, stype in screen_data:
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{SHORT_SCORE},'down','down','{rank}',"
-        f"'{sb2}','{mb2}','{lb2}','{nt2}','scan'"
+        f"'{sb2}','{mb2}','{lb2}','{nt2}','{DAYS_LABEL}'"
         f')">\n'
-        f'          <td><span style="font-size:9px;color:#475569;">{code}</span><br>'
+        f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
         f'          <td style="color:#fbbf24;">{short_label(SHORT_SCORE)}</td>\n'
         f'          <td style="color:#fbbf24;">{short_label(MID_SCORE)}</td>\n'
         f'          <td><span style="background:{rb2};color:{rc};padding:1px 6px;'
-        f'border-radius:4px;font-weight:900;font-size:10px;">{rank}</span></td>\n'
-        f'          <td>scan</td>\n'
+        f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
+        f'          <td>{DAYS_LABEL}</td>\n'
         f'          <td><span class="s-buy" style="background:{rbg(rank)};color:{sc};">'
         f'{st}</span></td>\n'
         f'        </tr>'
@@ -738,7 +761,7 @@ else:
     print(f"WARN: 市場ストリップ置換スキップ (start={mstrip_start} end={mstrip_end})")
 
 # ティッカーHTML生成
-TICKER_HTML = '<div style="overflow:hidden;white-space:nowrap;background:#0a0e17;padding:3px 0;font-size:10px;border-bottom:1px solid #1e293b;"><div style="display:inline-block;animation:ticker_scroll 60s linear infinite;"><span style="color:#6ee7b7;margin:0 18px;">AI LEARNING</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">保有銘柄46 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">監視銘柄27 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">学習用99 月次バッチ学習</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">日次データ学習中(FRED 32指標)</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">全172銘柄 v4.3スコアリング稼働中</span></div></div>'
+TICKER_HTML = '<div style="overflow:hidden;white-space:nowrap;background:#0a0e17;padding:3px 0;font-size:var(--fs-base);border-bottom:1px solid #1e293b;"><div style="display:inline-block;animation:ticker_scroll 60s linear infinite;"><span style="color:#6ee7b7;margin:0 18px;">AI LEARNING</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">保有銘柄46 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">監視銘柄27 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">学習用99 月次バッチ学習</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">日次データ学習中(FRED 32指標)</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">全172銘柄 v4.3スコアリング稼働中</span></div></div>'
 
 # ティッカー挿入
 SL_ANCHOR    = '<div class="sl">市場体温計 &amp; 短期・中期シグナル</div>'
@@ -892,7 +915,7 @@ def gauge_dot_color(pct, g_pct, w_pct, invert=False):
 
 def badge(label, cls):
     bg = {'g':'#064e3b;color:#34d399','y':'#92400e;color:#fbbf24','r':'#7f1d1d;color:#f87171'}.get(cls,'#1e2d40;color:#94a3b8')
-    return f'<span style="font-size:7px;font-weight:800;padding:1px 5px;border-radius:3px;background:{bg};">{label}</span>'
+    return f'<span style="font-size:var(--fs-micro);font-weight:800;padding:1px 5px;border-radius:3px;background:{bg};">{label}</span>'
 
 def make_gauge(mn, mx, v, g, w, invert=False):
     p  = gauge_pct(mn, mx, v)
@@ -944,18 +967,18 @@ buf_jp_lbl  = '割安圏' if buf_jp_cls=='g' else '割高圏注意' if buf_jp_cl
 buf_us_lbl  = '割安圏' if buf_us_cls=='g' else '割高圏注意' if buf_us_cls=='y' else '割高警戒'
 
 vi_style  = 'padding:4px 8px;border-right:1px solid #1e2d40;cursor:pointer;'
-vn_style  = 'font-size:8.5px;font-weight:800;color:#cbd5e1;margin-bottom:4px;text-decoration:underline dotted;text-underline-offset:2px;'
+vn_style  = 'font-size:var(--fs-sm);font-weight:800;color:#cbd5e1;margin-bottom:4px;text-decoration:underline dotted;text-underline-offset:2px;'
 row_style = 'display:flex;align-items:center;gap:5px;margin-bottom:1px;'
-flag_style= 'font-size:9px;min-width:14px;'
-val_style_g='font-size:12px;font-weight:900;font-family:monospace;color:#34d399;min-width:36px;'
-val_style_y='font-size:12px;font-weight:900;font-family:monospace;color:#fbbf24;min-width:36px;'
-val_style_r='font-size:12px;font-weight:900;font-family:monospace;color:#f87171;min-width:36px;'
+flag_style= 'font-size:var(--fs-sm);min-width:14px;'
+val_style_g='font-size:var(--fs-lg);font-weight:900;font-family:monospace;color:#34d399;min-width:36px;'
+val_style_y='font-size:var(--fs-lg);font-weight:900;font-family:monospace;color:#fbbf24;min-width:36px;'
+val_style_r='font-size:var(--fs-lg);font-weight:900;font-family:monospace;color:#f87171;min-width:36px;'
 vc = {'g':val_style_g,'y':val_style_y,'r':val_style_r}
 
 # 更新日時表示（ソース更新済みを明示）
 updated_display = VAL['updated_at']
 
-VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs 米国（過去10年との比較）<span style="font-size:7px;color:#34d399;font-weight:600;margin-left:8px;">✓ {updated_display}</span></div>
+VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs 米国（過去10年との比較）<span style="font-size:var(--fs-micro);color:#34d399;font-weight:600;margin-left:8px;">✓ {updated_display}</span></div>
         <div style="background:#0f1420;border:1px solid #1e2d40;border-radius:6px;padding:6px 4px;">
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;">
           <div style="{vi_style}" onclick="showVI('cape')">
@@ -990,14 +1013,14 @@ VI_MODAL_HTML = f"""<style>
 #vi-modal{{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);z-index:9999;align-items:center;justify-content:center;}}
 #vi-modal.open{{display:flex;}}
 #vi-box{{background:#111827;border:1px solid #374151;border-radius:10px;padding:18px 20px;max-width:340px;width:90%;}}
-#vi-ttl{{font-size:13px;font-weight:900;color:#f59e0b;margin-bottom:8px;}}
-#vi-body{{font-size:11px;color:#d1d5db;line-height:1.75;white-space:pre-wrap;}}
+#vi-ttl{{font-size:var(--fs-lg);font-weight:900;color:#f59e0b;margin-bottom:8px;}}
+#vi-body{{font-size:var(--fs-md);color:#d1d5db;line-height:1.75;white-space:pre-wrap;}}
 #vi-hist{{margin-top:10px;padding-top:10px;border-top:1px solid #1e2d40;}}
-.vi-close{{margin-top:12px;text-align:right;font-size:10px;color:#94a3b8;cursor:pointer;}}
+.vi-close{{margin-top:12px;text-align:right;font-size:var(--fs-base);color:#94a3b8;cursor:pointer;}}
 .mh-row{{margin-bottom:10px;}}
-.mh-flag{{font-size:8.5px;color:#94a3b8;margin-bottom:3px;font-weight:800;}}
+.mh-flag{{font-size:var(--fs-sm);color:#94a3b8;margin-bottom:3px;font-weight:800;}}
 .mh-bg{{background:#1e2d40;border-radius:4px;height:8px;position:relative;}}
-.mh-labels{{display:flex;justify-content:space-between;font-size:7px;color:#475569;margin-top:3px;}}
+.mh-labels{{display:flex;justify-content:space-between;font-size:var(--fs-micro);color:#475569;margin-top:3px;}}
 </style>
 <div id="vi-modal" onclick="if(event.target===this)closeVI()">
   <div id="vi-box">
@@ -1036,7 +1059,7 @@ function showVI(k){{
   document.getElementById('vi-ttl').textContent=d.ttl;
   document.getElementById('vi-body').textContent=d.body;
   var h=document.getElementById('vi-hist');
-  if(d.jp){{h.style.display='block';h.innerHTML='<div style="font-size:9px;font-weight:800;color:#94a3b8;margin-bottom:6px;">過去レンジ（緑＝割安 / 黄＝普通 / 赤＝割高）</div>'+mhRow(d.jp)+mhRow(d.us);}}
+  if(d.jp){{h.style.display='block';h.innerHTML='<div style="font-size:var(--fs-sm);font-weight:800;color:#94a3b8;margin-bottom:6px;">過去レンジ（緑＝割安 / 黄＝普通 / 赤＝割高）</div>'+mhRow(d.jp)+mhRow(d.us);}}
   else h.style.display='none';
   document.getElementById('vi-modal').classList.add('open');
 }}

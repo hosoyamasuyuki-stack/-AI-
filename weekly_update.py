@@ -202,7 +202,7 @@ def calc_v43_score(df, price_info):
                 ta_l = df['TA'].dropna()
                 if len(ta_l) > 0:
                     fy = fcf_v / float(ta_l.iloc[-1]) * 100
-    s3    = round(thr_high(peg, PEG_THR) * 0.50 + thr_high(fy, FCY_THR) * 0.50)
+    s3    = round(thr_low(peg, PEG_THR) * 0.50 + thr_high(fy, FCY_THR) * 0.50)
     total = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)
     rank  = ('S' if total >= 80 else 'A' if total >= 65 else
              'B' if total >= 50 else 'C' if total >= 35 else 'D')
