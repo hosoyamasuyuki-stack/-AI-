@@ -312,24 +312,24 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
           <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;"><span style="background:#92400e;color:#fbbf24;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">注意</span></div>
         </div>
       </div>
-      <!-- マクロ総合スコア -->
-      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #f59e0b;border-radius:6px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">
-        <div style="font-size:var(--fs-xs);font-weight:900;color:#f59e0b;margin-bottom:4px;letter-spacing:.5px;">マクロ総合</div>
-        <div style="text-align:center;margin-bottom:4px;">
-          <div style="font-size:var(--fs-2xl);font-weight:900;font-family:monospace;color:#f59e0b;">45<span style="font-size:var(--fs-base);color:#475569;">/100</span></div>
-          <div style="background:#1e293b;border-radius:3px;height:4px;margin:3px 0;"><div style="width:45%;height:4px;border-radius:3px;background:#f59e0b;"></div></div>
-          <div style="font-size:var(--fs-sm);font-weight:800;color:#f59e0b;">慎重に</div>
+      <!-- マクロ総合スコア（コンパクト版） -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #f59e0b;border-radius:6px;padding:6px 10px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-size:var(--fs-xs);font-weight:900;color:#f59e0b;letter-spacing:.5px;">マクロ総合</span>
+          <span style="font-size:var(--fs-xl);font-weight:900;font-family:monospace;color:#f59e0b;">45<span style="font-size:var(--fs-micro);color:#475569;">/100</span></span>
+          <span style="font-size:var(--fs-sm);font-weight:800;color:#f59e0b;">慎重に</span>
         </div>
+        <div style="background:#1e293b;border-radius:3px;height:4px;margin-bottom:5px;"><div style="width:45%;height:4px;border-radius:3px;background:#f59e0b;"></div></div>
         <div style="display:flex;gap:4px;">
-          <div style="flex:1;background:#0a0d16;border:1px solid #991b1b;border-radius:3px;padding:3px;text-align:center;cursor:pointer;" onclick="showHelp('short_score')">
-            <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">短期(1年)</div>
-            <div style="color:#f87171;font-size:var(--fs-md);font-weight:900;font-family:monospace;">19</div>
-            <div style="color:#f87171;font-size:var(--fs-micro);font-weight:800;">弱気</div>
+          <div style="flex:1;background:#0a0d16;border:1px solid #991b1b;border-radius:3px;padding:3px 6px;display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="showHelp('short_score')">
+            <span style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">短期</span>
+            <span style="color:#f87171;font-size:var(--fs-md);font-weight:900;font-family:monospace;">19</span>
+            <span style="color:#f87171;font-size:var(--fs-micro);font-weight:800;">弱気</span>
           </div>
-          <div style="flex:1;background:#0a0d16;border:1px solid #92400e;border-radius:3px;padding:3px;text-align:center;cursor:pointer;" onclick="showHelp('medium_score')">
-            <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">中期(3年)</div>
-            <div style="color:#fbbf24;font-size:var(--fs-md);font-weight:900;font-family:monospace;">50</div>
-            <div style="color:#fbbf24;font-size:var(--fs-micro);font-weight:800;">中立</div>
+          <div style="flex:1;background:#0a0d16;border:1px solid #92400e;border-radius:3px;padding:3px 6px;display:flex;align-items:center;gap:6px;cursor:pointer;" onclick="showHelp('medium_score')">
+            <span style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">中期</span>
+            <span style="color:#fbbf24;font-size:var(--fs-md);font-weight:900;font-family:monospace;">50</span>
+            <span style="color:#fbbf24;font-size:var(--fs-micro);font-weight:800;">中立</span>
           </div>
         </div>
       </div>
