@@ -715,10 +715,95 @@
   </div>
 </section>
 
-<!-- SECTION 5: 反論 -->
+<!-- SECTION 05: H005 MacroPhase + 暴落時買い -->
 <section class="section">
   <div class="container">
-    <p class="section-label">Section 05 · よくある反論</p>
+    <p class="section-label">Section 05 · 実験H005</p>
+    <h2>マクロ環境判定は<br>投資リターンを改善するか</h2>
+    <p class="lead">VIX・金利・M2等33指標から算出するMacroPhaseスコアで「買い時」を判定できるかを、11の戦略で網羅的に検証しました。</p>
+
+    <div class="grid-2" style="margin-top:24px;">
+      <div class="card red">
+        <div class="card-label">H005-A · MacroPhaseタイミング投資</div>
+        <div class="card-title">4層100点のスコアで<br>買い時は当てられない</div>
+        <div class="card-body" style="margin-top:12px;">
+          11の戦略（GREEN投資・RED回避・閾値変更・スコア連動・Layer単独・VIX単独等）を
+          5ウォークフォワードウィンドウ（2017-2024）で検証。
+          10戦略がREJECTED。複雑なスコアリングは買い時判定に無効でした。
+        </div>
+      </div>
+      <div class="card green">
+        <div class="card-label">唯一の採択 · VIXスパイク回避</div>
+        <div class="card-title">VIX>=30で退避するだけで<br>年率+4.76%超過</div>
+        <div class="card-body" style="margin-top:12px;">
+          5/5全勝、p=0.0022。4層100点の複雑なスコアより、
+          「VIXが30を超えたらキャッシュ」という単純ルールが最も有効でした。
+          投資率86%（ほぼ常時投資）で、暴落月だけ退避する戦略です。
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:16px;">
+      <div class="card" style="grid-column:1/-1;border-color:rgba(201,168,76,.3);">
+        <div class="card-label" style="color:var(--gold);">H005-B · 暴落時買い戦略（長期投資家向け）</div>
+        <div class="card-title">暴落時に買い5年持てば<br>通常時より年率+8.80%の超過</div>
+        <div class="card-body" style="margin-top:12px;">
+          2007-2024年（リーマン・コロナ・2022暴落含む）の日経225データで検証。
+          VIX>=30のパニック月（19ヶ月）にエントリーし、3年/5年保有した場合のリターンを
+          通常月（VIX<20、137ヶ月）と比較しました。
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-label">3年保有</div>
+        <div class="card-title" style="font-size:28px;">+1.85%<span style="font-size:14px;color:var(--text-dim);">/年 超過</span></div>
+        <div class="card-body" style="margin-top:8px;">
+          PANIC +9.31%/年 vs CALM +7.47%/年<br>
+          p=0.218（有意でない）<br>
+          方向は正しいが統計的有意性に至らず
+        </div>
+      </div>
+      <div class="card green">
+        <div class="card-label">5年保有（採択）</div>
+        <div class="card-title" style="font-size:28px;">+8.80%<span style="font-size:14px;color:var(--green);">/年 超過</span></div>
+        <div class="card-body" style="margin-top:8px;">
+          PANIC +21.81%/年 vs CALM +13.01%/年<br>
+          <strong>p=0.0035</strong>（極めて強い有意性）<br>
+          暴落時エントリーの優位性を証明
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">PANIC買いは正か</div>
+        <div class="card-title" style="font-size:28px;">YES<span style="font-size:14px;color:var(--green);"> p=0.0005</span></div>
+        <div class="card-body" style="margin-top:8px;">
+          パニック月に買った場合のリターンが<br>
+          ゼロより有意に大きいことを確認<br>
+          暴落=損失ではなく、暴落=機会
+        </div>
+      </div>
+    </div>
+
+    <canvas id="h005chart" height="200" style="margin-top:32px;"></canvas>
+
+    <div class="card" style="margin-top:24px;border-color:rgba(201,168,76,.2);">
+      <div class="card-label" style="color:var(--gold);">H005の核心的発見</div>
+      <div class="card-body" style="margin-top:8px;font-size:15px;line-height:1.9;">
+        短期投資家と長期投資家では、暴落への最適な対応が正反対です。<br>
+        <strong style="color:var(--red);">短期（1-3年）</strong>：VIX>=30で退避すべき（H005-A VIXスパイク回避 +4.76%/年）<br>
+        <strong style="color:var(--green);">長期（5年以上）</strong>：VIX>=30でむしろ買うべき（H005-B 暴落時買い +8.80%/年）<br>
+        この2つは矛盾しません。時間軸が異なるだけです。<br>
+        本システムは10年長期保有を前提としているため、暴落は最大の買い場です。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: 反論 -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Section 06 · よくある反論</p>
     <h2>想定される批判への<br>先回り回答</h2>
     <p class="lead">科学的な検証ほど、批判への答えを最初から用意しておく必要があります。</p>
 
@@ -780,7 +865,7 @@
 <!-- SECTION 5: 結論 -->
 <section class="section">
   <div class="container">
-    <p class="section-label">Section 06 · 結論</p>
+    <p class="section-label">Section 07 · 結論</p>
     <h2>実験が示した「シンプルな真実」</h2>
     <p class="lead">複雑な理論より、シンプルな真実の方が強い。</p>
 
@@ -814,6 +899,26 @@
           年率+9.13%超過、p=0.032。ただしlook-ahead biasの留保あり。
         </div>
       </div>
+      <div class="card green">
+        <div class="card-label">採択 · H005-B 暴落時買い</div>
+        <div class="card-title">暴落時に買い5年持てば<br>年率+8.80%の超過</div>
+        <div class="card-body" style="margin-top:12px;">
+          VIX>=30のパニック月に買い5年保有すると、
+          通常時より年率+8.80%高いリターン（p=0.0035）。
+          リーマン・コロナ含む17年分のデータで証明。
+          長期投資家にとって暴落は最大の買い場です。
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">採択 · H005-A VIXスパイク回避</div>
+        <div class="card-title">VIX>=30で退避するだけで<br>年率+4.76%超過</div>
+        <div class="card-body" style="margin-top:12px;">
+          短期投資家向け。5/5全勝、p=0.0022。
+          4層100点の複雑なマクロスコアより、
+          VIX単一指標の方が有効でした。
+          シンプルなルールほど堅牢です。
+        </div>
+      </div>
       <div class="card" style="border-color:#f59e0b44;">
         <div class="card-label" style="color:#f59e0b;">現状把握強化 · 賢者の審判</div>
         <div class="card-title">AIによる決算分析で<br>「今の異変」を見逃さない</div>
@@ -829,10 +934,12 @@
     <div class="conclusion" style="margin-top:48px;">
       <h2>投資で<span>上位3%</span>に入る条件は<br>シンプルだった</h2>
       <p>
-        財務品質の高い会社を選び、マクロ環境を確認しながら、
-        3年間保有し続ける。<br>
+        財務品質の高い会社を選び（H002）、割安で買い（H004）、
+        5年以上保有し続ける。<br>
+        暴落時こそ最大の買い場であり（H005-B, p=0.0035）、
+        短期的にはVIX>=30で退避する（H005-A, p=0.0022）。<br>
         買う前にはAIが決算データを7つの視点で分析し、異変がないかを確認する。<br>
-        この実験はその「当たり前」を、データで繰り返し証明した記録です。
+        この実験はその「当たり前」を、6つの仮説と17年分のデータで繰り返し証明した記録です。
       </p>
     </div>
   </div>
@@ -841,8 +948,9 @@
 <!-- FOOTER -->
 <footer class="site-footer">
   AI投資判断システム · 科学的根拠レポート · 2026年3月 ·
-  検証手法: Mann-Whitney U / Bonferroni補正 / ウォークフォワード3フェーズ ·
-  本資料は投資助言ではありません
+  検証手法: t検定 / Mann-Whitney U / Bonferroni補正(alpha=0.025) / ウォークフォワード5ウィンドウ ·
+  データ: 2007-2024 FRED/yfinance/J-Quants ·
+  本資料は投資助言ではありません · 過去の実績は将来の結果を保証するものではありません
 </footer>
 
 <script>
@@ -1014,6 +1122,45 @@ new Chart(document.getElementById('h004chart'), {
         grid: { color: gridColor },
         ticks: { callback: v => '+' + v + '%' },
         title: { display: true, text: '3\u5e74\u7d2f\u7a4d\u30ea\u30bf\u30fc\u30f3', color: '#7888aa' }
+      }
+    }
+  }
+});
+
+// ── H005-B CHART ──
+new Chart(document.getElementById('h005chart'), {
+  type: 'bar',
+  data: {
+    labels: ['3\u5E74\u4FDD\u6709', '5\u5E74\u4FDD\u6709'],
+    datasets: [
+      {
+        label: 'PANIC\u6708\u30A8\u30F3\u30C8\u30EA\u30FC (VIX>=30)',
+        data: [9.31, 21.81],
+        backgroundColor: 'rgba(61,214,140,.75)',
+        borderColor: 'rgba(61,214,140,1)',
+        borderWidth: 1, borderRadius: 4,
+      },
+      {
+        label: 'CALM\u6708\u30A8\u30F3\u30C8\u30EA\u30FC (VIX<20)',
+        data: [7.47, 13.01],
+        backgroundColor: 'rgba(201,168,76,.35)',
+        borderColor: 'rgba(201,168,76,.8)',
+        borderWidth: 1, borderRadius: 4,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { padding: 20, usePointStyle: true } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: +${ctx.parsed.y}%/\u5E74` } }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { maxRotation: 0 } },
+      y: {
+        grid: { color: gridColor },
+        ticks: { callback: v => '+' + v + '%' },
+        title: { display: true, text: '\u5E74\u7387\u30EA\u30BF\u30FC\u30F3', color: '#7888aa' }
       }
     }
   }
