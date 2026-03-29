@@ -200,12 +200,22 @@ YAMLファイル：
 - manage_stock.yml（workflow_dispatch・銘柄管理）/ full_scan.yml（週次全市場スキャン）
 - 全YAMLにTZ: Asia/Tokyo設定済み
 
-注意：weekly_update_v4.pyは旧版（孤立ファイル・どのYAMLからも参照されていない）
-
 J-Quants V2仕様：
-- エンドポイント：/v2/equities/bars/daily
+- エンドポイント：/v2/equities/bars/daily（株価）/ /v2/fins/summary（財務）
 - 日付形式：YYYYMMDD / データ：AdjC（調整済み終値）
-- 認証：x-api-keyヘッダーのみ（v1のauth_userは廃止済み）
+- 認証：x-api-keyヘッダー（ダッシュボードから発行・期限なし）
+- V1のauth_user/auth_refresh方式は廃止
+- プラン：スタンダード（120リクエスト/分）
+- キー再発行時は .env + GitHub Secrets を同時更新必須
+- 検証コマンド：curl -s -H "x-api-key: {key}" "https://api.jquants.com/v2/fins/summary?code=72030"
+
+【2026/03/30障害記録】full_scan 全3,506銘柄403エラー
+  原因：3/29 18:29にダッシュボードでAPIキーが再発行され旧キーが無効化。
+        GitHub Secretsが旧キーのまま未更新だった。
+  誤診経緯：レート制限→トークン24時間失効→V2仕様確認で原因確定。
+        最初に公式ドキュメントを読まなかったことが根本原因。
+  対策：GitHub Secret JQUANTS_API_KEY を新キーに更新（3/30完了）。
+  再発防止：キー再発行時の更新チェックリスト（.env/Secrets/確認コマンド）。
 
 ================================================================
 ## 現在の緊急課題
