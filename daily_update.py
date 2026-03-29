@@ -193,7 +193,7 @@ for name, sid in FRED_DAILY.items():
         total_added += added
     else:
         print(f"  $26A0$FE0F {name}: 取得失敗")
-    time.sleep(0.3)
+    time.sleep(2)
 
 # ── FRED 月次指標 ──
 print("\n【FRED 月次指標】")
@@ -205,7 +205,7 @@ for name, sid in FRED_MONTHLY.items():
         total_added += added
     else:
         print(f"  $26A0$FE0F {name}: 取得失敗")
-    time.sleep(0.3)
+    time.sleep(2)
 
 # ── yfinance 日次 ──
 print("\n【yfinance 日次指標】")
@@ -217,7 +217,7 @@ for name, ticker in YF_DAILY.items():
         total_added += added
     else:
         print(f"  $26A0$FE0F {name}: 取得失敗")
-    time.sleep(0.3)
+    time.sleep(2)
 
 # ── シラーPER近似値（SP500株価÷10年移動平均×20） ──
 print("\n【シラーPER近似値更新】")
@@ -244,9 +244,14 @@ try:
 
         try:
             ws_cape = ss.worksheet("シラーPER")
-            ss.del_worksheet(ws_cape)
-        except: pass
-        ws_cape = ss.add_worksheet(title="シラーPER", rows=len(df_cape)+5, cols=6)
+            ws_cape.clear()
+            ws_cape.resize(rows=len(df_cape)+5, cols=6)
+        except gspread.exceptions.WorksheetNotFound:
+            ws_cape = ss.add_worksheet(title="シラーPER", rows=len(df_cape)+5, cols=6)
+        except Exception:
+            time.sleep(5)
+            ws_cape = ss.worksheet("シラーPER")
+            ws_cape.clear()
         header  = ["date","value","前月比","前年比%","3M平均","乖離率%"]
         rows    = [header] + [
             [clean_val(row[c]) if c != "date" else str(row[c])
@@ -268,6 +273,7 @@ try:
 
     for name in check_sheets:
         try:
+            time.sleep(1)
             ws   = ss.worksheet(name)
             rows = ws.get_all_values()
             if len(rows) < 10: continue
@@ -288,9 +294,13 @@ try:
     if anomaly_data:
         try:
             ws_a = ss.worksheet("異常値スコア")
-            ss.del_worksheet(ws_a)
-        except: pass
-        ws_a    = ss.add_worksheet(title="異常値スコア", rows=100, cols=4)
+            ws_a.clear()
+        except gspread.exceptions.WorksheetNotFound:
+            ws_a = ss.add_worksheet(title="異常値スコア", rows=100, cols=4)
+        except Exception:
+            time.sleep(5)
+            ws_a = ss.worksheet("異常値スコア")
+            ws_a.clear()
         header_a = ["指標","最新乖離率%","異常値判定","更新日"]
         rows_a   = [[d["指標"],d["最新乖離率%"],d["異常値"],d["更新日"]] for d in anomaly_data]
         ws_a.update(range_name="A1", values=[header_a]+rows_a)
