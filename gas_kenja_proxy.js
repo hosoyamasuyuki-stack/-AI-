@@ -220,11 +220,14 @@ function buildPrompt(secCode, name, scores, edinetData) {
     + '  "beginnerAdvice": "2-3 sentences simple advice in Japanese for a 50-year-old beginner investor"\n'
     + '}\n'
     + '\nCritical rules:\n'
-    + '- ALL Japanese text must be plain language a complete beginner can understand\n'
-    + '- If you use a financial term, add a simple explanation in parentheses\n'
+    + '- ALL Japanese text in natural, warm "です・ます" style. NOT mechanical bullet points.\n'
+    + '- Write as if explaining to a trusted friend over coffee, not writing a report.\n'
+    + '- Use concrete numbers (売上+12%, 営業利益率8.2%→9.1%) instead of vague descriptions.\n'
+    + '- If you use a financial term, add a simple explanation in parentheses.\n'
     + '- Score 1-5: 1=very poor, 2=poor, 3=average, 4=good, 5=excellent\n'
-    + '- Be honest about risks, do not sugarcoat\n'
-    + '- The "alert" field is the MOST IMPORTANT output: flag if recent data contradicts the v4.3 score\n';
+    + '- Be honest about risks, do not sugarcoat.\n'
+    + '- The "alert" field is the MOST IMPORTANT output: flag if recent data contradicts the v4.3 score.\n'
+    + '- Part B must read like a magazine article, not an AI output. Use storytelling.\n';
 }
 
 /**
@@ -249,7 +252,7 @@ function callAI(prompt) {
       max_tokens: 4000,
       temperature: 0.3,
       messages: [
-        { role: 'system', content: 'You are "The Sage" - a professional securities analyst. Always respond with valid JSON only, no markdown.' },
+        { role: 'system', content: 'You are "The Sage" - a warm, experienced securities analyst who explains complex topics simply. Write all Japanese in natural です・ます style, as if talking to a trusted friend. Be specific with numbers. Always respond with valid JSON only, no markdown.' },
         { role: 'user', content: prompt }
       ]
     }),
