@@ -112,24 +112,24 @@ def check_all():
     print()
     print("接続テスト:")
 
-    # J-Quants
+    # J-Quants（株価API + 財務API 両方テスト）
     jq_key = os.environ.get('JQUANTS_API_KEY', '')
     if jq_key:
-        try:
-            r = requests.get(
-                'https://api.jquants.com/v2/equities/bars/daily',
-                headers={'x-api-key': jq_key},
-                params={'code': '72030', 'date': '2026-03-28'},
-                timeout=10
-            )
-            if r.status_code == 200:
-                print(f"  J-Quants API:  ✅ 正常 (HTTP {r.status_code})")
-            else:
-                print(f"  J-Quants API:  ❌ HTTP {r.status_code} {r.text[:80]}")
-                errors.append(f"J-Quants API: HTTP {r.status_code}")
-        except Exception as e:
-            print(f"  J-Quants API:  ❌ {e}")
-            errors.append(f"J-Quants API: {e}")
+        for ep_name, ep_url, ep_params in [
+            ('株価', 'https://api.jquants.com/v2/equities/bars/daily', {'code':'72030','date':'2026-03-28'}),
+            ('財務', 'https://api.jquants.com/v2/fins/summary', {'code':'72030'}),
+        ]:
+            try:
+                r = requests.get(ep_url, headers={'x-api-key': jq_key},
+                                 params=ep_params, timeout=10)
+                if r.status_code == 200:
+                    print(f"  J-Quants {ep_name}:  ✅ 正常 (HTTP {r.status_code})")
+                else:
+                    print(f"  J-Quants {ep_name}:  ❌ HTTP {r.status_code} {r.text[:80]}")
+                    errors.append(f"J-Quants {ep_name}: HTTP {r.status_code}")
+            except Exception as e:
+                print(f"  J-Quants {ep_name}:  ❌ {e}")
+                errors.append(f"J-Quants {ep_name}: {e}")
     else:
         print("  J-Quants API:  ⏭️ スキップ（キー未設定）")
 
