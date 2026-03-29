@@ -4,9 +4,18 @@ core/config.py - Centralized configuration and constants
 All threshold constants, spreadsheet IDs, and API endpoints
 are defined here. Import from this module instead of
 hardcoding values in individual scripts.
+
+J-Quants API Authentication:
+  1. JQUANTS_MAIL + JQUANTS_PASS -> /v1/token/auth_user -> refresh_token (7 days)
+  2. refresh_token -> /v1/token/auth_refresh -> id_token (24 hours)
+  3. id_token -> x-api-key header -> data API calls
+
+  If JQUANTS_API_KEY (id_token) is expired or missing,
+  this module automatically refreshes it using mail/password.
 """
 
 import os
+import requests as _requests
 
 # ── Spreadsheet ──────────────────────────────────────────────
 SPREADSHEET_ID = os.environ.get(
@@ -15,9 +24,67 @@ SPREADSHEET_ID = os.environ.get(
 )
 
 # ── J-Quants API ─────────────────────────────────────────────
-JQUANTS_API_KEY = os.environ.get('JQUANTS_API_KEY', '')
+JQUANTS_BASE = 'https://api.jquants.com'
+
+def _get_jquants_token():
+    """
+    Get a valid J-Quants ID token (x-api-key).
+
+    Priority:
+      1. JQUANTS_API_KEY env var (if set and not empty)
+      2. Auto-refresh using JQUANTS_MAIL + JQUANTS_PASS env vars
+
+    Returns the token string, or empty string on failure.
+    """
+    # Try existing token first
+    token = os.environ.get('JQUANTS_API_KEY', '').strip()
+    if token:
+        return token
+
+    # Auto-refresh: mail + password -> refresh_token -> id_token
+    mail = os.environ.get('JQUANTS_MAIL', '').strip()
+    passwd = os.environ.get('JQUANTS_PASS', '').strip()
+    if not mail or not passwd:
+        print("  WARN: JQUANTS_API_KEY not set and JQUANTS_MAIL/JQUANTS_PASS not available")
+        return ''
+
+    try:
+        # Step 1: Get refresh token
+        r1 = _requests.post(
+            f"{JQUANTS_BASE}/v1/token/auth_user",
+            json={"mailaddress": mail, "password": passwd},
+            timeout=15,
+        )
+        if r1.status_code != 200:
+            print(f"  WARN: J-Quants auth_user failed: {r1.status_code} {r1.text[:200]}")
+            return ''
+        refresh_token = r1.json().get('refreshToken', '')
+        if not refresh_token:
+            print("  WARN: J-Quants auth_user returned no refreshToken")
+            return ''
+
+        # Step 2: Get ID token
+        r2 = _requests.post(
+            f"{JQUANTS_BASE}/v1/token/auth_refresh?refreshtoken={refresh_token}",
+            timeout=15,
+        )
+        if r2.status_code != 200:
+            print(f"  WARN: J-Quants auth_refresh failed: {r2.status_code} {r2.text[:200]}")
+            return ''
+        id_token = r2.json().get('idToken', '')
+        if id_token:
+            print(f"  J-Quants: ID token auto-refreshed successfully")
+            return id_token
+        else:
+            print("  WARN: J-Quants auth_refresh returned no idToken")
+            return ''
+    except Exception as e:
+        print(f"  WARN: J-Quants token refresh failed: {e}")
+        return ''
+
+
+JQUANTS_API_KEY = _get_jquants_token()
 JQUANTS_HEADERS = {'x-api-key': JQUANTS_API_KEY}
-JQUANTS_BASE    = 'https://api.jquants.com'
 
 # ── Google Sheets Scope ──────────────────────────────────────
 GSHEETS_SCOPE = [
