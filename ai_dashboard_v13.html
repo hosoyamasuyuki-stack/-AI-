@@ -149,6 +149,22 @@ tr.dr.sel td:first-child{border-left:2px solid #f59e0b;}
 .sc:hover{border-color:#f59e0b!important;}
 .sc:hover .help-icon,.axis-title:hover .help-icon{background:#f59e0b;color:#0b0f1a;}
 
+/* LISA風: ウェイトバー */
+.weight-bar{display:flex;height:24px;border-radius:8px;overflow:hidden;margin-bottom:5px;}
+.wb-seg{display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;}
+/* LISA風: ゲージバー */
+.gauge-wrap{position:relative;height:20px;margin-top:4px;}
+.gauge-bg{height:8px;border-radius:4px;background:#1e293b;position:relative;top:6px;}
+.gauge-fill{height:100%;border-radius:4px;}
+.gauge-ptr{position:absolute;top:2px;width:12px;height:12px;border-radius:50%;border:2px solid white;transform:translateX(-50%);}
+.gauge-tick{position:absolute;top:0;font-size:var(--fs-micro);color:#64748b;font-weight:700;}
+/* LISA風: 判定ラベル */
+.judge{font-size:var(--fs-xs);font-weight:800;margin-top:4px;padding:3px 6px;border-radius:4px;text-align:center;}
+.judge-s{background:rgba(167,139,250,.15);color:#a78bfa;}
+.judge-a{background:rgba(52,211,153,.15);color:#34d399;}
+.judge-b{background:rgba(251,191,36,.15);color:#fbbf24;}
+.judge-c{background:rgba(248,113,113,.15);color:#f87171;}
+.judge-d{background:rgba(148,163,184,.1);color:#64748b;}
 /* 初心者向けまとめボックス */
 #d-summary{background:linear-gradient(135deg,#0d1f35,#0a1628);border:1px solid #1e4a6e;border-radius:6px;padding:9px 11px;}
 #d-summary .sum-title{font-size:var(--fs-xs);font-weight:900;color:#5eead4;letter-spacing:.5px;margin-bottom:5px;display:flex;align-items:center;gap:4px;}
@@ -1603,6 +1619,20 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
             <div id="d-v42s" style="font-size:var(--fs-sm);font-weight:800;margin-top:1px;"></div>
           </div>
         </div>
+        <!-- ゲージバー -->
+        <div class="gauge-wrap">
+          <div class="gauge-bg"><div id="d-gauge-fill" class="gauge-fill" style="width:50%;background:linear-gradient(90deg,#f87171,#fbbf24,#34d399);border-radius:4px;"></div></div>
+          <div class="gauge-tick" style="left:50%"><span style="color:#fb923c">C</span>50</div>
+          <div class="gauge-tick" style="left:65%"><span style="color:#fbbf24">B</span>65</div>
+          <div class="gauge-tick" style="left:80%"><span style="color:#34d399">A</span>80</div>
+          <div id="d-gauge-ptr" class="gauge-ptr" style="left:50%;background:#fbbf24;"></div>
+        </div>
+        <!-- ウェイトバー -->
+        <div class="weight-bar" style="margin-top:6px;">
+          <div class="wb-seg" style="width:40%;background:rgba(167,139,250,.2);color:#a78bfa;">稼ぐ力 40%</div>
+          <div class="wb-seg" style="width:35%;background:rgba(52,211,153,.2);color:#34d399;">成長 35%</div>
+          <div class="wb-seg" style="width:25%;background:rgba(251,191,36,.2);color:#fbbf24;">割安 25%</div>
+        </div>
         <!-- 3スコアカード -->
         <div class="sg">
           <div class="sc">
@@ -1683,6 +1713,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
                 <div id="d-s1-bar" style="height:100%;border-radius:2px;background:linear-gradient(90deg,#7c3aed,#a78bfa);transition:width .4s ease;"></div>
               </div>
               <div id="d-s1-desc" style="font-size:var(--fs-xs);color:#64748b;font-weight:700;margin-top:2px;line-height:1.4;"></div>
+              <div id="d-s1-judge" class="judge judge-b"></div>
             </div>
             <!-- 変数2: トレンド -->
             <div>
@@ -1694,6 +1725,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
                 <div id="d-s2-bar" style="height:100%;border-radius:2px;background:linear-gradient(90deg,#059669,#34d399);transition:width .4s ease;"></div>
               </div>
               <div id="d-s2-desc" style="font-size:var(--fs-xs);color:#64748b;font-weight:700;margin-top:2px;line-height:1.4;"></div>
+              <div id="d-s2-judge" class="judge judge-b"></div>
             </div>
             <!-- 変数3: 価格 -->
             <div>
@@ -1705,6 +1737,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
                 <div id="d-s3-bar" style="height:100%;border-radius:2px;background:linear-gradient(90deg,#d97706,#f59e0b);transition:width .4s ease;"></div>
               </div>
               <div id="d-s3-desc" style="font-size:var(--fs-xs);color:#64748b;font-weight:700;margin-top:2px;line-height:1.4;"></div>
+              <div id="d-s3-judge" class="judge judge-b"></div>
             </div>
           </div>
         </div>
@@ -1866,6 +1899,29 @@ function showD(code,name,sector,v42,rk,sScore,sArr,mArr,lRk,sBody,mBody,lBody,no
     document.getElementById('d-s1-bar').style.width=s1+'%';
     document.getElementById('d-s2-bar').style.width=s2+'%';
     document.getElementById('d-s3-bar').style.width=s3+'%';
+    // ゲージバー更新
+    var gf=document.getElementById('d-gauge-fill');
+    var gp=document.getElementById('d-gauge-ptr');
+    if(gf&&gp&&v42&&v42!=='—'){
+      var pct=Math.min(100,Math.max(0,parseFloat(v42)));
+      gf.style.width=pct+'%';
+      gp.style.left=pct+'%';
+      gp.style.background=rkColor[rk]||'#fbbf24';
+    }
+    // 判定ラベル更新
+    function setJudge(id,score){
+      var el=document.getElementById(id);if(!el)return;
+      var cls='judge ',txt='';
+      if(score>=80){cls+='judge-s';txt='優秀';}
+      else if(score>=65){cls+='judge-a';txt='良好';}
+      else if(score>=50){cls+='judge-b';txt='普通';}
+      else if(score>=35){cls+='judge-c';txt='要注意';}
+      else{cls+='judge-d';txt='弱い';}
+      el.className=cls;el.textContent=txt;
+    }
+    setJudge('d-s1-judge',s1);
+    setJudge('d-s2-judge',s2);
+    setJudge('d-s3-judge',s3);
     // レーダーチャート
     if(typeof drawRadar==='function'){
       drawRadar(document.getElementById('d-radar'),s1,s2,s3);
