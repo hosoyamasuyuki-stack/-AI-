@@ -193,7 +193,7 @@ for name, sid in FRED_DAILY.items():
         total_added += added
     else:
         print(f"  $26A0$FE0F {name}: 取得失敗")
-    time.sleep(2)
+    time.sleep(3)
 
 # ── FRED 月次指標 ──
 print("\n【FRED 月次指標】")
@@ -205,7 +205,7 @@ for name, sid in FRED_MONTHLY.items():
         total_added += added
     else:
         print(f"  $26A0$FE0F {name}: 取得失敗")
-    time.sleep(2)
+    time.sleep(3)
 
 # ── yfinance 日次 ──
 print("\n【yfinance 日次指標】")
@@ -217,7 +217,7 @@ for name, ticker in YF_DAILY.items():
         total_added += added
     else:
         print(f"  $26A0$FE0F {name}: 取得失敗")
-    time.sleep(2)
+    time.sleep(3)
 
 # ── シラーPER近似値（SP500株価÷10年移動平均×20） ──
 print("\n【シラーPER近似値更新】")
@@ -317,6 +317,7 @@ except Exception as e:
 
 def get_latest_val(ss, sheet_name, col=1):
     try:
+        time.sleep(1)
         ws = ss.worksheet(sheet_name)
         vals = ws.col_values(col + 1)
         for v in reversed(vals):
@@ -332,6 +333,7 @@ def get_latest_val(ss, sheet_name, col=1):
 def get_row_val(ss, sheet_name, col_name):
     """指定列名の最新値を取得"""
     try:
+        time.sleep(1)
         ws = ss.worksheet(sheet_name)
         rows = ws.get_all_values()
         if not rows: return None
