@@ -601,6 +601,12 @@ SCORES  = {}
 rows_h  = []
 rows_w  = []
 
+# STEP0予測記録日からの経過日数
+STEP0_DATE = datetime(2026, 3, 18)
+ELAPSED_DAYS = (datetime.now() - STEP0_DATE).days
+DAYS_LABEL = f"{ELAPSED_DAYS}日"
+print(f"  学習経過日数: {DAYS_LABEL}（STEP0: 2026/03/18）")
+
 for row, stype in all_data:
     code  = str(row.get('コード',    '')).strip()
     name  = str(row.get('銘柄名',    '')).strip()
@@ -647,7 +653,7 @@ for row, stype in all_data:
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{SHORT_SCORE},'down','down','{rank}',"
-        f"'{sb}','{mb}','{lb}','{nt}','1日'"
+        f"'{sb}','{mb}','{lb}','{nt}','{DAYS_LABEL}'"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
@@ -657,7 +663,7 @@ for row, stype in all_data:
         f'          <td style="color:#fbbf24;">{short_label(MID_SCORE)}</td>\n'
         f'          <td><span style="background:{rb};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
-        f'          <td>1日</td>\n'
+        f'          <td>{DAYS_LABEL}</td>\n'
         f'          <td><span class="s-buy" style="background:{rbg(rank)};color:{sc};">'
         f'{st}</span></td>\n'
         f'        </tr>'
@@ -718,7 +724,7 @@ for row, stype in screen_data:
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{SHORT_SCORE},'down','down','{rank}',"
-        f"'{sb2}','{mb2}','{lb2}','{nt2}','scan'"
+        f"'{sb2}','{mb2}','{lb2}','{nt2}','{DAYS_LABEL}'"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
@@ -728,7 +734,7 @@ for row, stype in screen_data:
         f'          <td style="color:#fbbf24;">{short_label(MID_SCORE)}</td>\n'
         f'          <td><span style="background:{rb2};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
-        f'          <td>scan</td>\n'
+        f'          <td>{DAYS_LABEL}</td>\n'
         f'          <td><span class="s-buy" style="background:{rbg(rank)};color:{sc};">'
         f'{st}</span></td>\n'
         f'        </tr>'
