@@ -1,5 +1,5 @@
 # AI投資判断システム 開発パートナー設定 完全版
-# 最終更新：2026/03/29（セッション5）
+# 最終更新：2026/03/31（セッション7）
 
 ================================================================
 ## セッション開始時の定型動作
@@ -147,42 +147,87 @@ FCF利回り：8%以上→100pt / 4%→70pt / 2%→38pt / 0%以下→8pt
 ランク：S>=80 / A>=65 / B>=50 / C<50 / D=低スコア
 
 ================================================================
-## リポジトリ構成
+## リポジトリ構成（2026/03/31更新）
 ================================================================
 
-core/                  : 共通モジュール（2026/03/28新設）
-  __init__.py          :   パッケージ初期化
-  config.py            :   定数・閾値・API設定（SPREADSHEET_ID・ROE_THR等）
-  auth.py              :   Google Sheets認証（get_spreadsheet()）
-  scoring.py           :   スコア計算ヘルパー（safe/thr_high/thr_low/slope_fn）
-  api.py               :   J-Quants API（get_price_jq/get_fin_jq/get_shares_jq）
-ai_dashboard_v13.html  : メインダッシュボード（GitHub Pages公開中）
-gas/                   : GASスクリプト参考コード
-generate_dashboard.py  : ダッシュボード生成スクリプト
-weekly_update.py       : 週次自動更新スクリプト
-daily_update.py        : 日次価格更新スクリプト
-verify/                 : 検証スクリプト
-  verify_0415.py        :   2026/04/15検証
-handover.txt           : GitHub Pages上の引き継ぎ書
-handover_FINAL.txt     : 完全版引き継ぎ書
-generate_handover.py   : 引き継ぎ書自動生成スクリプト
-backtests/              : 仮説検証バックテストスクリプト
-  backtest_H002_v1.py   :   H002バックテスト
-  backtest_H004_v1/v2   :   H004バックテスト
-H004_complete_record.txt : H004完全記録
-manage_stock.py        : 銘柄管理（追加・削除・移動 + v4.3スコア即時計算）
-full_scan.py           : 全日本株スクリーニング（全上場~3,800社→Top50書き出し）
-  gas_kenja_proxy.js    :   賢者の審判GASプロキシ
-sheet_manager.py       : SheetManagementLedger生成（毎月1日9:00 JST）
-record_changelog.py    : 変更履歴記録
-evidence_page.html     : 科学的根拠ページ（H002・H003バックテスト結果を視覚的に表示）
-framework_page.html    : 判断フレームワークページ（4時間軸の判断材料を初心者向けに解説）
-                         URL: https://hosoyamasuyuki-stack.github.io/-AI-/framework_page.html
-                         ダッシュボードヘッダー「判断フレームワーク」ボタンから別タブで開く
-                         ※具体的閾値・ウェイト・計算式は非公開（知的財産保護）
-                         URL: https://hosoyamasuyuki-stack.github.io/-AI-/evidence_page.html
-                         ダッシュボードヘッダー「科学的根拠」ボタンから別タブで開く
-                         Chart.jsで統計グラフ表示・ダークテーマ・ゴールドカラー設計
+core/                      : 共通モジュール（2026/03/28新設）
+  __init__.py              :   パッケージ初期化
+  config.py                :   定数・閾値・API設定（SPREADSHEET_ID・ROE_THR等）
+  auth.py                  :   Google Sheets認証（get_spreadsheet()）
+  scoring.py               :   スコア計算ヘルパー（safe/thr_high/thr_low/slope_fn）
+  api.py                   :   J-Quants API（get_price_jq/get_fin_jq/get_shares_jq）
+
+本番稼働スクリプト（ルート）：
+  ai_dashboard_v13.html    : メインダッシュボード（GitHub Pages公開中）
+  generate_dashboard.py    : ダッシュボード生成スクリプト
+  weekly_update.py         : 週次自動更新スクリプト
+  daily_update.py          : 日次FRED指標+MacroPhase更新（core/auth使用）
+  daily_price_update.py    : 日次価格+変数3更新
+  full_scan.py             : 全日本株スクリーニング（~3,800社→Top50）
+  manage_stock.py          : 銘柄管理（追加・削除・移動 + v4.3スコア即時計算）
+  learning_batch_monthly.py: 学習用100銘柄月次バッチ
+  sheet_manager.py         : SheetManagementLedger生成（毎月1日）
+  app.py                   : Streamlitローカルダッシュボード（開発用）
+
+backtests/                 : 仮説検証バックテスト（2026/03/31整理）
+  backtest_H002_v1.py      :   H002 Variable1バックテスト
+  backtest_H004_v1.py      :   H004 Variable3バックテスト（枠組み）
+  backtest_H004_v2.py      :   H004 Variable3バックテスト（本番計算）
+  backtest_H005_v1.py      :   H005 MacroPhaseバックテスト v1
+  backtest_H005_v2.py      :   H005 v2 全パターン網羅（11戦略）
+  backtest_H005B_v1.py     :   H005-B 暴落時買い戦略バックテスト
+
+verify/                    : 検証スクリプト
+  verify_0415.py           :   2026/04/15 STEP0検証（完全自動化済み）
+  verify_monday.py         :   毎週月曜検証
+
+tools/                     : 運用ツール
+  check_api_keys.py        :   全7キーの設定状態+接続テスト一括チェック
+  generate_handover.py     :   引き継ぎ書自動生成
+  record_changelog.py      :   変更履歴記録
+
+gas/                       : GASプロキシ参考コード
+  gas_kenja_proxy.js       :   賢者の審判GASプロキシ（OpenAI GPT-4o）
+  gas_manage_stock_addition.js : 銘柄管理GASプロキシ参考コード
+
+docs/                      : ドキュメント
+  H004_complete_record.txt :   H004完全記録（詳細理論・計測方法）
+
+GitHub Pages公開ページ：
+  evidence_page.html       : 科学的根拠ページ（H002-H005バックテスト結果）
+  framework_page.html      : 判断フレームワークページ（4時間軸の判断材料）
+  handover.txt             : GitHub Pages上の引き継ぎ書
+  handover_FINAL.txt       : 完全版引き継ぎ書
+
+設定ファイル：
+  .env.example             : 環境変数テンプレート（全キーに取得先・設定先を明記）
+  .gitignore               : Python/OS/IDE標準パターン
+  requirements.txt         : Python依存パッケージ（8パッケージ）
+  CLAUDE.md                : AI開発パートナー設定（本ファイル）
+  README.md                : プロジェクト概要・セットアップ手順
+
+.github/workflows/         : GitHub Actions（13ワークフロー）
+  daily_price_update.yml   : 毎日7:30 JST 株価更新
+  daily_update.yml         : 毎日7:00 JST FRED指標+MacroPhase
+  weekly_update.yml        : 毎週月曜10:00 JST 全変数再計算
+  dashboard_update.yml     : weekly完了後 ダッシュボードHTML再生成
+  full_update.yml          : workflow_dispatch 全更新ボタン（4ステップ）
+  full_scan.yml            : 毎週日曜22:00 JST 全市場スキャン
+  manage_stock.yml         : workflow_dispatch 銘柄管理
+  sheet_manager.yml        : 毎月1日9:00 JST
+  verify.yml               : 検証スクリプト実行
+  backtest_h005.yml        : H005バックテスト
+  monthly_learning.yml     : 学習用100銘柄月次バッチ
+  auto_changelog.yml       : 変更履歴自動記録
+  generate_handover.yml    : 引き継ぎ書自動生成
+
+削除済み（2026/03/31整理）：
+  kenja.js                 → ai_dashboard_v13.htmlにインライン統合済み
+  save_handover_v2_6.py    → Colab用一回きりスクリプト（不要）
+  create_handover_base.py  → Colab用一回きりスクリプト（不要）
+  delete_group_c.py        → Colab用一回きりスクリプト（不要）
+  daily_price_update.yml（ルート） → .github/workflows/に正式版あり
+  dashboard_update.yml（ルート）   → .github/workflows/に正式版あり
 
 ================================================================
 ## GitHub Actionsスクリプト
@@ -455,6 +500,10 @@ verify_0415.py が完全自動化済み
     - Step3（ダッシュボード生成）: continue-on-error除去（失敗時push防止）
     - Step1にSPREADSHEET_ID環境変数追加
 ★システムヘルスチェック結果 → 9.0/10（前回8.5から改善）
+★daily_update.py core/auth移行 → 完了
+    - 認証部分をcore/auth.get_spreadsheet()に統一
+    - import json/gspread/google.oauth2の重複削除
+    - from datetime import追加（欠落修正）
     - 全チーム報告：金融工学統計学者✓ 天才投資家✓ プログラマー✓
     - 保守エンジニア✓ 初心者代表✓ 監視官✓ 書記官✓
 
@@ -462,7 +511,6 @@ verify_0415.py が完全自動化済み
 【最優先（次回セッション）】
 ★2. 賢者の審判GAS再デプロイ時のURL更新自動化
     - 毎回デプロイ→URLコピー→HTML修正→PR→マージが手動
-★3. daily_update.pyをcore/モジュールに移行（ヘルスチェック指摘事項）
 2. 2026/03/30 verify_monday.py初回結果確認（月曜自動実行）
 3. 2026/04/15 STEP0目先予測自動検証（verify_0415.py v3）
 7. 売り判断ルールの体系化（天才投資家からの指摘）
@@ -483,7 +531,7 @@ H003：Variable2（トレンド）の有効性 → 検証済み
   重要知見：V字回復局面でモメンタムは完全逆転する
 H004：Variable3（価格）の有効性 → 条件付き採択（2026/03/25）
   結果：年率+9.13% / 5/5勝ち / p=0.0321
-  完全記録：https://github.com/hosoyamasuyuki-stack/-AI-/blob/main/H004_complete_record.txt
+  完全記録：https://github.com/hosoyamasuyuki-stack/-AI-/blob/main/docs/H004_complete_record.txt
 H005：マクロフェーズ判断の有効性 → 検証完了（2026/03/29）
   H005-A（4層MacroPhaseスコアによるタイミング投資）：REJECTED
     v1結果：GREEN期間が全ウィンドウで0月（閾値60が厳しすぎ）→検証不能
@@ -1318,6 +1366,16 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
   - daily_price_update.yml: SPREADSHEET_ID環境変数追加
   - full_update.yml: Step3 continue-on-error除去+Step1にSPREADSHEET_ID追加
 
+refactor: ファイル整理整頓（第三者可読性向上）
+  - backtests/: バックテスト6ファイル移動
+  - gas/: GASプロキシ2ファイル移動
+  - docs/: H004完全記録移動
+  - tools/: 運用ツール3ファイル移動(check_api_keys/generate_handover/record_changelog)
+  - verify/: 検証スクリプト2ファイル移動(verify_0415/verify_monday)
+  - 不要ファイル6件削除（旧YAML2+Colab一回きり3+kenja.js1）
+  - daily_update.py: core/auth移行完了（★3解決）
+  - GitHub Actions YAMLパス: 5ワークフロー更新
+
 ================================================================
 ## 変更履歴サマリー（続き）
 ================================================================
@@ -1337,6 +1395,20 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
     - Step3 continue-on-error除去（ダッシュボード生成失敗時にpush防止）
     - Step1にSPREADSHEET_ID環境変数追加
 80. 全チーム現状報告実施（8項目チェック→9.0/10に改善）
+81. ファイル整理整頓（第三者可読性向上・ルート57→51ファイル）
+    - backtests/: バックテスト6ファイル移動
+    - gas/: GASプロキシ2ファイル移動
+    - docs/: H004完全記録移動
+    - tools/: 運用ツール3ファイル移動
+    - verify/: 検証スクリプト2ファイル移動
+    - 不要ファイル6件削除（旧YAML重複2+Colab一回きり3+kenja.js統合済み1）
+82. daily_update.py core/auth移行（★3解決・全本番スクリプトがcore/使用に統一）
+83. CLAUDE.md仕様書 書記官最終漏れチェック+保存
+    - 最終更新日セッション7に更新
+    - リポジトリ構成セクション全面書き直し（新ディレクトリ構造反映）
+    - ★3を解決済みに移動
+    - H004パス docs/に更新
+    - セッション7コミット履歴にrefactorコミット追加
 
 ================================================================
 作成：WEBチーム全員
