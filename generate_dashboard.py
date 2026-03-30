@@ -343,6 +343,8 @@ def fetch_market():
     sp5 = yp('^GSPC')
     vix = yp('^VIX')
     hyg = yp('HYG')
+    wti = yp('CL=F')
+    gold = yp('GC=F')
     try:
         t10 = get_fred('DGS10') or 4.3
         t2  = get_fred('DGS2')  or 4.5
@@ -364,6 +366,10 @@ def fetch_market():
         'yield_spread': yield_spread,
         'hyg_v':   round(hyg['v'],2)   if hyg else 80,
         'hyg_chg': round(hyg['chg'],2) if hyg else 0,
+        'wti_v':   round(wti['v'],1)   if wti  else 70,
+        'wti_chg': round(wti['chg'],1)  if wti  else 0,
+        'gold_v':  round(gold['v'])     if gold else 3000,
+        'gold_chg':round(gold['chg'],1) if gold else 0,
     }
     print(f"  日経:{result['nk_v']:,} SP500:{result['sp_v']:,} VIX:{result['vix_v']} イールド差:{result['yield_spread']}")
     return result
@@ -792,6 +798,95 @@ src = re.sub(r'(#body\{[^}]*)overflow:hidden', r'\1overflow:visible', src)
 src = re.sub(r'(\.panel\{[^}]*)overflow:hidden', r'\1overflow:visible', src)
 print("OK: CSS修正")
 
+# ── 4層マクロカード動的生成 ──────────────────────────────────
+def _mc_item(label, val, badge_text, val_color, badge_bg, badge_fg, onclick='', sub_text=''):
+    oc = f" onclick=\"showHelp('{onclick}')\"" if onclick else ''
+    return (
+        f'<div style="cursor:pointer;margin-bottom:4px;"{oc}>'
+        f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+        f'<span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">{label}</span>'
+        f'<span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{val_color};">{val}</span>'
+        f'<span style="background:{badge_bg};color:{badge_fg};font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">{badge_text}</span>'
+        f'</div>'
+        f'<div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">{sub_text}</div>'
+        f'</div>'
+    )
+
+def _mc_card(border_color, title_color, title, items_html, summary_color, summary):
+    return (
+        f'<div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid {border_color};border-radius:6px;padding:6px 8px;">'
+        f'<div style="font-size:var(--fs-xs);font-weight:900;color:{title_color};margin-bottom:5px;letter-spacing:.5px;">{title}</div>'
+        f'{items_html}'
+        f'<div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">'
+        f'<div style="color:{summary_color};font-size:var(--fs-xs);font-weight:800;">{summary}</div>'
+        f'</div></div>'
+    )
+
+_vix_v = MKT['vix_v']
+_vix_col = '#34d399' if _vix_v <= 20 else '#fbbf24' if _vix_v <= 30 else '#f87171'
+_vix_bg  = '#064e3b' if _vix_v <= 20 else '#92400e' if _vix_v <= 30 else '#7f1d1d'
+_vix_lbl = '\u5E73\u9759' if _vix_v <= 20 else '\u8B66\u6212' if _vix_v <= 30 else '\u6050\u6016'
+_vix_sub = '\u5B89\u5B9A\u3057\u3066\u3044\u308B' if _vix_v <= 20 else '\u6050\u6016\u304C\u9AD8\u307E\u3063\u3066\u3044\u308B' if _vix_v <= 30 else '\u6A5F\u95A2\u6295\u8CC7\u5BB6\u304C\u6050\u6016\u3057\u3066\u3044\u308B'
+_hyg_v = MKT['hyg_v']; _hyg_chg = MKT['hyg_chg']
+_hyg_col = '#34d399' if _hyg_chg >= 0 else '#f87171'
+_hyg_bg  = '#064e3b' if _hyg_chg >= 0 else '#7f1d1d'
+_hyg_lbl = '\u826F\u597D' if _hyg_chg >= 0 else '\u60AA\u5316'
+_hyg_sub = '\u4FE1\u7528\u5E02\u5834\u5B89\u5B9A' if _hyg_chg >= 0 else '\u4F01\u696D\u306E\u4FE1\u7528\u529B\u304C\u4F4E\u4E0B'
+_risk_col = '#34d399' if _vix_v <= 20 and _hyg_chg >= 0 else '#f87171' if _vix_v > 30 else '#fbbf24'
+_risk_txt = '\u5371\u967A\u5EA6: ' + ('\u4F4E\u3044' if _vix_v <= 20 else '\u3084\u3084\u9AD8\u3044' if _vix_v <= 30 else '\u9AD8\u3044')
+card1 = _mc_card('#f87171','#fca5a5','\u30EA\u30B9\u30AF\u74B0\u5883',
+    _mc_item('VIX',str(_vix_v),_vix_lbl,_vix_col,_vix_bg,_vix_col,'vix',_vix_sub)+
+    _mc_item('HYG',str(_hyg_v),_hyg_lbl,_hyg_col,_hyg_bg,_hyg_col,'hyg',_hyg_sub),
+    _risk_col,_risk_txt)
+
+_ys = MKT['yield_spread']
+_ys_col = '#34d399' if _ys >= 0 else '#fbbf24' if _ys >= -0.5 else '#f87171'
+_ys_bg  = '#064e3b' if _ys >= 0 else '#92400e' if _ys >= -0.5 else '#7f1d1d'
+_ys_lbl = '\u6B63\u5E38' if _ys >= 0 else '\u3084\u3084\u8B66\u6212' if _ys >= -0.5 else '\u9006\u30A4\u30FC\u30EB\u30C9'
+_ys_sub = '\u6B63\u5E38\u5316=\u5B89\u5FC3\u6750\u6599' if _ys >= 0 else '\u8B66\u6212\u304C\u5FC5\u8981'
+card2 = _mc_card('#34d399','#6ee7b7','\u91D1\u878D\u653F\u7B56',
+    _mc_item('\u9006\u30A4\u30FC\u30EB\u30C9',f'{_ys:+.2f}',_ys_lbl,_ys_col,_ys_bg,_ys_col,'yield_spread',_ys_sub),
+    _ys_col,'\u5B89\u5FC3\u5EA6: '+('\u826F\u597D' if _ys >= 0 else '\u8981\u6CE8\u610F'))
+
+_wti = MKT['wti_v']; _gold = MKT['gold_v']
+_wti_col = '#34d399' if _wti < 60 else '#fbbf24' if _wti < 80 else '#f87171'
+_wti_bg  = '#064e3b' if _wti < 60 else '#92400e' if _wti < 80 else '#7f1d1d'
+_wti_lbl = '\u5B89\u5024' if _wti < 60 else '\u3084\u3084\u5B89' if _wti < 80 else '\u9AD8\u9A30'
+_gold_col = '#34d399' if _gold < 2000 else '#fbbf24' if _gold < 2500 else '#f87171'
+_gold_bg  = '#064e3b' if _gold < 2000 else '#92400e' if _gold < 2500 else '#7f1d1d'
+_gold_lbl = '\u5B89\u5B9A' if _gold < 2000 else '\u4E0A\u6607' if _gold < 2500 else '\u9AD8\u9A30'
+_gold_sub = '\u5B89\u5168\u8CC7\u7523\u306B\u8CC7\u91D1\u304C\u9003\u907F\u4E2D' if _gold >= 2500 else '\u8CC7\u7523\u9632\u885B\u9700\u8981'
+card3 = _mc_card('#a78bfa','#c4b5fd','\u30B3\u30E2\u30C7\u30A3\u30C6\u30A3',
+    _mc_item('WTI\u539F\u6CB9',f'${_wti}',_wti_lbl,_wti_col,_wti_bg,_wti_col,'wti','\u30A4\u30F3\u30D5\u30EC\u30FB\u30A8\u30CD\u30EB\u30AE\u30FC\u306E\u5148\u884C\u6307\u6A19')+
+    _mc_item('\u91D1(Gold)',f'${_gold:,}',_gold_lbl,_gold_col,_gold_bg,_gold_col,'gold',_gold_sub),
+    '#a78bfa','\u8CC7\u6E90: '+('\u30A4\u30F3\u30D5\u30EC\u8B66\u6212' if _wti>=80 or _gold>=2500 else '\u5B89\u5B9A'))
+
+_nk=MKT['nk_v'];_nk_chg=MKT['nk_chg']
+_nk_col='#34d399' if _nk_chg>=0 else '#f87171'
+_nk_bg='#064e3b' if _nk_chg>=0 else '#7f1d1d'
+_nk_lbl=f'+{_nk_chg:.1f}%' if _nk_chg>=0 else f'{_nk_chg:.1f}%'
+_m2c='#34d399' if _m2_yoy and _m2_yoy>0 else '#f87171'
+_m2b='#064e3b' if _m2_yoy and _m2_yoy>0 else '#7f1d1d'
+_m2v=f'+{_m2_yoy:.2f}%' if _m2_yoy and _m2_yoy>0 else f'{_m2_yoy:.2f}%' if _m2_yoy else '---'
+_m2s2='\u304A\u91D1\u306E\u91CF\u304C\u5897\u3048\u3066\u3044\u308B' if _m2_yoy and _m2_yoy>0 else '\u304A\u91D1\u306E\u91CF\u304C\u6E1B\u3063\u3066\u3044\u308B'
+_eco_col='#60a5fa'
+_eco_txt='\u52E2\u3044: '+('\u826F\u597D' if _nk_chg>=0 and (_m2_yoy or 0)>0 else '\u4E2D\u7ACB' if _nk_chg>=0 else '\u5F31\u3044')
+card4 = _mc_card('#60a5fa','#93c5fd','\u7D4C\u6E08\u6D3B\u52D5',
+    _mc_item('\u65E5\u672CM2',_m2v,_m2_label,_m2c,_m2b,_m2c,'m2',_m2s2)+
+    _mc_item('\u65E5\u7D4C225',f'{_nk:,}',_nk_lbl,_nk_col,_nk_bg,_nk_col,'nikkei',f'52\u9031\u306E{MKT["nk_p52"]}%\u4F4D\u7F6E'),
+    _eco_col,_eco_txt)
+
+MACRO_CARDS_HTML = ('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">\n'
+    f'      {card1}\n      {card2}\n      {card3}\n      {card4}\n    </div>')
+
+cards_start = src.find('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">')
+cards_end = src.find('    <!-- \u5272\u5B89\u5EA6 + \u30DE\u30AF\u30ED\u7DCF\u5408', cards_start) if cards_start >= 0 else -1
+if cards_start >= 0 and cards_end >= 0:
+    src = src[:cards_start] + MACRO_CARDS_HTML + '\n' + src[cards_end:]
+    print(f"OK: 4\u5C64\u30DE\u30AF\u30ED\u30AB\u30FC\u30C9\u52D5\u7684\u7F6E\u63DB (VIX={_vix_v} WTI=${_wti} Gold=${_gold:,})")
+else:
+    print(f"WARN: 4\u5C64\u30DE\u30AF\u30ED\u30AB\u30FC\u30C9\u7F6E\u63DB\u30B9\u30AD\u30C3\u30D7 (start={cards_start} end={cards_end})")
+
 # STOCK_SCORES埋め込み
 scores_js = ('const STOCK_SCORES=' +
              json.dumps(SCORES, ensure_ascii=False) + ';')
@@ -1124,6 +1219,62 @@ src = src.replace('<!-- MACRO_PHASE_GAUGE -->', PHASE_HTML, 1)
 print('OK: マクロフェーズゲージ置換')
 # モーダル挿入（</body>直前）
 src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
+
+# 銘柄管理ボタン挿入（ヘッダーに存在しなければ追加）
+MGMT_BTN = '<span id="mgmt-btn" onclick="openStockMgmt()" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#1e293b;border:1px solid #f97316;border-radius:6px;cursor:pointer;font-size:var(--fs-xs);font-weight:900;color:#f97316;transition:all .2s;" onmouseover="this.style.background=\'#f97316\';this.style.color=\'#000\'" onmouseout="this.style.background=\'#1e293b\';this.style.color=\'#f97316\'">&#x1F4DD; \u9298\u67C4\u7BA1\u7406</span>'
+if 'mgmt-btn' not in src:
+    # 全更新ボタンの直後に挿入
+    upd_btn_end = src.find('</span>', src.find('id="update-btn"'))
+    if upd_btn_end >= 0:
+        insert_pos = upd_btn_end + len('</span>')
+        src = src[:insert_pos] + '\n    ' + MGMT_BTN + src[insert_pos:]
+        print("OK: \u9298\u67C4\u7BA1\u7406\u30DC\u30BF\u30F3\u633F\u5165")
+    else:
+        print("WARN: \u5168\u66F4\u65B0\u30DC\u30BF\u30F3\u304C\u898B\u3064\u304B\u3089\u305A\u3001\u9298\u67C4\u7BA1\u7406\u30DC\u30BF\u30F3\u30B9\u30AD\u30C3\u30D7")
+else:
+    print("OK: \u9298\u67C4\u7BA1\u7406\u30DC\u30BF\u30F3\u5B58\u5728\u78BA\u8A8D")
+
+# 銘柄管理モーダル挿入（存在しなければ末尾に追加）
+if 'mgmt-overlay' not in src:
+    MGMT_MODAL = """
+<!-- MANAGE_STOCK_MODAL -->
+<div id="mgmt-overlay" onclick="closeMgmt(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;">
+  <div onclick="event.stopPropagation()" style="background:#111827;border:1px solid #f97316;border-radius:10px;width:380px;padding:0;box-shadow:0 0 40px rgba(0,0,0,.8);animation:fadeIn .2s ease;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1e3a5f;">
+      <div style="color:#f97316;font-weight:900;font-size:var(--fs-md);">\u9298\u67C4\u7BA1\u7406</div>
+      <button onclick="closeMgmt()" style="background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;">&#x2715;</button>
+    </div>
+    <div style="padding:16px;">
+      <div style="margin-bottom:12px;">
+        <label style="color:#94a3b8;font-size:var(--fs-xs);font-weight:700;display:block;margin-bottom:4px;">\u9298\u67C4\u30B3\u30FC\u30C9\uFF084\u6841\uFF09</label>
+        <input id="mgmt-code" type="text" maxlength="4" placeholder="\u4F8B: 7203" style="width:100%;padding:8px 10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e2e8f0;font-size:var(--fs-md);font-family:monospace;box-sizing:border-box;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="color:#94a3b8;font-size:var(--fs-xs);font-weight:700;display:block;margin-bottom:4px;">\u5BFE\u8C61</label>
+        <div style="display:flex;gap:12px;">
+          <label style="color:#e2e8f0;font-size:var(--fs-sm);cursor:pointer;display:flex;align-items:center;gap:4px;"><input type="radio" name="mgmt-target" value="\u4FDD\u6709" checked style="accent-color:#f97316;"> \u4FDD\u6709</label>
+          <label style="color:#e2e8f0;font-size:var(--fs-sm);cursor:pointer;display:flex;align-items:center;gap:4px;"><input type="radio" name="mgmt-target" value="\u76E3\u8996" style="accent-color:#f97316;"> \u76E3\u8996</label>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button onclick="execMgmt('add')" style="flex:1;padding:8px;background:#064e3b;border:1px solid #34d399;border-radius:6px;color:#34d399;font-weight:800;font-size:var(--fs-sm);cursor:pointer;">+ \u8FFD\u52A0</button>
+        <button onclick="execMgmt('remove')" style="flex:1;padding:8px;background:#7f1d1d;border:1px solid #f87171;border-radius:6px;color:#f87171;font-weight:800;font-size:var(--fs-sm);cursor:pointer;">- \u524A\u9664</button>
+        <button onclick="execMgmt('move')" style="flex:1;padding:8px;background:#1e3a5f;border:1px solid #60a5fa;border-radius:6px;color:#60a5fa;font-weight:800;font-size:var(--fs-sm);cursor:pointer;">&#x21C4; \u79FB\u52D5</button>
+      </div>
+      <div id="mgmt-status" style="min-height:24px;padding:6px 8px;background:#0d1117;border-radius:4px;font-size:var(--fs-xs);color:#94a3b8;font-family:monospace;"></div>
+    </div>
+  </div>
+</div>
+<script>
+function openStockMgmt(){document.getElementById('mgmt-overlay').style.display='flex';document.getElementById('mgmt-code').value='';document.getElementById('mgmt-status').textContent='';document.getElementById('mgmt-code').focus();}
+function closeMgmt(e){if(!e||e.target===document.getElementById('mgmt-overlay'))document.getElementById('mgmt-overlay').style.display='none';}
+function execMgmt(action){var code=document.getElementById('mgmt-code').value.trim();if(!code||code.length!==4||!/^\d{4}$/.test(code)){document.getElementById('mgmt-status').innerHTML='<span style="color:#f87171;">4\u6841\u306E\u9298\u67C4\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044</span>';return;}var target=document.querySelector('input[name="mgmt-target"]:checked').value;var al={'add':'\u8FFD\u52A0','remove':'\u524A\u9664','move':'\u79FB\u52D5'}[action];var st=document.getElementById('mgmt-status');st.innerHTML='<span style="color:#fbbf24;">&#x23F3; '+code+' \u3092'+target+'\u306B'+al+'\u4E2D...</span>';var btns=document.querySelectorAll('#mgmt-overlay button');btns.forEach(function(b){b.style.pointerEvents='none';b.style.opacity='0.5';});var GAS='https://script.google.com/macros/s/AKfycbwVDZ9IhuGEz7onU9uCvhSFd7N84cGQouIcnBMQO5iIlFwbNbVP4J8_tPtOj8X7yxAw/exec';fetch(GAS+'?action=manage_stock&code='+code+'&operation='+action+'&target='+encodeURIComponent(target),{method:'POST',mode:'no-cors'}).then(function(){st.innerHTML='<span style="color:#34d399;">&#x2705; GitHub Actions\u8D77\u52D5! '+code+'\u3092'+target+'\u306B'+al+' (2-3\u5206\u3067\u53CD\u6620)</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});}).catch(function(){st.innerHTML='<span style="color:#f87171;">&#x274C; \u30A8\u30E9\u30FC</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});});}
+</script>
+"""
+    src += MGMT_MODAL
+    print("OK: \u9298\u67C4\u7BA1\u7406\u30E2\u30FC\u30C0\u30EB\u633F\u5165")
+else:
+    print("OK: \u9298\u67C4\u7BA1\u7406\u30E2\u30FC\u30C0\u30EB\u5B58\u5728\u78BA\u8A8D")
 print("OK: モーダル挿入")
 
 out = 'ai_dashboard_v13.html'

@@ -504,6 +504,15 @@ verify_0415.py が完全自動化済み
     - 認証部分をcore/auth.get_spreadsheet()に統一
     - import json/gspread/google.oauth2の重複削除
     - from datetime import追加（欠落修正）
+★4層マクロカード・コモディティ ハードコード問題 → 修正完了
+    - 問題：VIX/HYG/逆イールド/WTI原油/金/M2/日経225が全てHTMLにハードコード
+    - generate_dashboard.pyで動的生成・置換するロジックを追加
+    - yfinanceからWTI(CL=F)・Gold(GC=F)を新規取得
+    - 全更新実行時に全指標がリアルタイム値に更新される
+★銘柄管理ボタン消失問題 → 復元完了
+    - 問題：generate_dashboard.py再生成時にボタン+モーダルが消失していた
+    - ai_dashboard_v13.htmlにボタン+モーダル+JS復元
+    - generate_dashboard.pyに自動復元ロジック追加（再生成時も消えない）
     - 全チーム報告：金融工学統計学者✓ 天才投資家✓ プログラマー✓
     - 保守エンジニア✓ 初心者代表✓ 監視官✓ 書記官✓
 
@@ -1376,6 +1385,12 @@ refactor: ファイル整理整頓（第三者可読性向上）
   - daily_update.py: core/auth移行完了（★3解決）
   - GitHub Actions YAMLパス: 5ワークフロー更新
 
+fix: 4層マクロカード・コモディティ動的化+銘柄管理ボタン復元
+  - generate_dashboard.py: 4層カード(VIX/HYG/逆イールド/WTI/金/M2/日経)動的生成
+  - generate_dashboard.py: yfinanceからWTI(CL=F)/Gold(GC=F)新規取得
+  - generate_dashboard.py: 銘柄管理ボタン+モーダル自動復元ロジック追加
+  - ai_dashboard_v13.html: 銘柄管理ボタン+モーダル+JS復元
+
 ================================================================
 ## 変更履歴サマリー（続き）
 ================================================================
@@ -1410,6 +1425,14 @@ refactor: ファイル整理整頓（第三者可読性向上）
     - H004パス docs/に更新
     - セッション7コミット履歴にrefactorコミット追加
 
+84. 4層マクロカード・コモディティ動的化（ハードコード問題解消）
+    - VIX/HYG/逆イールド/WTI原油/金/M2/日経225を全更新で動的更新
+    - yfinanceからWTI(CL=F)・Gold(GC=F)を新規取得追加
+    - 4層カードHTML全体をgenerate_dashboard.pyで動的生成・置換
+85. 銘柄管理ボタン復元
+    - ヘッダーにオレンジ色「銘柄管理」ボタン復元
+    - モーダルUI（コード入力+保有/監視選択+追加/削除/移動）復元
+    - generate_dashboard.pyに自動復元ロジック（再生成時も永続化）
 ================================================================
 作成：WEBチーム全員
 2026/03/26
