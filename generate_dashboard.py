@@ -814,6 +814,24 @@ src = src.replace(
 print("OK: マトリックス配列修正")
 src = re.sub(r'最終更新：[^<"\']+', f'最終更新：{NOW}', src)
 
+# 4層マクロダッシュボード 更新日時を現在日時に更新
+src = re.sub(
+    r'4層マクロダッシュボード<span[^>]*>[^<]*</span>',
+    f'4層マクロダッシュボード<span style="font-size:var(--fs-micro);color:#475569;margin-left:8px;">{NOW} 更新</span>',
+    src
+)
+print(f"OK: 4層マクロダッシュボード更新日時更新 → {NOW}")
+
+# ティッカーブロック（TICKER_START〜TICKER_END）内の日経225を動的置換
+# ※日経225の値のみ置換（ティッカー構造を維持したまま）
+nk_v_str = f'{MKT["nk_v"]:,}'
+src = re.sub(
+    r'(日経225</span><span[^>]*>)[\d,]+(</span>)',
+    r'\g<1>' + nk_v_str + r'\g<2>',
+    src
+)
+print(f"OK: ティッカー内日経225更新 → {nk_v_str}")
+
 # ヘッダー日時バッジを現在日時に更新
 BADGE_NOW = datetime.now().strftime('%Y-%m-%d %H:%M')
 src = re.sub(
@@ -1067,25 +1085,15 @@ function closeVI(){{document.getElementById('vi-modal').classList.remove('open')
 </script>"""
 
 # バリュエーション置換
-val_start = src.find('<div class="sl">バリュエーション')
-val_end   = src.find('<div id="body">')
-if val_start >= 0 and val_end >= 0:
-    src = src[:val_start] + VAL_HTML + '\n    ' + src[val_end:]
-    print("OK: バリュエーション置換")
-else:
-    print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
+# ── 4層マクロカード・割安度テーブル・マクロ総合スコアHTML生成 ────────────────
+# 既存変数を活用（MKT / _m2_yoy / _m2_label / wti_price / gold_price は後で設定）
+# wti_price / gold_price は先に取得する（FOUR_LAYER_CARDSのため）
+wti_price  = get_fred('DCOILWTICO')
+gold_price = get_fred('GOLDPMGBD228NLBM')
+print(f"  WTI:{wti_price} 金:{gold_price}")
 
-# マクロフェーズゲージ挿入
-PHASE_HTML = build_phase_gauge_html(ss)
-src = src.replace('<!-- MACRO_PHASE_GAUGE -->', PHASE_HTML, 1)
-print('OK: マクロフェーズゲージ置換')
-# モーダル挿入（</body>直前）
-src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
-print("OK: モーダル挿入")
-
-# コモディティ（WTI原油・金価格）動的更新
 def _commodity_style(val, thresholds):
-    """価格→(表示文字列, 前景色, 背景色, ラベル) を返す"""
+    """価格→(ラベル, 前景色, 背景色) を返す"""
     for thr, lbl, fg, bg in thresholds:
         if val >= thr:
             return lbl, fg, bg
@@ -1104,36 +1112,268 @@ GOLD_THR = [
     (0,    '安値圏', '#34d399', '#064e3b'),
 ]
 
-wti_price  = get_fred('DCOILWTICO')
-gold_price = get_fred('GOLDPMGBD228NLBM')
+# VIX・HYGの表示スタイル
+vix_v   = MKT['vix_v']
+vix_chg = MKT['vix_chg']
+hyg_v   = MKT['hyg_v']
+hyg_chg = MKT['hyg_chg']
+ys_v    = MKT['yield_spread']
+nk_v    = MKT['nk_v']
+nk_chg  = MKT['nk_chg']
+nk_p52  = MKT['nk_p52']
 
+vix_fg  = '#34d399' if vix_v <= 20 else '#fbbf24' if vix_v <= 30 else '#f87171'
+vix_bg2 = '#064e3b' if vix_v <= 20 else '#92400e' if vix_v <= 30 else '#7f1d1d'
+vix_lbl2= '安全' if vix_v <= 20 else '警戒' if vix_v <= 30 else '恐怖'
+vix_summary = '平穏な市場環境' if vix_v <= 20 else '恐怖が高まっている' if vix_v <= 30 else '強い恐怖・暴落モード'
+risk_color = '#34d399' if vix_v <= 20 else '#fbbf24' if vix_v <= 30 else '#f87171'
+risk_label = '危険度: 低い' if vix_v <= 20 else '危険度: やや高い' if vix_v <= 30 else '危険度: 高い'
+
+hyg_fg  = '#34d399' if hyg_chg >= 0 else '#f87171'
+hyg_bg2 = '#064e3b' if hyg_chg >= 0 else '#7f1d1d'
+hyg_lbl2= '良好' if hyg_chg >= 0 else '悪化'
+hyg_sub = '企業の信用力が安定' if hyg_chg >= 0 else '企業の信用力が低下'
+
+ys_fg   = '#34d399' if ys_v >= 0 else '#fbbf24' if ys_v >= -0.5 else '#f87171'
+ys_bg2  = '#064e3b' if ys_v >= 0 else '#92400e' if ys_v >= -0.5 else '#7f1d1d'
+ys_lbl2 = '正常' if ys_v >= 0 else 'やや警戒' if ys_v >= -0.5 else '逆イールド'
+ys_sub  = '正常化=安心材料' if ys_v >= 0 else '警戒ゾーン' if ys_v >= -0.5 else '景気後退シグナル'
+fin_color = '#34d399' if ys_v >= 0 else '#fbbf24' if ys_v >= -0.5 else '#f87171'
+fin_label = '安心度: 良好' if ys_v >= 0 else '安心度: 警戒' if ys_v >= -0.5 else '安心度: 危険'
+
+# WTI・金
 if wti_price:
-    wti_lbl, wti_fg, wti_bg = _commodity_style(wti_price, WTI_THR)
-    wti_str = f'${wti_price:.1f}'
-    src = re.sub(
-        r'(>WTI原油</span>)<span[^>]*>\$[\d,.]+</span><span[^>]*>[^<]+</span>',
-        f'>WTI原油</span>'
-        f'<span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{wti_fg};">{wti_str}</span>'
-        f'<span style="background:{wti_bg};color:{wti_fg};font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">{wti_lbl}</span>',
-        src
-    )
-    print(f"OK: WTI原油価格更新 → {wti_str} ({wti_lbl})")
+    wti_lbl2, wti_fg2, wti_bg2 = _commodity_style(wti_price, WTI_THR)
+    wti_str2 = f'${wti_price:.1f}'
 else:
-    print("WARN: WTI原油価格取得失敗（FRED_API_KEY未設定またはAPI障害）")
-
+    wti_lbl2, wti_fg2, wti_bg2 = 'データなし', '#64748b', '#1e2d40'
+    wti_str2 = '$--'
 if gold_price:
-    gold_lbl, gold_fg, gold_bg = _commodity_style(gold_price, GOLD_THR)
-    gold_str = f'${gold_price:,.0f}'
-    src = re.sub(
-        r'(>金\(Gold\)</span>)<span[^>]*>\$[\d,]+</span><span[^>]*>[^<]+</span>',
-        f'>金(Gold)</span>'
-        f'<span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{gold_fg};">{gold_str}</span>'
-        f'<span style="background:{gold_bg};color:{gold_fg};font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">{gold_lbl}</span>',
-        src
-    )
-    print(f"OK: 金価格更新 → {gold_str} ({gold_lbl})")
+    gold_lbl2, gold_fg2, gold_bg2 = _commodity_style(gold_price, GOLD_THR)
+    gold_str2 = f'${gold_price:,.0f}'
 else:
-    print("WARN: 金価格取得失敗（FRED_API_KEY未設定またはAPI障害）")
+    gold_lbl2, gold_fg2, gold_bg2 = 'データなし', '#64748b', '#1e2d40'
+    gold_str2 = '$--'
+# コモディティ総合コメント
+if wti_price and gold_price:
+    if wti_price >= 90 or gold_price >= 2800:
+        comm_summary, comm_color = '資源: インフレ警戒', '#f87171'
+    elif wti_price >= 75 or gold_price >= 2400:
+        comm_summary, comm_color = '資源: やや警戒', '#fbbf24'
+    else:
+        comm_summary, comm_color = '資源: 安定圏', '#34d399'
+else:
+    comm_summary, comm_color = '資源: データ取得中', '#64748b'
+
+# M2・日経
+m2_str = f'+{_m2_yoy:.2f}%' if _m2_yoy and _m2_yoy > 0 else f'{_m2_yoy:.2f}%' if _m2_yoy else '---'
+m2_fg  = '#34d399' if _m2_yoy and _m2_yoy > 0 else '#f87171'
+m2_bg2 = '#064e3b' if _m2_yoy and _m2_yoy > 0 else '#7f1d1d'
+m2_lbl2= '加速' if _m2_yoy and _m2_yoy > 3.0 else '拡大' if _m2_yoy and _m2_yoy > 0 else '縮小'
+m2_sub = 'お金の量が増えている' if _m2_yoy and _m2_yoy > 0 else 'お金の量が減っている'
+
+nk_fg   = '#34d399' if nk_chg >= 0 else '#f87171'
+nk_bg2  = '#064e3b' if nk_chg >= 0 else '#7f1d1d'
+nk_str  = f'{nk_v:,}'
+nk_chg_str = f'{nk_chg:+.1f}%'
+nk_52w_str  = f'52週の{nk_p52}%位置'
+econ_color  = '#34d399' if nk_chg >= 0 and (_m2_yoy or 0) > 0 else '#fbbf24' if nk_chg >= 0 else '#f87171'
+econ_label  = '勢い: 良好' if nk_chg >= 0 else '勢い: 低下'
+
+# 割安度テーブル用の数値
+_cape_jp_v = VAL.get('cape_jp', 20)
+_pbr_jp_v  = VAL.get('pbr_jp', 1.76)
+_yld_jp_v  = VAL.get('yield_jp', 6.25)
+_buf_jp_v  = VAL.get('buffett_jp', 140)
+_cape_us_v = VAL.get('cape_us', 38)
+_pbr_us_v  = VAL.get('pbr_us', 4.8)
+_yld_us_v  = VAL.get('yield_us', 4.5)
+_buf_us_v  = VAL.get('buffett_us', 200)
+
+def _val_color(v, good_below, warn_below, invert=False):
+    """閾値に基づき色を返す（invert=True: 大きいほど良い）"""
+    if invert:
+        return '#34d399' if v >= good_below else '#fbbf24' if v >= warn_below else '#f87171'
+    return '#34d399' if v <= good_below else '#fbbf24' if v <= warn_below else '#f87171'
+
+_cape_jp_c = _val_color(_cape_jp_v, 22, 28)
+_pbr_jp_c  = _val_color(_pbr_jp_v,  1.4, 2.0)
+_yld_jp_c  = _val_color(_yld_jp_v,  6,   4, invert=True)
+_buf_jp_c  = _val_color(_buf_jp_v,  100, 150)
+_cape_us_c = _val_color(_cape_us_v, 27, 35)
+_pbr_us_c  = _val_color(_pbr_us_v,  3.5, 4.5)
+_yld_us_c  = _val_color(_yld_us_v,  5,   3.5, invert=True)
+_buf_us_c  = _val_color(_buf_us_v,  120, 170)
+
+def _badge_sm(lbl, color):
+    bg_map = {'#34d399':'#064e3b','#fbbf24':'#92400e','#f87171':'#7f1d1d'}
+    bg = bg_map.get(color, '#1e2d40')
+    return f'<span style="background:{bg};color:{color};font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">{lbl}</span>'
+
+_cape_jp_lbl = '割安' if _cape_jp_v <= 22 else 'やや高' if _cape_jp_v <= 28 else '割高'
+_pbr_jp_lbl  = '割安' if _pbr_jp_v  <= 1.4 else 'やや高' if _pbr_jp_v  <= 2.0 else '割高'
+_yld_jp_lbl  = '株有利' if _yld_jp_v >= 6 else '中立' if _yld_jp_v >= 4 else '注意'
+_buf_jp_lbl  = '割安' if _buf_jp_v  <= 100 else '注意' if _buf_jp_v <= 150 else '割高'
+_cape_us_lbl = '割安' if _cape_us_v <= 27 else 'やや高' if _cape_us_v <= 35 else '割高'
+_pbr_us_lbl  = '割安' if _pbr_us_v  <= 3.5 else 'やや高' if _pbr_us_v  <= 4.5 else '割高'
+_yld_us_lbl  = '株有利' if _yld_us_v >= 5 else '中立' if _yld_us_v >= 3.5 else '注意'
+_buf_us_lbl  = '割安' if _buf_us_v  <= 120 else '注意' if _buf_us_v <= 170 else '割高'
+
+# マクロ総合スコアの色
+_mp_total_color = '#22c55e' if _mp_lbl=='GREEN' else '#f59e0b' if _mp_lbl=='YELLOW' else '#ef4444'
+_mp_total_txt   = '良好' if _mp_lbl=='GREEN' else '慎重に' if _mp_lbl=='YELLOW' else '今は待て'
+_short_vc2 = '#34d399' if SHORT_SCORE >= 55 else '#fbbf24' if SHORT_SCORE >= 45 else '#f87171'
+_short_bc2 = '#064e3b' if SHORT_SCORE >= 55 else '#92400e' if SHORT_SCORE >= 45 else '#991b1b'
+_short_lbl2 = '強気' if SHORT_SCORE >= 55 else '中立' if SHORT_SCORE >= 45 else '弱気'
+_mid_vc2   = '#34d399' if MID_SCORE >= 55 else '#fbbf24' if MID_SCORE >= 45 else '#f87171'
+_mid_bc2   = '#064e3b' if MID_SCORE >= 55 else '#92400e' if MID_SCORE >= 45 else '#92400e'
+_mid_lbl2  = '強気' if MID_SCORE >= 55 else '中立' if MID_SCORE >= 45 else '弱気'
+
+FOUR_LAYER_HTML = f"""    <!-- 4層マクロカード：上段4列 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">
+
+      <!-- リスク環境 -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #f87171;border-radius:6px;padding:6px 8px;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:#fca5a5;margin-bottom:5px;letter-spacing:.5px;">リスク環境</div>
+        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('vix')">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">VIX</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{vix_fg};">{vix_v}</span>{_badge_sm(vix_lbl2, vix_fg)}</div>
+          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">{vix_summary}</div>
+        </div>
+        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('hyg')">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">HYG</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{hyg_fg};">{hyg_v:.2f}</span>{_badge_sm(hyg_lbl2, hyg_fg)}</div>
+          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">{hyg_sub}</div>
+        </div>
+        <div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">
+          <div style="color:{risk_color};font-size:var(--fs-xs);font-weight:800;">{risk_label}</div>
+        </div>
+      </div>
+
+      <!-- 金融政策 -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #34d399;border-radius:6px;padding:6px 8px;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:#6ee7b7;margin-bottom:5px;letter-spacing:.5px;">金融政策</div>
+        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('yield_spread')">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">逆イールド</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{ys_fg};">{ys_v:+.2f}</span>{_badge_sm(ys_lbl2, ys_fg)}</div>
+          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">{ys_sub}</div>
+        </div>
+        <div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">
+          <div style="color:{fin_color};font-size:var(--fs-xs);font-weight:800;">{fin_label}</div>
+        </div>
+      </div>
+
+      <!-- コモディティ -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #a78bfa;border-radius:6px;padding:6px 8px;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:#c4b5fd;margin-bottom:5px;letter-spacing:.5px;">コモディティ</div>
+        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('wti')">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">WTI原油</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{wti_fg2};">{wti_str2}</span>{_badge_sm(wti_lbl2, wti_fg2)}</div>
+          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">インフレ・エネルギーの先行指標</div>
+        </div>
+        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('gold')">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">金(Gold)</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{gold_fg2};">{gold_str2}</span>{_badge_sm(gold_lbl2, gold_fg2)}</div>
+          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">安全資産への資金逃避を示す指標</div>
+        </div>
+        <div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">
+          <div style="color:{comm_color};font-size:var(--fs-xs);font-weight:800;">{comm_summary}</div>
+        </div>
+      </div>
+
+      <!-- 経済活動 -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #60a5fa;border-radius:6px;padding:6px 8px;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:#93c5fd;margin-bottom:5px;letter-spacing:.5px;">経済活動</div>
+        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('m2')">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">日本M2</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{m2_fg};">{m2_str}</span>{_badge_sm(m2_lbl2, m2_fg)}</div>
+          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">{m2_sub}</div>
+        </div>
+        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('nikkei')">
+          <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">日経225</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{nk_fg};">{nk_str}</span>{_badge_sm(nk_chg_str, nk_fg)}</div>
+          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">{nk_52w_str}</div>
+        </div>
+        <div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">
+          <div style="color:{econ_color};font-size:var(--fs-xs);font-weight:800;">{econ_label}</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- 割安度 + マクロ総合：横長バー -->
+    <div style="display:grid;grid-template-columns:3fr 1.2fr;gap:4px;margin-top:4px;">
+      <!-- 割安度：日本 vs 米国 比較テーブル -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #fb923c;border-radius:6px;padding:6px 10px;">
+        <div style="display:flex;align-items:center;margin-bottom:6px;">
+          <span style="font-size:var(--fs-sm);font-weight:900;color:#fdba74;letter-spacing:.5px;">割安度</span>
+          <span style="font-size:var(--fs-micro);color:#475569;font-weight:700;margin-left:6px;">- 日本と米国、今どっちが割安？</span>
+        </div>
+        <!-- テーブル型：ヘッダー行 + データ行 -->
+        <div style="display:grid;grid-template-columns:70px 1fr 1fr 1fr 1fr;gap:0;font-family:monospace;">
+          <!-- ヘッダー -->
+          <div style="padding:2px 0;"></div>
+          <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:var(--fs-xs);font-weight:800;">CAPE</span></div>
+          <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:var(--fs-xs);font-weight:800;">PBR</span></div>
+          <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:var(--fs-xs);font-weight:800;">益回り</span></div>
+          <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:var(--fs-xs);font-weight:800;">BF指数</span></div>
+          <!-- 日本行 -->
+          <div style="padding:3px 0;display:flex;align-items:center;"><span style="font-size:var(--fs-sm);font-weight:900;color:#e2e8f0;">🇯🇵 日本</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('cape')"><span style="font-size:var(--fs-md);font-weight:900;color:{_cape_jp_c};">{_cape_jp_v:.0f}倍</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('pbr')"><span style="font-size:var(--fs-md);font-weight:900;color:{_pbr_jp_c};">{_pbr_jp_v:.2f}倍</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('earnings_yield')"><span style="font-size:var(--fs-md);font-weight:900;color:{_yld_jp_c};">{_yld_jp_v:.2f}%</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('buffett')"><span style="font-size:var(--fs-md);font-weight:900;color:{_buf_jp_c};">{_buf_jp_v:.0f}%</span></div>
+          <!-- 米国行 -->
+          <div style="padding:3px 0;display:flex;align-items:center;"><span style="font-size:var(--fs-sm);font-weight:900;color:#e2e8f0;">🇺🇸 米国</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('cape')"><span style="font-size:var(--fs-md);font-weight:900;color:{_cape_us_c};">{_cape_us_v:.0f}倍</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('pbr')"><span style="font-size:var(--fs-md);font-weight:900;color:{_pbr_us_c};">{_pbr_us_v:.2f}倍</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('earnings_yield')"><span style="font-size:var(--fs-md);font-weight:900;color:{_yld_us_c};">{_yld_us_v:.2f}%</span></div>
+          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('buffett')"><span style="font-size:var(--fs-md);font-weight:900;color:{_buf_us_c};">{_buf_us_v:.0f}%</span></div>
+          <!-- 判定行 -->
+          <div style="padding:2px 0;border-top:1px solid #1e2d40;"><span style="color:#fb923c;font-size:var(--fs-micro);font-weight:800;">判定</span></div>
+          <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;">{_badge_sm(_cape_jp_lbl, _cape_jp_c)}</div>
+          <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;">{_badge_sm(_pbr_jp_lbl, _pbr_jp_c)}</div>
+          <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;">{_badge_sm(_yld_jp_lbl, _yld_jp_c)}</div>
+          <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;">{_badge_sm(_buf_jp_lbl, _buf_jp_c)}</div>
+        </div>
+      </div>
+      <!-- マクロ総合スコア -->
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid {_mp_total_color};border-radius:6px;padding:6px 10px;display:flex;flex-direction:column;justify-content:space-between;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:{_mp_total_color};letter-spacing:.5px;">マクロ総合</div>
+        <div style="text-align:center;">
+          <span style="font-size:var(--fs-xl);font-weight:900;font-family:monospace;color:{_mp_total_color};">{_mp_score}</span><span style="font-size:var(--fs-micro);color:#475569;">/100</span>
+          <span style="font-size:var(--fs-sm);font-weight:800;color:{_mp_total_color};margin-left:6px;">{_mp_total_txt}</span>
+        </div>
+        <div style="background:#1e293b;border-radius:3px;height:4px;"><div style="width:{_mp_score}%;height:4px;border-radius:3px;background:{_mp_total_color};"></div></div>
+        <div style="display:flex;gap:4px;">
+          <div style="flex:1;background:#0a0d16;border:1px solid {_short_bc2};border-radius:4px;padding:4px 6px;text-align:center;cursor:pointer;" onclick="showHelp('short_score')">
+            <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">短期(1年)</div>
+            <div><span style="color:{_short_vc2};font-size:var(--fs-lg);font-weight:900;font-family:monospace;">{SHORT_SCORE}</span> <span style="color:{_short_vc2};font-size:var(--fs-micro);font-weight:800;">{_short_lbl2}</span></div>
+          </div>
+          <div style="flex:1;background:#0a0d16;border:1px solid {_mid_bc2};border-radius:4px;padding:4px 6px;text-align:center;cursor:pointer;" onclick="showHelp('medium_score')">
+            <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">中期(3年)</div>
+            <div><span style="color:{_mid_vc2};font-size:var(--fs-lg);font-weight:900;font-family:monospace;">{MID_SCORE}</span> <span style="color:{_mid_vc2};font-size:var(--fs-micro);font-weight:800;">{_mid_lbl2}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>"""
+
+# 4層マクロカード置換
+src = src.replace('<!-- FOUR_LAYER_CARDS -->', FOUR_LAYER_HTML, 1)
+print(f"OK: 4層マクロカード置換（VIX:{vix_v} HYG:{hyg_v:.2f} YS:{ys_v:+.2f} WTI:{wti_str2} Gold:{gold_str2} NKY:{nk_str}）")
+
+val_start = src.find('<div class="sl">バリュエーション')
+val_end   = src.find('<div id="body">')
+if val_start >= 0 and val_end >= 0:
+    src = src[:val_start] + VAL_HTML + '\n    ' + src[val_end:]
+    print("OK: バリュエーション置換")
+else:
+    print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
+
+# マクロフェーズゲージ挿入
+PHASE_HTML = build_phase_gauge_html(ss)
+src = src.replace('<!-- MACRO_PHASE_GAUGE -->', PHASE_HTML, 1)
+print('OK: マクロフェーズゲージ置換')
+# モーダル挿入（</body>直前）
+src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
+print("OK: モーダル挿入")
+
+# WTI・金価格は4層マクロカード（FOUR_LAYER_HTML）内で既に動的生成済み
+# （旧来のre.subによる置換は不要・FOUR_LAYER_CARDSに統合）
+print(f"OK: WTI原油価格 → {wti_str2} ({wti_lbl2})  ※4層カードに反映済み")
+print(f"OK: 金価格 → {gold_str2} ({gold_lbl2})  ※4層カードに反映済み")
 
 out = 'ai_dashboard_v13.html'
 with open(out, 'w', encoding='utf-8') as f:
