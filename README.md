@@ -64,9 +64,12 @@ manage_stock.py              # Add/remove/move stocks via dashboard
 
 verify_0415.py               # 2026/04/15 STEP0 auto-verification
 verify_monday.py             # Weekly Monday verification checks
-backtest_H002_v1.py          # H002 Variable1 backtest
+backtest_H002_v1.py          # H002 Variable1 backtest (adopted)
 backtest_H004_v1.py          # H004 Variable3 backtest (framework)
-backtest_H004_v2.py          # H004 Variable3 backtest (production)
+backtest_H004_v2.py          # H004 Variable3 backtest (production, adopted)
+backtest_H005_v1.py          # H005-A MacroPhase GREEN strategy (rejected)
+backtest_H005_v2.py          # H005-A 11 strategies exhaustive (VIX strategy adopted)
+backtest_H005B_v1.py         # H005-B crash buying 5yr hold (adopted p=0.0035)
 
 learning_batch_monthly.py    # Monthly batch for 99 learning stocks
 sheet_manager.py             # Monthly SheetManagementLedger
@@ -92,7 +95,8 @@ H004_complete_record.txt     # H004 backtest detailed record
 | Mon 10:00 | weekly_update.py | Full v4.3 score (all 3 variables) |
 | Mon 11:00 | verify_monday.py | Weekly verification checks |
 | Sun 22:00 | full_scan.py | Full market scan (~3,800 stocks) -> Top 50 |
-| 1st of month 9:00 | sheet_manager.py | SheetManagementLedger |
+| 1st of month 9:00 | monthly_learning.py | 99 learning stocks monthly batch |
+| 1st of month 9:30 | sheet_manager.py | SheetManagementLedger (staggered 30min after monthly_learning) |
 | 2026/04/15 | verify_0415.py | STEP0 prediction verification |
 
 ## Setup
@@ -127,6 +131,52 @@ The GAS proxy handles dashboard button actions (full update, stock management).
 - Project: See CLAUDE.md for GAS project URL
 - Script properties: GITHUB_TOKEN, EDINET_API_KEY
 
+---
+
+## ⚠️ API Key Management — Critical Checklist
+
+**When J-Quants API key is reissued (expires or regenerated):**
+
+```bash
+# 1. Verify the new key works
+curl -s -H "x-api-key: YOUR_NEW_KEY" "https://api.jquants.com/v2/fins/summary?code=72030"
+# Should return JSON with financial data (not 403)
+
+# 2. Update .env file
+JQUANTS_API_KEY=YOUR_NEW_KEY
+
+# 3. Update GitHub Secrets
+# Settings > Secrets and variables > Actions > JQUANTS_API_KEY > Update
+```
+
+**MUST update ALL 3 locations simultaneously:**
+
+| Location | Used by | How to update |
+|----------|---------|---------------|
+| `.env` (local) | Local scripts | Edit directly |
+| GitHub Secrets: `JQUANTS_API_KEY` | All GitHub Actions | Settings > Secrets |
+| J-Quants dashboard | Source of new key | jpx-jquants.com > マイページ |
+
+**⚠️ Incident Record (2026/03/29):** Key was reissued via dashboard → GitHub Secrets not updated → full_scan failed for all 3,506 stocks (HTTP 403). This took 2 days to diagnose. **Always update Secrets immediately after reissuing.**
+
+**Health check tool:**
+```bash
+python check_api_keys.py  # Checks all 7 keys + live connectivity test
+```
+
+**Other keys with multi-location management:**
+
+| Key | .env | GitHub Secrets | GAS Script Properties |
+|-----|------|----------------|----------------------|
+| JQUANTS_API_KEY | ✓ | ✓ | — |
+| FRED_API_KEY | ✓ | ✓ | — |
+| GOOGLE_CREDENTIALS | ✓ | ✓ | — |
+| GITHUB_TOKEN | ✓ | auto | ✓ |
+| EDINET_API_KEY | ✓ | — | ✓ |
+| OPENAI_API_KEY (kenja-rich-api) | — | — | ✓ |
+
+---
+
 ## Technology Stack
 
 - **Python 3.11** (GitHub Actions runtime)
@@ -146,7 +196,8 @@ The GAS proxy handles dashboard button actions (full update, stock management).
 | H002 | Variable 1 (Real ROIC) | Verified |
 | H003 | Variable 2 (Trend) | Rejected (reverses in V-recovery) |
 | H004 | Variable 3 (Price) | Conditionally adopted (+9.13%/yr, p=0.0321) |
-| H005 | MacroPhase judgment | Designed, not yet tested |
+| H005-A | MacroPhase timing (11 strategies) | Mostly rejected. Only H adopted: VIX>=30 cash-out (+4.76%/yr, p=0.0022) |
+| H005-B | Crash buying (VIX>=30, 5yr hold) | Adopted: PANIC +21.81%/yr vs CALM +13.01%/yr, diff +8.80%, p=0.0035 |
 | H006 | STEP0 prediction record | Pending (2026/04/15) |
 
 ## Backtest Methodology
