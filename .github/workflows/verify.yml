@@ -31,7 +31,7 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
-        run: python verify_monday.py
+        run: python verify/verify_monday.py
 
       - name: Run verify_0415 (4/15のみ)
         if: github.event.schedule == '0 0 15 4 *'
@@ -39,7 +39,7 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
-        run: python verify_0415.py
+        run: python verify/verify_0415.py
 
       - name: Run both (手動実行時)
         if: github.event_name == 'workflow_dispatch'
@@ -48,6 +48,6 @@ jobs:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: |
-          python verify_monday.py
+          python verify/verify_monday.py
           echo "---"
-          python verify_0415.py
+          python verify/verify_0415.py

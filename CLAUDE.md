@@ -157,22 +157,22 @@ core/                  : 共通モジュール（2026/03/28新設）
   scoring.py           :   スコア計算ヘルパー（safe/thr_high/thr_low/slope_fn）
   api.py               :   J-Quants API（get_price_jq/get_fin_jq/get_shares_jq）
 ai_dashboard_v13.html  : メインダッシュボード（GitHub Pages公開中）
-kenja.js               : 賢者の審判JS（現在問題あり・後述）
+gas/                   : GASスクリプト参考コード
 generate_dashboard.py  : ダッシュボード生成スクリプト
 weekly_update.py       : 週次自動更新スクリプト
 daily_update.py        : 日次価格更新スクリプト
-verify_0415.py         : 2026/04/15検証スクリプト（完全自動化済み）
-verify_monday.py       : 毎週月曜検証（初回2026/03/30）
+verify/                 : 検証スクリプト
+  verify_0415.py        :   2026/04/15検証
 handover.txt           : GitHub Pages上の引き継ぎ書
 handover_FINAL.txt     : 完全版引き継ぎ書
 generate_handover.py   : 引き継ぎ書自動生成スクリプト
-backtest_H002_v1.py    : H002バックテスト
-backtest_H004_v1.py    : H004バックテスト（枠組み）
-backtest_H004_v2.py    : H004バックテスト（本番計算）
+backtests/              : 仮説検証バックテストスクリプト
+  backtest_H002_v1.py   :   H002バックテスト
+  backtest_H004_v1/v2   :   H004バックテスト
 H004_complete_record.txt : H004完全記録
 manage_stock.py        : 銘柄管理（追加・削除・移動 + v4.3スコア即時計算）
 full_scan.py           : 全日本株スクリーニング（全上場~3,800社→Top50書き出し）
-gas_manage_stock_addition.js : GASプロキシ追加コード（参考用）
+  gas_kenja_proxy.js    :   賢者の審判GASプロキシ
 sheet_manager.py       : SheetManagementLedger生成（毎月1日9:00 JST）
 record_changelog.py    : 変更履歴記録
 evidence_page.html     : 科学的根拠ページ（H002・H003バックテスト結果を視覚的に表示）

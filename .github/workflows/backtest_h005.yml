@@ -27,8 +27,8 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
-          python backtest_H005_v1.py
+          python backtests/backtest_H005_v1.py
           echo "=== v2 ==="
-          python backtest_H005_v2.py
+          python backtests/backtest_H005_v2.py
           echo "=== H005-B ==="
-          python backtest_H005B_v1.py
+          python backtests/backtest_H005B_v1.py

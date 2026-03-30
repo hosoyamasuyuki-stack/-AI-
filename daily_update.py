@@ -8,22 +8,14 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 import gspread
-from google.oauth2.service_account import Credentials
+from core.auth import get_spreadsheet
+from core.config import SPREADSHEET_ID
 
 # ============================================================
 # 認証
 # ============================================================
 FRED_API_KEY   = os.environ.get("FRED_API_KEY", "")
-SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID", "1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE")
-creds_json     = os.environ.get("GOOGLE_CREDENTIALS", "{}")
-creds_dict     = json.loads(creds_json)
-scopes = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
-creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-gc    = gspread.authorize(creds)
-ss    = gc.open_by_key(SPREADSHEET_ID)
+ss = get_spreadsheet()
 print(f"$2705 認証完了 ({datetime.now().strftime('%Y-%m-%d %H:%M')})")
 
 # ============================================================

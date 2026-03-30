@@ -62,25 +62,25 @@ daily_price_update.py        # Daily stock price + Variable 3 update
 full_scan.py                 # Weekly scan of all ~3,800 listed stocks
 manage_stock.py              # Add/remove/move stocks via dashboard
 
-verify_0415.py               # 2026/04/15 STEP0 auto-verification
-verify_monday.py             # Weekly Monday verification checks
-backtest_H002_v1.py          # H002 Variable1 backtest
-backtest_H004_v1.py          # H004 Variable3 backtest (framework)
-backtest_H004_v2.py          # H004 Variable3 backtest (production)
+verify/verify_0415.py          # 2026/04/15 STEP0 auto-verification
+verify/verify_monday.py        # Weekly Monday verification checks
+backtests/backtest_H002_v1.py  # H002 Variable1 backtest
+backtests/backtest_H004_v1.py  # H004 Variable3 backtest (framework)
+backtests/backtest_H004_v2.py  # H004 Variable3 backtest (production)
 
 learning_batch_monthly.py    # Monthly batch for 99 learning stocks
 sheet_manager.py             # Monthly SheetManagementLedger
-record_changelog.py          # Change history recording
-generate_handover.py         # Handover document generation
+tools/record_changelog.py      # Change history recording
+tools/generate_handover.py     # Handover document generation
 
-kenja.js                     # Deep Insight Analysis JS
-gas_kenja_proxy.js           # GAS proxy for Claude API integration
-gas_manage_stock_addition.js # GAS proxy for stock management
+gas/kenja.js (inline)          # Deep Insight Analysis JS
+gas/gas_kenja_proxy.js         # GAS proxy for Claude API integration
+gas/gas_manage_stock_addition.js# GAS proxy for stock management
 
 CLAUDE.md                    # AI development partner instructions
 handover.txt                 # Lightweight handover (GitHub Pages)
 handover_FINAL.txt           # Complete handover document
-H004_complete_record.txt     # H004 backtest detailed record
+docs/H004_complete_record.txt  # H004 backtest detailed record
 ```
 
 ## Automated Schedules (JST)
