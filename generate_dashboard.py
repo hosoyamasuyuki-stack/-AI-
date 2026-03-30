@@ -1083,6 +1083,58 @@ print('OK: マクロフェーズゲージ置換')
 src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
 print("OK: モーダル挿入")
 
+# コモディティ（WTI原油・金価格）動的更新
+def _commodity_style(val, thresholds):
+    """価格→(表示文字列, 前景色, 背景色, ラベル) を返す"""
+    for thr, lbl, fg, bg in thresholds:
+        if val >= thr:
+            return lbl, fg, bg
+    return thresholds[-1][1], thresholds[-1][2], thresholds[-1][3]
+
+WTI_THR = [
+    (90, '高騰',  '#f87171', '#7f1d1d'),
+    (75, 'やや高', '#fbbf24', '#78350f'),
+    (55, 'やや安', '#fbbf24', '#92400e'),
+    (0,  '安値圏', '#34d399', '#064e3b'),
+]
+GOLD_THR = [
+    (2800, '高騰',  '#f87171', '#7f1d1d'),
+    (2400, 'やや高', '#fbbf24', '#78350f'),
+    (2000, '普通',  '#fbbf24', '#92400e'),
+    (0,    '安値圏', '#34d399', '#064e3b'),
+]
+
+wti_price  = get_fred('DCOILWTICO')
+gold_price = get_fred('GOLDPMGBD228NLBM')
+
+if wti_price:
+    wti_lbl, wti_fg, wti_bg = _commodity_style(wti_price, WTI_THR)
+    wti_str = f'${wti_price:.1f}'
+    src = re.sub(
+        r'(>WTI原油</span>)<span[^>]*>\$[\d,.]+</span><span[^>]*>[^<]+</span>',
+        f'>WTI原油</span>'
+        f'<span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{wti_fg};">{wti_str}</span>'
+        f'<span style="background:{wti_bg};color:{wti_fg};font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">{wti_lbl}</span>',
+        src
+    )
+    print(f"OK: WTI原油価格更新 → {wti_str} ({wti_lbl})")
+else:
+    print("WARN: WTI原油価格取得失敗（FRED_API_KEY未設定またはAPI障害）")
+
+if gold_price:
+    gold_lbl, gold_fg, gold_bg = _commodity_style(gold_price, GOLD_THR)
+    gold_str = f'${gold_price:,.0f}'
+    src = re.sub(
+        r'(>金\(Gold\)</span>)<span[^>]*>\$[\d,]+</span><span[^>]*>[^<]+</span>',
+        f'>金(Gold)</span>'
+        f'<span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{gold_fg};">{gold_str}</span>'
+        f'<span style="background:{gold_bg};color:{gold_fg};font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">{gold_lbl}</span>',
+        src
+    )
+    print(f"OK: 金価格更新 → {gold_str} ({gold_lbl})")
+else:
+    print("WARN: 金価格取得失敗（FRED_API_KEY未設定またはAPI障害）")
+
 out = 'ai_dashboard_v13.html'
 with open(out, 'w', encoding='utf-8') as f:
     f.write(src)
