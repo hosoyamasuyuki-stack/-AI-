@@ -1,3 +1,14 @@
+"""
+backtest_H005_v1.py
+H005-A: MacroPhase判定（GREEN投資戦略）の有効性バックテスト v1
+
+【仮説】MacroPhaseスコアGREEN期間に投資すると買い持ちより高リターンを得られる
+【登録】2026/03/29 / Bonferroni補正 α=0.025
+【結果】REJECTED（GREEN期間が全ウィンドウで0ヶ月→検証不能）
+        閾値60が厳しすぎた。→ v2で全11戦略を網羅検証
+【実行】python backtest_H005_v1.py（ローカル実行可）
+【依存】FRED_API_KEY / GOOGLE_CREDENTIALS / SPREADSHEET_ID（環境変数）
+"""
 # backtest_H005_v1.py
 # H005: MacroPhase判定の有効性バックテスト
 #

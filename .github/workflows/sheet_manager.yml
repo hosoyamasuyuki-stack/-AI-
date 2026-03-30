@@ -2,9 +2,13 @@ name: Sheet Manager Monthly
 
 on:
   schedule:
-    # 毎月1日 9:00 JST (= 00:00 UTC)
-    - cron: '0 0 1 * *'
+    # 毎月1日 9:30 JST (= 00:30 UTC) ※monthly_learningと競合しないよう30分後にずらす
+    - cron: '30 0 1 * *'
   workflow_dispatch:  # 手動実行も可能
+
+concurrency:
+  group: monthly-sheets
+  cancel-in-progress: false
 
 jobs:
   sheet_manager:

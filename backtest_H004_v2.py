@@ -1,3 +1,16 @@
+"""
+backtest_H004_v2.py
+H004: Variable3（価格スコア）の有効性バックテスト Phase2（本番計算）
+
+【仮説】Variable3（PEGスコア50%+FCF利回り50%）上位銘柄は3年超過リターンを得られる
+【登録】2026/03/25 / Bonferroni補正 α=0.025
+【結果】条件付き採択（年率+9.13% / 5ウォークフォワード全勝 / p=0.0321）
+【役割】Phase2: 実際の3年リターン計算・統計検定（Phase1の設計を受けて本番実行）
+【実行】Google Colab推奨:
+    from google.colab import auth
+    auth.authenticate_user()
+【依存】GOOGLE_CREDENTIALS / SPREADSHEET_ID（環境変数）
+"""
 # backtest_H004_v2.py
 # H004 Phase2: Variable3(価格スコア)上位銘柄の実際の3年リターン計算
 # Colabで実行: auth.authenticate_user() -> exec(code)

@@ -1,3 +1,24 @@
+"""
+backtest_H005_v2.py
+H005-A: MacroPhase判定（全11戦略網羅）バックテスト v2
+
+【仮説】MacroPhaseスコアによるタイミング投資が買い持ちを上回るか（11パターン検証）
+【登録】2026/03/29 / Bonferroni補正 α=0.025
+【結果】唯一ADOPTED: 戦略H（VIX>=30でキャッシュ）+4.76%/yr 5/5勝 p=0.0022
+        その他10戦略はすべてREJECTED
+        結論：4層100点より「VIX>=30で退避」が最も有効
+【実行】python backtest_H005_v2.py（ローカル実行可）
+【依存】FRED_API_KEY / GOOGLE_CREDENTIALS / SPREADSHEET_ID（環境変数）
+
+検証戦略一覧:
+A: RED回避（RED月はキャッシュ） → REJECTED p=0.489
+B: スコア連動（score/100でポジション調整） → REJECTED p=0.956
+C: 閾値変更（GREEN=50/40に緩和） → REJECTED
+D: 逆指標（RED時に買い=反証） → REJECTED p=0.999
+E: Layer A単独（VIX/HYG/TED） → REJECTED
+F: Layer A+B（リスク+金融政策） → REJECTED p=0.857
+H: VIXスパイク回避（VIX>=30でキャッシュ） → ADOPTED p=0.0022
+"""
 # backtest_H005_v2.py
 # H005: MacroPhase判定の有効性バックテスト（全パターン網羅版）
 #
