@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Python 3.11 セットアップ
         uses: actions/setup-python@v4
@@ -24,7 +26,7 @@ jobs:
 
       - name: 依存パッケージをインストール
         run: |
-          pip install requests gspread google-auth pandas numpy yfinance
+          pip install requests gspread google-auth pandas numpy yfinance scipy
 
       - name: 日次価格更新を実行
         env:
@@ -33,3 +35,24 @@ jobs:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run: |
           python daily_price_update.py
+
+      - name: ダッシュボードHTML再生成
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          echo "=== ダッシュボードHTML再生成 ==="
+          python generate_dashboard.py
+          echo "再生成完了"
+
+      - name: GitHubにプッシュ
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions [Daily Update]"
+          git add ai_dashboard_v13.html
+          git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
+          git commit -m "dashboard update $(date +'%Y/%m/%d %H:%M') JST"
+          git pull --rebase origin main || true
+          git push
+          echo "GitHubプッシュ完了"
