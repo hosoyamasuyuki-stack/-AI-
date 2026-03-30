@@ -12,8 +12,9 @@
 // -----------------------------------------------
 // if (action === 'manage_stock') {
 //   var code      = e.parameter.code      || '';
-//   var operation = e.parameter.operation  || '';  // add, remove, move
+//   var operation = e.parameter.operation  || '';  // add, remove, move, swap
 //   var target    = e.parameter.target     || '';  // 保有, 監視
+//   var add_code  = e.parameter.add_code   || '';  // swap時のみ: 追加する銘柄コード
 //
 //   if (!code || !operation || !target) {
 //     return ContentService.createTextOutput(
@@ -25,13 +26,16 @@
 //   var url = 'https://api.github.com/repos/hosoyamasuyuki-stack/-AI-/actions/workflows/manage_stock.yml/dispatches';
 //   var token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
 //
+//   var inputs = {
+//     code: code,
+//     action: operation,
+//     target: target,
+//     add_code: add_code   // swap時のみ使用（それ以外は空文字列）
+//   };
+//
 //   var payload = {
 //     ref: 'main',
-//     inputs: {
-//       code: code,
-//       action: operation,
-//       target: target
-//     }
+//     inputs: inputs
 //   };
 //
 //   var options = {

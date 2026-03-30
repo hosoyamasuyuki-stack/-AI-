@@ -4,14 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       code:
-        description: '銘柄コード（4桁）'
+        description: '銘柄コード（4桁）。swap時は除外コード'
         required: true
       action:
-        description: '操作（add/remove/move）'
+        description: '操作（add/remove/move/swap）'
         required: true
       target:
         description: '対象（保有/監視）'
         required: true
+      add_code:
+        description: 'swap時のみ: 追加する銘柄コード（4桁）'
+        required: false
+        default: ''
 
 env:
   TZ: Asia/Tokyo
@@ -49,7 +53,8 @@ jobs:
           python manage_stock.py \
             --code "${{ github.event.inputs.code }}" \
             --action "${{ github.event.inputs.action }}" \
-            --target "${{ github.event.inputs.target }}"
+            --target "${{ github.event.inputs.target }}" \
+            --add_code "${{ github.event.inputs.add_code }}"
 
       - name: API制限回避（30秒待機）
         run: sleep 30

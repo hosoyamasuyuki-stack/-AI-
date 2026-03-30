@@ -760,21 +760,87 @@ if mstrip_start >= 0 and mstrip_end >= 0:
 else:
     print(f"WARN: 市場ストリップ置換スキップ (start={mstrip_start} end={mstrip_end})")
 
-# ティッカーHTML生成
-TICKER_HTML = '<div style="overflow:hidden;white-space:nowrap;background:#0a0e17;padding:3px 0;font-size:var(--fs-base);border-bottom:1px solid #1e293b;"><div style="display:inline-block;animation:ticker_scroll 60s linear infinite;"><span style="color:#6ee7b7;margin:0 18px;">AI LEARNING</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">保有銘柄46 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">監視銘柄27 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">学習用99 月次バッチ学習</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">日次データ学習中(FRED 32指標)</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">全172銘柄 v4.3スコアリング稼働中</span></div></div>'
+# ティッカーHTML動的生成（銘柄数・指標数は実データから算出）
+_n_hold  = len(rows_h)
+_n_watch = len(rows_w)
+_n_total = _n_hold + _n_watch + len(rows_s)  # スクリーニング含む（0のときも正常）
+# FRED指標数（daily_update.py と同一定義：FRED_DAILY 10 + FRED_MONTHLY 15）
+_n_fred  = 25  # FRED_DAILY(10) + FRED_MONTHLY(15)
 
-# ティッカー挿入
-SL_ANCHOR    = '<div class="sl">市場体温計 &amp; 短期・中期シグナル</div>'
-MSTRIP_ANCHOR = '<div class="mstrip">'
-sl_pos     = src.find(SL_ANCHOR)
-mstrip_pos = src.find(MSTRIP_ANCHOR)
-if sl_pos >= 0 and mstrip_pos >= 0 and mstrip_pos > sl_pos:
-    src = (src[:sl_pos + len(SL_ANCHOR)] +
-           '\n    ' + TICKER_HTML + '\n    ' +
-           src[mstrip_pos:])
-    print("OK: ティッカー置換（全蓄積クリア）")
+def _tk_span(dot_color, text_bold, text_val, val_color=None):
+    """ティッカー1アイテムのHTMLを生成（日本語テキストは文字列として渡す）"""
+    vc = val_color if val_color else '#34d399'
+    return (
+        '<span style="display:inline-flex;align-items:center;gap:4px;'
+        'padding:0 10px;border-right:1px solid #1e2d40;'
+        'font-size:var(--fs-sm);font-family:monospace;height:20px;'
+        'flex-shrink:0;white-space:nowrap;">'
+        '<span style="width:5px;height:5px;border-radius:50%;'
+        f'background:{vc};flex-shrink:0;box-shadow:0 0 4px {vc};"></span>'
+        f'<span style="color:#e2e8f0;font-weight:800;">{text_bold}</span>'
+        f'<span style="color:{vc};">{text_val}</span>'
+        '</span>'
+    )
+
+_ticker_items = (
+    '<span style="display:inline-flex;align-items:center;gap:4px;'
+    'padding:0 10px;border-right:1px solid #1e2d40;'
+    'font-size:var(--fs-xs);font-family:monospace;height:20px;'
+    'flex-shrink:0;white-space:nowrap;">'
+    '<span style="color:#f59e0b;font-weight:900;">AI LEARNING</span>'
+    '</span>'
+    + _tk_span('#34d399', f'\u4fdd\u6709\u9298\u67c4({_n_hold})', '\u65e5\u6b21\u4fa1\u683c\u5b66\u7fd2\u4e2d')
+    + _tk_span('#34d399', f'\u76e3\u8996\u9298\u67c4({_n_watch})', '\u65e5\u6b21\u4fa1\u683c\u5b66\u7fd2\u4e2d')
+    + _tk_span('#34d399', f'\u30de\u30af\u30ed\u6307\u6a19({_n_fred})', '\u65e5\u6b21\u30c7\u30fc\u30bf\u5b66\u7fd2\u4e2d')
+    + _tk_span('#fbbf24', '\u5b66\u7fd2\u7528(99)', '\u6708\u6b21\u30d0\u30c3\u30c1\u5b66\u7fd2', '#fbbf24')
+    + _tk_span('#34d399', '\u56e0\u5b50\u52a3\u5316', '\u9031\u6b21\u76e3\u8996\u4e2d')
+    + _tk_span('#fbbf24', 'EDINET', 'GAS\u63a5\u7d9a\u6e08', '#fbbf24')
+    + _tk_span('#fbbf24', '04/15\u691c\u8a3c', '\u6e96\u5099\u5b8c\u4e86', '#fbbf24')
+    + '<span style="display:inline-flex;align-items:center;gap:4px;'
+      'padding:0 10px;border-right:1px solid #1e2d40;'
+      'font-size:var(--fs-xs);font-family:monospace;height:20px;'
+      'flex-shrink:0;white-space:nowrap;">'
+      '<span style="color:#475569;">v4.3</span>'
+      f'<span style="color:#94a3b8;">\u5408\u8a08{_n_total}\u9298\u67c4\u8ffd\u8de1\u4e2d</span>'
+      '</span>'
+)
+# ティッカーは無限スクロールのため内容を2連結する
+_ticker_content = _ticker_items + _ticker_items
+
+TICKER_HTML = (
+    '<!-- TICKER_START -->'
+    '<div id="sys-ticker-wrap" style="background:#060810;border-bottom:1px solid #1e2d40;'
+    'height:20px;overflow:hidden;flex-shrink:0;">'
+    '<div id="sys-ticker" style="display:inline-flex;flex-wrap:nowrap;align-items:center;'
+    'height:20px;width:max-content;animation:ticker_scroll 60s linear infinite;" '
+    'onmouseover="this.style.animationPlayState=\'paused\'" '
+    'onmouseout="this.style.animationPlayState=\'running\'">'
+    + _ticker_content +
+    '</div></div>'
+    '<!-- TICKER_END -->'
+)
+
+# ティッカーブロック（TICKER_START〜TICKER_END）を動的HTMLで置換
+_ticker_replaced = False
+_ts = src.find('<!-- TICKER_START -->')
+_te = src.find('<!-- TICKER_END -->')
+if _ts >= 0 and _te >= 0:
+    src = src[:_ts] + TICKER_HTML + src[_te + len('<!-- TICKER_END -->'):]
+    _ticker_replaced = True
+    print(f"OK: ティッカーHTML動的置換（保有:{_n_hold} 監視:{_n_watch} FRED:{_n_fred} 合計:{_n_total}）")
 else:
-    print(f"WARN: ティッカー挿入スキップ (sl={sl_pos} mstrip={mstrip_pos})")
+    # フォールバック：旧方式でSL_ANCHORの後ろに挿入
+    SL_ANCHOR    = '<div class="sl">4\u5c64\u30de\u30af\u30ed\u30c0\u30c3\u30b7\u30e5\u30dc\u30fc\u30c9'
+    MSTRIP_ANCHOR = '<div class="mstrip">'
+    sl_pos     = src.find(SL_ANCHOR)
+    mstrip_pos = src.find(MSTRIP_ANCHOR)
+    if sl_pos >= 0 and mstrip_pos >= 0 and mstrip_pos > sl_pos:
+        src = (src[:sl_pos + len(SL_ANCHOR)] +
+               '\n    ' + TICKER_HTML + '\n    ' +
+               src[mstrip_pos:])
+        print("OK: ティッカーHTML動的生成・挿入（フォールバック）")
+    else:
+        print(f"WARN: ティッカー挿入スキップ (ts={_ts} te={_te})")
 
 # ticker_scroll keyframe追加
 src = src.replace(
@@ -1366,9 +1432,314 @@ else:
 PHASE_HTML = build_phase_gauge_html(ss)
 src = src.replace('<!-- MACRO_PHASE_GAUGE -->', PHASE_HTML, 1)
 print('OK: マクロフェーズゲージ置換')
-# モーダル挿入（</body>直前）
-src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
-print("OK: モーダル挿入")
+# モーダル挿入（</body>直前 or ファイル末尾の</script>後）
+_modal_html = VI_MODAL_HTML + MC_MODAL_HTML
+if '</body>' in src:
+    src = src.replace('</body>', _modal_html + '</body>', 1)
+    print("OK: モーダル挿入（</body>前）")
+else:
+    # </body>が存在しない場合はファイル末尾の</script>の後に追加
+    _last_script = src.rfind('</script>')
+    if _last_script >= 0:
+        src = src[:_last_script + len('</script>')] + '\n' + _modal_html + src[_last_script + len('</script>'):]
+        print("OK: モーダル挿入（</script>後・フォールバック）")
+    else:
+        src += '\n' + _modal_html
+        print("OK: モーダル挿入（末尾・フォールバック）")
+
+# ── 銘柄管理ボタン・モーダル注入 ──────────────────────────────
+# ヘッダー「全更新」ボタンの直後に「銘柄管理」ボタンを追加
+_MANAGE_BTN = (
+    '<span id="manage-btn" onclick="openManageModal()" '
+    'style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;'
+    'background:#1e293b;border:1px solid #fb923c;border-radius:6px;cursor:pointer;'
+    'font-size:var(--fs-xs);font-weight:900;color:#fb923c;transition:all .2s;" '
+    'onmouseover="this.style.background=\'#fb923c\';this.style.color=\'#000\'" '
+    'onmouseout="this.style.background=\'#1e293b\';this.style.color=\'#fb923c\'">'
+    '&#x1F4CB; \u9298\u67c4\u7ba1\u7406'  # 📋 銘柄管理
+    '</span>'
+)
+_FULL_UPDATE_BTN = (
+    '<span id="update-btn" onclick="triggerFullUpdate()" '
+    'style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;'
+    'background:#1e293b;border:1px solid #f59e0b;border-radius:6px;cursor:pointer;'
+    'font-size:var(--fs-xs);font-weight:900;color:#f59e0b;transition:all .2s;" '
+    'onmouseover="this.style.background=\'#f59e0b\';this.style.color=\'#000\'" '
+    'onmouseout="this.style.background=\'#1e293b\';this.style.color=\'#f59e0b\'">'
+    '&#x1F504; \u5168\u66f4\u65b0'  # 🔄 全更新
+    '</span>'
+)
+# 「全更新」ボタンが既に存在するか確認し、直後に「銘柄管理」を挿入
+if 'id="manage-btn"' not in src:
+    src = src.replace(_FULL_UPDATE_BTN, _FULL_UPDATE_BTN + '\n    ' + _MANAGE_BTN, 1)
+    if 'id="manage-btn"' in src:
+        print("OK: 銘柄管理ボタン注入（全更新ボタンの直後）")
+    else:
+        # フォールバック：update-btn の id を検索して後ろに挿入
+        _ub_end = src.find('&#x1F504;')
+        if _ub_end < 0:
+            _ub_end = src.find('id="update-btn"')
+        if _ub_end >= 0:
+            _span_close = src.find('</span>', _ub_end)
+            if _span_close >= 0:
+                src = src[:_span_close + 7] + '\n    ' + _MANAGE_BTN + src[_span_close + 7:]
+                print("OK: 銘柄管理ボタン注入（フォールバック）")
+            else:
+                print("WARN: 銘柄管理ボタン挿入位置が見つかりません")
+        else:
+            print("WARN: update-btn が見つかりません（銘柄管理ボタン挿入スキップ）")
+else:
+    print("SKIP: 銘柄管理ボタンは既に存在します")
+
+# 銘柄管理モーダルHTML・JSを </script> 後に追加
+_MANAGE_MODAL_HTML = (
+    '\n<!-- \u9298\u67c4\u7ba1\u7406\u30e2\u30fc\u30c0\u30eb -->\n'
+    '<div id="mgmt-overlay" onclick="closeMgmtModal(event)" '
+    'style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);'
+    'z-index:200;align-items:center;justify-content:center;">'
+    '<div id="mgmt-box" onclick="event.stopPropagation()" '
+    'style="background:#111827;border:1px solid #1e3a5f;border-radius:10px;'
+    'width:440px;max-height:80vh;overflow-y:auto;'
+    'box-shadow:0 0 50px rgba(0,0,0,.9);animation:modalIn .2s ease;">'
+    '<div style="padding:12px 14px;border-bottom:1px solid #1e2d40;'
+    'display:flex;justify-content:space-between;align-items:center;">'
+    '<div style="font-size:var(--fs-md);font-weight:900;color:#f1f5f9;">'
+    '\u9298\u67c4\u7ba1\u7406</div>'  # 銘柄管理
+    '<button onclick="closeMgmtModal()" style="width:22px;height:22px;background:#1e2d40;'
+    'border:none;border-radius:3px;color:#94a3b8;font-size:var(--fs-lg);'
+    'cursor:pointer;display:flex;align-items:center;justify-content:center;">&#x2715;</button>'
+    '</div>'
+    '<div style="padding:14px;font-size:var(--fs-sm);color:#94a3b8;">'
+    # 操作選択ボタン
+    '<div style="margin-bottom:12px;">'
+    '<div style="color:#f59e0b;font-size:var(--fs-base);font-weight:900;'
+    'margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #1e2d40;">'
+    '\u64cd\u4f5c\u3092\u9078\u629e</div>'  # 操作を選択
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+    '<button onclick="mgmtSetMode(\'add\')" id="mgmt-btn-add" '
+    'style="flex:1;padding:7px 4px;border-radius:5px;border:1px solid #374151;'
+    'background:#1e293b;color:#94a3b8;cursor:pointer;font-size:var(--fs-xs);'
+    'font-weight:800;transition:all .15s;">\u8ffd\u52a0</button>'  # 追加
+    '<button onclick="mgmtSetMode(\'remove\')" id="mgmt-btn-remove" '
+    'style="flex:1;padding:7px 4px;border-radius:5px;border:1px solid #374151;'
+    'background:#1e293b;color:#94a3b8;cursor:pointer;font-size:var(--fs-xs);'
+    'font-weight:800;transition:all .15s;">\u524a\u9664</button>'  # 削除
+    '<button onclick="mgmtSetMode(\'move\')" id="mgmt-btn-move" '
+    'style="flex:1;padding:7px 4px;border-radius:5px;border:1px solid #374151;'
+    'background:#1e293b;color:#94a3b8;cursor:pointer;font-size:var(--fs-xs);'
+    'font-weight:800;transition:all .15s;">\u79fb\u52d5</button>'  # 移動
+    '<button onclick="mgmtSetMode(\'swap\')" id="mgmt-btn-swap" '
+    'style="flex:1;padding:7px 4px;border-radius:5px;border:1px solid #374151;'
+    'background:#1e293b;color:#94a3b8;cursor:pointer;font-size:var(--fs-xs);'
+    'font-weight:800;transition:all .15s;">\u5165\u308c\u66ff\u3048</button>'  # 入れ替え
+    '</div></div>'
+    # フォームエリア（最初は非表示）
+    '<div id="mgmt-form" style="display:none;">'
+    # add/remove/move 用フォーム
+    '<div id="mgmt-form-single">'
+    '<div style="margin-bottom:8px;">'
+    '<label style="display:block;color:#cbd5e1;font-weight:800;margin-bottom:3px;">'
+    '\u9298\u67c4\u30b3\u30fc\u30c9\uff084\u6841\uff09</label>'  # 銘柄コード（4桁）
+    '<input id="mgmt-code" type="text" maxlength="4" placeholder="\u4f8b: 7203" '
+    'style="width:100%;box-sizing:border-box;padding:7px 10px;'
+    'background:#0a0d16;border:1px solid #374151;border-radius:5px;'
+    'color:#f1f5f9;font-size:var(--fs-base);font-weight:800;outline:none;" />'
+    '</div>'
+    '<div id="mgmt-target-row" style="margin-bottom:8px;">'
+    '<label style="display:block;color:#cbd5e1;font-weight:800;margin-bottom:3px;">'
+    '\u7ba1\u7406\u5148</label>'  # 管理先
+    '<div style="display:flex;gap:6px;">'
+    '<button onclick="mgmtSetTarget(\'\u4fdd\u6709\')" id="mgmt-t-hold" '
+    'style="flex:1;padding:6px;border-radius:5px;border:1px solid #374151;'
+    'background:#1e293b;color:#94a3b8;cursor:pointer;font-size:var(--fs-sm);'
+    'font-weight:800;">\u4fdd\u6709</button>'  # 保有
+    '<button onclick="mgmtSetTarget(\'\u76e3\u8996\')" id="mgmt-t-watch" '
+    'style="flex:1;padding:6px;border-radius:5px;border:1px solid #374151;'
+    'background:#1e293b;color:#94a3b8;cursor:pointer;font-size:var(--fs-sm);'
+    'font-weight:800;">\u76e3\u8996</button>'  # 監視
+    '</div></div></div>'
+    # swap 専用フォーム（IDを -sw サフィックスで区別）
+    '<div id="mgmt-form-swap" style="display:none;">'
+    '<div style="margin-bottom:8px;">'
+    '<label style="display:block;color:#f87171;font-weight:800;margin-bottom:3px;">'
+    '\u9664\u5916\u3059\u308b\u9298\u67c4\u30b3\u30fc\u30c9\uff084\u6841\uff09</label>'  # 除外する銘柄コード（4桁）
+    '<input id="mgmt-remove-code" type="text" maxlength="4" placeholder="\u4f8b: 7203" '
+    'style="width:100%;box-sizing:border-box;padding:7px 10px;'
+    'background:#0a0d16;border:1px solid #7f1d1d;border-radius:5px;'
+    'color:#f1f5f9;font-size:var(--fs-base);font-weight:800;outline:none;" />'
+    '</div>'
+    '<div style="margin-bottom:8px;">'
+    '<label style="display:block;color:#34d399;font-weight:800;margin-bottom:3px;">'
+    '\u8ffd\u52a0\u3059\u308b\u9298\u67c4\u30b3\u30fc\u30c9\uff084\u6841\uff09</label>'  # 追加する銘柄コード（4桁）
+    '<input id="mgmt-add-code" type="text" maxlength="4" placeholder="\u4f8b: 9984" '
+    'style="width:100%;box-sizing:border-box;padding:7px 10px;'
+    'background:#0a0d16;border:1px solid #064e3b;border-radius:5px;'
+    'color:#f1f5f9;font-size:var(--fs-base);font-weight:800;outline:none;" />'
+    '</div>'
+    '<div style="margin-bottom:8px;">'
+    '<label style="display:block;color:#cbd5e1;font-weight:800;margin-bottom:3px;">'
+    '\u8ffd\u52a0\u5148</label>'  # 追加先
+    '<div style="display:flex;gap:6px;">'
+    '<button onclick="mgmtSetTarget(\'\u4fdd\u6709\')" id="mgmt-t-hold-sw" '
+    'style="flex:1;padding:6px;border-radius:5px;border:1px solid #374151;'
+    'background:#1e293b;color:#94a3b8;cursor:pointer;font-size:var(--fs-sm);'
+    'font-weight:800;">\u4fdd\u6709</button>'  # 保有
+    '<button onclick="mgmtSetTarget(\'\u76e3\u8996\')" id="mgmt-t-watch-sw" '
+    'style="flex:1;padding:6px;border-radius:5px;border:1px solid #374151;'
+    'background:#1e293b;color:#94a3b8;cursor:pointer;font-size:var(--fs-sm);'
+    'font-weight:800;">\u76e3\u8996</button>'  # 監視
+    '</div></div>'
+    '<div style="background:#0b0f1a;border-left:2px solid #fbbf24;padding:6px 8px;'
+    'border-radius:0 4px 4px 0;font-size:var(--fs-xs);color:#64748b;margin-bottom:8px;">'
+    '\u5165\u308c\u66ff\u3048: \u9664\u5916\u9298\u67c4\u3092\u524a\u9664\u3057\u4e88\u6e2c\u8a18\u9332\u306b\u300c\u5165\u308c\u66ff\u3048\u3067\u9664\u5916\u300d\u30d5\u30e9\u30b0\u3092\u8ffd\u8a18\u5f8c\u3001'
+    '\u8ffd\u52a0\u9298\u67c4\u3092v4.3\u30b9\u30b3\u30a2\u8a08\u7b97\u3057\u3066\u767b\u9332\u3057\u307e\u3059\u3002'
+    '</div>'
+    '</div>'
+    # 実行ボタン
+    '<button id="mgmt-exec-btn" onclick="execManage()" '
+    'style="width:100%;padding:9px;border-radius:6px;border:none;'
+    'background:#fb923c;color:#000;font-size:var(--fs-base);font-weight:900;'
+    'cursor:pointer;margin-top:4px;transition:all .2s;">'
+    '\u5b9f\u884c</button>'  # 実行
+    '<div id="mgmt-status" style="margin-top:8px;font-size:var(--fs-xs);color:#94a3b8;display:none;"></div>'
+    '</div>'  # /mgmt-form
+    '<div id="mgmt-mode-hint" '
+    'style="color:#475569;font-size:var(--fs-xs);text-align:center;padding:8px 0;">'
+    '\u4e0a\u306e\u30dc\u30bf\u30f3\u3067\u64cd\u4f5c\u3092\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044'  # 上のボタンで操作を選択してください
+    '</div>'
+    '</div>'  # /padding div
+    '</div>'  # /mgmt-box
+    '</div>'  # /mgmt-overlay
+)
+
+_MANAGE_JS = (
+    '\n/* === \u9298\u67c4\u7ba1\u7406\u30e2\u30fc\u30c0\u30eb === */\n'
+    'var _mgmtMode = \'\';\n'
+    'var _mgmtTarget = \'\';\n'
+    'function openManageModal(){\n'
+    '  document.getElementById(\'mgmt-overlay\').style.display=\'flex\';\n'
+    '  _mgmtMode=\'\'; _mgmtTarget=\'\';\n'
+    '  document.getElementById(\'mgmt-form\').style.display=\'none\';\n'
+    '  document.getElementById(\'mgmt-mode-hint\').style.display=\'block\';\n'
+    '  [\'add\',\'remove\',\'move\',\'swap\'].forEach(function(m){\n'
+    '    var b=document.getElementById(\'mgmt-btn-\'+m);\n'
+    '    if(b){b.style.background=\'#1e293b\';b.style.color=\'#94a3b8\';b.style.borderColor=\'#374151\';}\n'
+    '  });\n'
+    '  document.getElementById(\'mgmt-status\').style.display=\'none\';\n'
+    '}\n'
+    'function closeMgmtModal(e){\n'
+    '  if(!e||e.target===document.getElementById(\'mgmt-overlay\'))\n'
+    '    document.getElementById(\'mgmt-overlay\').style.display=\'none\';\n'
+    '}\n'
+    'function mgmtSetMode(mode){\n'
+    '  _mgmtMode=mode; _mgmtTarget=\'\';\n'
+    '  [\'add\',\'remove\',\'move\',\'swap\'].forEach(function(m){\n'
+    '    var b=document.getElementById(\'mgmt-btn-\'+m);\n'
+    '    if(!b)return;\n'
+    '    if(m===mode){b.style.background=\'#fb923c\';b.style.color=\'#000\';b.style.borderColor=\'#fb923c\';}\n'
+    '    else{b.style.background=\'#1e293b\';b.style.color=\'#94a3b8\';b.style.borderColor=\'#374151\';}\n'
+    '  });\n'
+    '  document.getElementById(\'mgmt-form\').style.display=\'block\';\n'
+    '  document.getElementById(\'mgmt-mode-hint\').style.display=\'none\';\n'
+    '  document.getElementById(\'mgmt-status\').style.display=\'none\';\n'
+    '  var isSw=(mode===\'swap\');\n'
+    '  document.getElementById(\'mgmt-form-single\').style.display=isSw?\'none\':\'block\';\n'
+    '  document.getElementById(\'mgmt-form-swap\').style.display=isSw?\'block\':\'none\';\n'
+    '  var tr=document.getElementById(\'mgmt-target-row\');\n'
+    '  if(tr) tr.style.display=\'block\';\n'
+    '  [\'hold\',\'watch\'].forEach(function(t){\n'
+    '    var b=document.getElementById(\'mgmt-t-\'+t);\n'
+    '    if(b){b.style.background=\'#1e293b\';b.style.color=\'#94a3b8\';b.style.borderColor=\'#374151\';}\n'
+    '    var bsw=document.getElementById(\'mgmt-t-\'+t+\'-sw\');\n'
+    '    if(bsw){bsw.style.background=\'#1e293b\';bsw.style.color=\'#94a3b8\';bsw.style.borderColor=\'#374151\';}\n'
+    '  });\n'
+    '}\n'
+    'function mgmtSetTarget(t){\n'
+    '  _mgmtTarget=t;\n'
+    '  var isSw=(_mgmtMode===\'swap\');\n'
+    '  [\'hold\',\'watch\'].forEach(function(k){\n'
+    '    var isHold=(k===\'hold\');\n'
+    '    var match=(isHold&&t===\'\u4fdd\u6709\')||(!isHold&&t===\'\u76e3\u8996\');\n'
+    '    var sfx=isSw?\'-sw\':\'\';\n'
+    '    var b=document.getElementById(\'mgmt-t-\'+k+sfx);\n'
+    '    if(!b)return;\n'
+    '    if(match){b.style.background=\'#fb923c\';b.style.color=\'#000\';b.style.borderColor=\'#fb923c\';}\n'
+    '    else{b.style.background=\'#1e293b\';b.style.color=\'#94a3b8\';b.style.borderColor=\'#374151\';}\n'
+    '  });\n'
+    '}\n'
+    'function execManage(){\n'
+    '  var btn=document.getElementById(\'mgmt-exec-btn\');\n'
+    '  var st=document.getElementById(\'mgmt-status\');\n'
+    '  if(!_mgmtMode){alert(\'\u64cd\u4f5c\u3092\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044\');return;}\n'
+    '  var code=\'\',addCode=\'\',target=_mgmtTarget;\n'
+    '  if(_mgmtMode===\'swap\'){\n'
+    '    code=(document.getElementById(\'mgmt-remove-code\')||{value:\'\'}).value.trim();\n'
+    '    addCode=(document.getElementById(\'mgmt-add-code\')||{value:\'\'}).value.trim();\n'
+    '    if(!code||code.length!==4||!/^\\d+$/.test(code)){'
+    'alert(\'\u9664\u5916\u9298\u67c4\u30b3\u30fc\u30c9\u304c\u6b63\u3057\u304f\u3042\u308a\u307e\u305b\u3093\uff084\u6841\u6570\u5b57\uff09\');return;}\n'
+    '    if(!addCode||addCode.length!==4||!/^\\d+$/.test(addCode)){'
+    'alert(\'\u8ffd\u52a0\u9298\u67c4\u30b3\u30fc\u30c9\u304c\u6b63\u3057\u304f\u3042\u308a\u307e\u305b\u3093\uff084\u6841\u6570\u5b57\uff09\');return;}\n'
+    '    if(!_mgmtTarget){alert(\'\u8ffd\u52a0\u5148\u3092\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044\');return;}\n'
+    '  } else {\n'
+    '    code=(document.getElementById(\'mgmt-code\')||{value:\'\'}).value.trim();\n'
+    '    if(!code||code.length!==4||!/^\\d+$/.test(code)){'
+    'alert(\'\u9298\u67c4\u30b3\u30fc\u30c9\u304c\u6b63\u3057\u304f\u3042\u308a\u307e\u305b\u3093\uff084\u6841\u6570\u5b57\uff09\');return;}\n'
+    '    if(!_mgmtTarget){alert(\'\u7ba1\u7406\u5148\u3092\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044\');return;}\n'
+    '  }\n'
+    '  btn.textContent=\'\u9001\u4fe1\u4e2d...\';btn.style.opacity=\'0.6\';btn.style.pointerEvents=\'none\';\n'
+    '  st.style.display=\'block\';st.style.color=\'#fbbf24\';\n'
+    '  st.textContent=\'GitHub Actions \u8d77\u52d5\u4e2d...\';\n'
+    '  var gasUrl=typeof FULL_UPDATE_GAS_URL!==\'undefined\'?FULL_UPDATE_GAS_URL:\'\';\n'
+    '  if(!gasUrl){st.style.color=\'#f87171\';st.textContent=\'GAS URL\u304c\u672a\u8a2d\u5b9a\';'
+    'btn.textContent=\'\u5b9f\u884c\';btn.style.opacity=\'\';btn.style.pointerEvents=\'\';return;}\n'
+    '  var tgt=target;\n'
+    '  var params=\'?action=manage_stock\'+\'&code=\'+encodeURIComponent(code)\n'
+    '    +\'&operation=\'+encodeURIComponent(_mgmtMode)\n'
+    '    +\'&target=\'+encodeURIComponent(tgt);\n'
+    '  if(_mgmtMode===\'swap\') params+=\'&add_code=\'+encodeURIComponent(addCode);\n'
+    '  fetch(gasUrl+params,{method:\'POST\',mode:\'no-cors\',body:JSON.stringify({action:\'manage_stock\',code:code,operation:_mgmtMode,target:tgt})})\n'
+    '  .then(function(){\n'
+    '    st.style.color=\'#34d399\';\n'
+    '    st.textContent=\'\u8d77\u52d5\u5b8c\u4e86\uff015\u5206\u5f8c\u306b\u30c0\u30c3\u30b7\u30e5\u30dc\u30fc\u30c9\u304c\u66f4\u65b0\u3055\u308c\u307e\u3059\u3002\';\n'
+    '    btn.textContent=\'\u5b8c\u4e86\';btn.style.background=\'#064e3b\';btn.style.color=\'#34d399\';\n'
+    '    setTimeout(function(){\n'
+    '      btn.textContent=\'\u5b9f\u884c\';btn.style.background=\'#fb923c\';btn.style.color=\'#000\';\n'
+    '      btn.style.opacity=\'\';btn.style.pointerEvents=\'\';\n'
+    '    },8000);\n'
+    '  })\n'
+    '  .catch(function(){\n'
+    '    st.style.color=\'#f87171\';st.textContent=\'\u30a8\u30e9\u30fc\u304c\u767a\u751f\u3057\u307e\u3057\u305f\u3002\u518d\u8a66\u884c\u3057\u3066\u304f\u3060\u3055\u3044\u3002\';\n'
+    '    btn.textContent=\'\u5b9f\u884c\';btn.style.opacity=\'\';btn.style.pointerEvents=\'\';\n'
+    '  });\n'
+    '}\n'
+    '/* === /\u9298\u67c4\u7ba1\u7406\u30e2\u30fc\u30c0\u30eb === */\n'
+)
+
+# 銘柄管理モーダルHTMLを </script> の後（ファイル末尾付近）に追加
+if 'id="mgmt-overlay"' not in src:
+    _last_script_pos = src.rfind('</script>')
+    if _last_script_pos >= 0:
+        src = (src[:_last_script_pos + len('</script>')] +
+               '\n' + _MANAGE_MODAL_HTML +
+               src[_last_script_pos + len('</script>'):])
+        print("OK: 銘柄管理モーダルHTML追加")
+    else:
+        src += '\n' + _MANAGE_MODAL_HTML
+        print("OK: 銘柄管理モーダルHTML追加（末尾）")
+else:
+    print("SKIP: 銘柄管理モーダルは既に存在します")
+
+# 銘柄管理JSをファイル末尾の</script>の直前に挿入
+if 'openManageModal' not in src:
+    _last_script_close = src.rfind('</script>')
+    if _last_script_close >= 0:
+        src = src[:_last_script_close] + _MANAGE_JS + '\n' + src[_last_script_close:]
+        print("OK: 銘柄管理JS挿入")
+    else:
+        src += '<script>' + _MANAGE_JS + '</script>'
+        print("OK: 銘柄管理JSをscriptタグで追加")
+else:
+    print("SKIP: 銘柄管理JSは既に存在します")
 
 # WTI・金価格は4層マクロカード（FOUR_LAYER_HTML）内で既に動的生成済み
 # （旧来のre.subによる置換は不要・FOUR_LAYER_CARDSに統合）

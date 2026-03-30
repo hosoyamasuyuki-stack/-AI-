@@ -345,14 +345,81 @@ def move_stock(code, target):
     target_ws.update(f'A{next_row}', [row_data])
     print(f"  {SHEET_MAP[target]} の行{next_row}に追加")
 
+
+def swap_stock(remove_code, add_code, target):
+    """
+    銘柄入れ替え（remove_code を削除 → add_code を追加）。
+
+    - remove_code: 除外する銘柄コード（保有または監視から削除）
+    - add_code: 追加する銘柄コード（target シートに追加）
+    - target: 入れ替え後の管理先（保有 or 監視）
+
+    処理フロー:
+      1. remove_code が保有/監視いずれかを自動判定して削除
+      2. 予測記録に「入れ替えで除外」フラグを追記
+      3. add_code を target シートに追加（v4.3スコア計算）
+      4. 予測記録に add_code の新規記録を自動追加
+    """
+    # remove_code の所属シートを自動判定
+    removed_from = None
+    for tgt_name, sheet_name in SHEET_MAP.items():
+        ws_check = ss.worksheet(sheet_name)
+        row_num, _ = find_row_by_code(ws_check, remove_code)
+        if row_num:
+            removed_from = tgt_name
+            break
+
+    if not removed_from:
+        print(f"ERROR: {remove_code} は保有・監視いずれにも存在しません")
+        sys.exit(1)
+
+    print(f"  入れ替え: {remove_code}({removed_from}) を除外 → {add_code}({target}) を追加")
+
+    # Step1: remove_code を削除（予測記録に「入れ替えで除外」フラグ追記）
+    remove_sheet = SHEET_MAP[removed_from]
+    remove_ws = ss.worksheet(remove_sheet)
+    row_num, all_vals = find_row_by_code(remove_ws, remove_code)
+    remove_name = all_vals[row_num - 1][1] if len(all_vals[row_num - 1]) > 1 else remove_code
+    remove_ws.delete_rows(row_num)
+    print(f"  {remove_sheet} から {remove_code} {remove_name} を削除")
+
+    # 予測記録に「入れ替えで除外」フラグ追記（flag_prediction_removed拡張）
+    try:
+        ws_pred = ss.worksheet('予測記録')
+        all_pred = ws_pred.get_all_values()
+        today_str = datetime.now().strftime('%Y/%m/%d')
+        updated = 0
+        for i, row in enumerate(all_pred[2:], start=3):
+            if len(row) > COL_CODE and str(row[COL_CODE]).strip() == str(remove_code).strip():
+                old_action = row[COL_ACTION] if len(row) > COL_ACTION else ''
+                new_action = f'{old_action} [入れ替えで除外 {today_str}]'.strip()
+                ws_pred.update_cell(i, COL_ACTION + 1, new_action)
+                updated += 1
+                time.sleep(0.5)
+        if updated:
+            print(f'  予測記録に入れ替えで除外フラグ追記: {remove_code} ({updated}行)')
+        else:
+            print(f'  INFO: 予測記録に {remove_code} の記録なし')
+    except Exception as e:
+        print(f'  WARNING: 予測記録フラグ追記失敗（処理は続行）: {e}')
+
+    time.sleep(2)  # Sheets APIレート制限回避
+
+    # Step2: add_code を target に追加（v4.3スコア計算）
+    add_stock(add_code, target)
+
 # ── エントリーポイント ───────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description='銘柄管理（追加・削除・移動）')
-    parser.add_argument('--code',   required=True, help='銘柄コード（4桁）')
-    parser.add_argument('--action', required=True, choices=['add', 'remove', 'move'],
-                        help='操作: add=追加, remove=削除, move=移動')
-    parser.add_argument('--target', required=True, choices=['保有', '監視'],
+    parser = argparse.ArgumentParser(description='銘柄管理（追加・削除・移動・入れ替え）')
+    parser.add_argument('--code',        required=True,
+                        help='銘柄コード（4桁）。swap時は除外コード')
+    parser.add_argument('--action',      required=True,
+                        choices=['add', 'remove', 'move', 'swap'],
+                        help='操作: add=追加, remove=削除, move=移動, swap=入れ替え')
+    parser.add_argument('--target',      required=True, choices=['保有', '監視'],
                         help='対象シート: 保有 or 監視')
+    parser.add_argument('--add_code',    default='',
+                        help='swap時のみ: 追加する銘柄コード（4桁）')
     args = parser.parse_args()
 
     code = args.code.strip()
@@ -371,6 +438,15 @@ def main():
         remove_stock(code, args.target)
     elif args.action == 'move':
         move_stock(code, args.target)
+    elif args.action == 'swap':
+        add_code = args.add_code.strip()
+        if not add_code:
+            print("ERROR: swap操作には --add_code が必要です")
+            sys.exit(1)
+        if not add_code.isdigit() or len(add_code) != 4:
+            print(f"ERROR: --add_code は4桁の数字で指定してください: {add_code}")
+            sys.exit(1)
+        swap_stock(code, add_code, args.target)
 
     print(f"\n完了: {args.action} {code} -> {args.target}")
 
