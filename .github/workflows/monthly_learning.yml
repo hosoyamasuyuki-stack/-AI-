@@ -2,10 +2,14 @@ name: Monthly Learning Batch
 
 on:
   schedule:
-    # 毎月1日 9:00 JST（00:00 UTC）
+    # 毎月1日 9:00 JST（00:00 UTC）※sheet_managerは9:30 JSTにずらし済み
     - cron: '0 0 1 * *'
   workflow_dispatch:
     # 手動実行ボタン（テスト用）
+
+concurrency:
+  group: monthly-sheets
+  cancel-in-progress: false
 
 jobs:
   learning-batch:

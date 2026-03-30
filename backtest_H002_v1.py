@@ -1,3 +1,15 @@
+"""
+backtest_H002_v1.py
+H002: Variable1（Real ROIC）の有効性バックテスト
+
+【仮説】Real ROIC上位銘柄を3年保有すると、市場平均を超過リターンを得られる
+【登録】2026/03/24 / Bonferroni補正 α=0.025
+【結果】採択済み（全3フェーズ）
+【実行】Google Colab推奨:
+    from google.colab import auth
+    auth.authenticate_user()
+【依存】JQUANTS_API_KEY / GOOGLE_CREDENTIALS / SPREADSHEET_ID（環境変数）
+"""
 # backtest_H002_v1.py
 # H002: Variable1(Real ROIC)のみで3年超過リターンが生じるか
 # 仮説登録済み 2026/03/24 / Bonferroni補正 α=0.025

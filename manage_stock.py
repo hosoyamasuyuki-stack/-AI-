@@ -37,6 +37,11 @@ SHEET_MAP = {
     '監視': '監視銘柄_v4.3スコア',
 }
 
+# 予測記録シートの列インデックス（verify_0415.pyと同一定義・教訓8準拠）
+COL_DATE=0; COL_CODE=1; COL_NAME=2; COL_SECT=3
+COL_PRICE=4; COL_SCORE=5; COL_RANK=6; COL_ACTION=7
+COL_DIR=8; COL_TARGET=9; COL_BASIS=10; COL_VERDATE=11
+
 # シート列定義（保有/監視シートの列順序）
 SHEET_COLS = ['コード', '銘柄名', '業種', '総合スコア', 'ランク',
               '変数1', '変数2', '変数3',
@@ -129,6 +134,56 @@ def find_row_by_code(ws, code):
             return i, all_vals
     return None, all_vals
 
+def record_prediction(code, name, sector, price, total, rank, target):
+    """
+    銘柄追加時に予測記録シートへ自動記録（2行：目先3ヶ月 + 短期1年）
+
+    列構造（教訓8準拠）:
+      COL_DATE=0  COL_CODE=1  COL_NAME=2  COL_SECT=3
+      COL_PRICE=4 COL_SCORE=5 COL_RANK=6  COL_ACTION=7
+      COL_DIR=8   COL_TARGET=9 COL_BASIS=10 COL_VERDATE=11
+    """
+    try:
+        ws_pred = ss.worksheet('予測記録')
+        today_str = datetime.now().strftime('%Y/%m/%d')
+
+        # ランクから予測方向を自動決定
+        if rank in ('S', 'A'):
+            direction = f'上昇予測（{rank}ランク・v4.3={total}点）'
+        elif rank == 'B':
+            direction = '中立（Bランク）'
+        else:
+            direction = f'様子見（{rank}ランク・v4.3={total}点）'
+
+        basis = (f'manage_stock自動記録 / v4.3={total}点 {rank}ランク'
+                 f' / {target}追加 / {today_str}')
+
+        for label, days in [('目先3ヶ月', 91), ('短期1年', 365)]:
+            ver_date = (TODAY + timedelta(days=days)).strftime('%Y/%m/%d')
+            row = [
+                today_str,           # COL_DATE=0  記録日
+                str(code),           # COL_CODE=1  銘柄コード
+                name,                # COL_NAME=2  銘柄名
+                sector or '',        # COL_SECT=3  業種
+                price if price else '',  # COL_PRICE=4 記録時株価
+                total,               # COL_SCORE=5 v4.3スコア
+                rank,                # COL_RANK=6  ランク
+                label,               # COL_ACTION=7 目先3ヶ月 or 短期1年
+                direction,           # COL_DIR=8   予測方向
+                '',                  # COL_TARGET=9 目標株価（自動設定しない）
+                basis,               # COL_BASIS=10 根拠
+                ver_date,            # COL_VERDATE=11 検証予定日
+            ]
+            all_vals = ws_pred.get_all_values()
+            next_row = len(all_vals) + 1
+            ws_pred.update(f'A{next_row}', [row])
+            print(f'  予測記録自動追加: {code} [{label}] 検証日={ver_date}')
+            time.sleep(1)  # Sheets APIレート制限回避
+
+    except Exception as e:
+        print(f'  WARNING: 予測記録への自動追加失敗（処理は続行）: {e}')
+
+
 def add_stock(code, target):
     """銘柄を追加（スコア計算してシートに書き込み）"""
     sheet_name = SHEET_MAP[target]
@@ -201,10 +256,48 @@ def add_stock(code, target):
     except Exception as e:
         print(f"  WARNING: コアスキャン_v4.3への追加失敗: {e}")
 
+    # ── 予測記録に自動追加（フィードバックループ完成）──────────
+    # 追加先（保有/監視）・スクリーニング出所をbasisに記録
+    record_prediction(
+        code=code,
+        name=name,
+        sector=sector,
+        price=details.get('price'),
+        total=total,
+        rank=rank,
+        target=target,
+    )
+
     return total, rank
 
+def flag_prediction_removed(code, target):
+    """
+    削除時に予測記録の該当行COL_ACTIONに「途中売却/監視除外」フラグを追記。
+    予測記録自体は残す（途中売却でも学習データとして活用するため）。
+    """
+    try:
+        ws_pred = ss.worksheet('予測記録')
+        all_vals = ws_pred.get_all_values()
+        today_str = datetime.now().strftime('%Y/%m/%d')
+        flag_label = '途中売却' if target == '保有' else '監視除外'
+        updated = 0
+        for i, row in enumerate(all_vals[2:], start=3):  # row1=header, row2=subheader
+            if len(row) > COL_CODE and str(row[COL_CODE]).strip() == str(code).strip():
+                # COL_ACTION(7)に除外フラグを追記（上書きではなく追記）
+                old_action = row[COL_ACTION] if len(row) > COL_ACTION else ''
+                new_action = f'{old_action} [{flag_label} {today_str}]'.strip()
+                ws_pred.update_cell(i, COL_ACTION + 1, new_action)  # gspread: 1-indexed
+                updated += 1
+                time.sleep(0.5)
+        if updated:
+            print(f'  予測記録に{flag_label}フラグ追記: {code} ({updated}行)')
+        else:
+            print(f'  INFO: 予測記録に {code} の記録なし（フラグ追記なし）')
+    except Exception as e:
+        print(f'  WARNING: 予測記録フラグ追記失敗（処理は続行）: {e}')
+
 def remove_stock(code, target):
-    """銘柄をシートから削除"""
+    """銘柄をシートから削除。予測記録は残し、途中売却/監視除外フラグを追記。"""
     sheet_name = SHEET_MAP[target]
     ws = ss.worksheet(sheet_name)
 
@@ -216,6 +309,9 @@ def remove_stock(code, target):
     name = all_vals[row_num - 1][1] if len(all_vals[row_num - 1]) > 1 else code
     ws.delete_rows(row_num)
     print(f"  {sheet_name} から {code} {name} を削除（行{row_num}）")
+
+    # 予測記録に途中売却/監視除外フラグを追記（記録は削除しない）
+    flag_prediction_removed(code, target)
 
 def move_stock(code, target):
     """銘柄を target に移動（もう一方から削除 → target に追加）"""

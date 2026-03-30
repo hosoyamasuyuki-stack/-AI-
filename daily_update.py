@@ -1,3 +1,14 @@
+"""
+daily_update.py v1
+AI投資判断システム 日次マクロ指標更新
+
+【実行タイミング】毎日 7:00 JST（平日のみ・GitHub Actions）
+【依存API】FRED API（25指標）/ Google Sheets API
+【入力】FRED_API_KEY / GOOGLE_CREDENTIALS / SPREADSHEET_ID（環境変数）
+【出力】スプレッドシート各指標シートに最新値を書き込み
+       MacroPhase 4層スコア（Layer A〜D 合計100点）を計算・保存
+【注意】レート制限対策：各書き込み後に3秒ウェイト（2026/03/29修正）
+"""
 
 import os
 import json
