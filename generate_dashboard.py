@@ -890,6 +890,49 @@ if degradation_alerts:
 else:
     print("OK: abar ランク異常なし")
 
+
+# gbar動的生成（短期危険/長期好機の二重表示 - H005-B検証結果対応）
+vix_now = MKT['vix_v']
+if vix_now >= 30:
+    # VIX>=30: 暴落検知 → 短期赤アラート + 長期金色アラート同時表示
+    GBAR_HTML = (
+        '<div class="gbar" style="background:#1a0808;border-color:#7f1d1d;">'
+        '<span style="color:#f87171;font-size:var(--fs-xs);font-weight:900;">'
+        '\u26A0 \u77ED\u671F\u30EA\u30B9\u30AF\u9AD8</span>'
+        '<span style="color:#fca5a5;font-size:var(--fs-xs);">'
+        f'VIX {vix_now}\u2026\u65B0\u898F\u8CB7\u3044\u306F\u63A7\u3048\u3066\u304F\u3060\u3055\u3044</span>'
+        '</div>\n'
+        '    <div class="gbar" style="background:#1a1400;border-color:#92400e;">'
+        '<span style="color:#fbbf24;font-size:var(--fs-xs);font-weight:900;">'
+        '\u2B50 \u9577\u671F\u6295\u8CC7\u5BB6\u306B\u306F\u6B74\u53F2\u7684\u8CB7\u3044\u5834</span>'
+        '<span style="color:#fcd34d;font-size:var(--fs-xs);">'
+        'H005-B\u691C\u8A3C\u6E08\uFF1A\u66B4\u843D\u6642\u8CB7\u30445\u5E74\u4FDD\u6709\u2192+21.81%/\u5E74\uFF08p=0.0035\uFF09</span>'
+        '<span style="color:#d1d5db;font-size:var(--fs-micro);">'
+        '\u203B\u6295\u8CC7\u52A9\u8A00\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002\u904E\u53BB\u306E\u691C\u8A3C\u7D50\u679C\u306E\u8868\u793A\u3067\u3059</span>'
+        '</div>'
+    )
+elif vix_now >= 25:
+    # VIX 25-30: 警戒域 → 慎重な通常表示
+    GBAR_HTML = (
+        '<div class="gbar"><span class="gl">\u73FE\u5728\u306E\u74B0\u5883</span>'
+        f'<span class="gi">\u77ED\u671F{SHORT_SCORE}\u70B9\u30FB\u4E2D\u671F{MID_SCORE}\u70B9'
+        f'\u2026VIX {vix_now}\u8B66\u6212\u57DF</span>'
+        '<span class="gi">\u62BC\u3057\u76EE\u5F62\u6210\u5F8C\u306B\u518D\u8A55\u4FA1</span></div>'
+    )
+else:
+    # VIX < 25: 通常表示
+    s_lbl = '\u5F37\u6C17' if SHORT_SCORE >= 55 else '\u4E2D\u7ACB' if SHORT_SCORE >= 45 else '\u5F31\u6C17'
+    m_lbl = '\u5F37\u6C17' if MID_SCORE >= 55 else '\u4E2D\u7ACB' if MID_SCORE >= 45 else '\u5F31\u6C17'
+    GBAR_HTML = (
+        '<div class="gbar"><span class="gl">\u73FE\u5728\u306E\u74B0\u5883</span>'
+        f'<span class="gi">\u77ED\u671F{SHORT_SCORE}\u70B9({s_lbl})\u30FB\u4E2D\u671F{MID_SCORE}\u70B9({m_lbl})</span>'
+        '</div>'
+    )
+
+# gbar置換（HTMLテンプレート内の静的gbarを動的に置換）
+src = re.sub(r'<div class="gbar">.*?</div>(\s*<div class="gbar"[^>]*>.*?</div>)?',
+             GBAR_HTML, src, count=1, flags=re.DOTALL)
+print(f"OK: gbar動的生成（VIX={vix_now}）")
 # 四半期レビューリマインダー（sbar）
 import calendar
 now_month = datetime.now().month

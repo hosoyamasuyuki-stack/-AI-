@@ -35,6 +35,7 @@ jobs:
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           PRICE_SOURCE: yfinance
         run: |
           echo "=== Step 1: 株価更新（yfinanceリアルタイム） ==="
@@ -59,7 +60,6 @@ jobs:
           echo "待機完了"
 
       - name: Step 3 - ダッシュボードHTML再生成
-        continue-on-error: true
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}

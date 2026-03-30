@@ -13,9 +13,9 @@ from google.oauth2.service_account import Credentials
 # ============================================================
 # 認証
 # ============================================================
-FRED_API_KEY   = os.environ["FRED_API_KEY"]
-SPREADSHEET_ID = os.environ["SPREADSHEET_ID"]
-creds_json     = os.environ["GOOGLE_CREDENTIALS"]
+FRED_API_KEY   = os.environ.get("FRED_API_KEY", "")
+SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID", "1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE")
+creds_json     = os.environ.get("GOOGLE_CREDENTIALS", "{}")
 creds_dict     = json.loads(creds_json)
 scopes = [
     "https://www.googleapis.com/auth/spreadsheets",
