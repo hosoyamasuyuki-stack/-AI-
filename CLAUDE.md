@@ -1,5 +1,5 @@
 # AI投資判断システム 開発パートナー設定 完全版
-# 最終更新：2026/03/31（セッション7）
+# 最終更新：2026/04/01（セッション8）
 
 ================================================================
 ## セッション開始時の定型動作
@@ -108,6 +108,8 @@
 - 出力前に全員で2回チェック
 - セッション終了時にhandover.txtを更新してGitHubコミット
 - 更新前に前版の文字数を確認、新版文字数 >= 旧版文字数を守る
+- セッション終了時にCLAUDE.mdをDropboxにもバックアップ（別PC復元用）
+  コピー先：C:\Users\hosoy\Dropbox\KABU\RICH-KAIZEN\CLAUDE.md
 
 ### 臨時メンバー
 
@@ -522,9 +524,11 @@ verify_0415.py が完全自動化済み
 
 
 【残タスク（優先度順）】
-★2. 賢者の審判GAS再デプロイ時のURL更新自動化 → URL統一済み(2026/03/31) → URL統一済み(2026/03/31)
-    - 毎回デプロイ→URLコピー→HTML修正→PR→マージが手動
-    - 優先度：LOW（頻度低い・手動で対応可能）
+★2. 賢者の審判GAS再デプロイ時のURL更新自動化 → 完全自動化済み(2026/04/01 セッション8)
+    - core/config.pyにGAS_URL_FULL_UPDATE / GAS_URL_KENJAを定数化
+    - ai_dashboard_v13.htmlの3箇所のハードコードURLを%%プレースホルダー%%に置換
+    - generate_dashboard.pyが出力時にconfig.pyから実URLを注入
+    - GAS再デプロイ時はcore/config.pyの1行を変更するだけで全体に反映
 3. 2026/04/15 STEP0目先予測自動検証（verify_0415.py v3）→ 待機中
 7. 売り判断ルールの体系化（天才投資家からの指摘）→ 四半期レビュー制で概ね解決済み
 8. H004完全ウォークフォワード再検証（JQUANTS_API_KEY設定済み）
@@ -1439,6 +1443,25 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
 2026/03/18：STEP0実行完了（15銘柄+83銘柄）/ verify_0415.py設定
 2026/03/16：v4.2スコアリングモデル確定 / H001-C採択
 
+
+================================================================
+## 2026/04/01（セッション8）のコミット履歴
+================================================================
+
+1. fix: ダッシュボードUI改善（アラート移動+ヘッダー圧縮+charset+TZ修正）
+   - VIXアラート（短期リスク高+長期買い場）を監視銘柄パネル→ティッカー下に移動
+   - generate_dashboard.pyのgbar生成をアラートストリップ方式に変更（ALERT_STRIP マーカー）
+   - ヘッダー4層マクロカードの縦幅を約40%圧縮（padding縮小・説明テキスト削除）
+   - HTML charset宣言追加（<!DOCTYPE html>+<meta charset="utf-8">・文字化け防止）
+   - generate_dashboard.pyにcharset保証ガード追加
+   - 4つのYAMLにTZ: Asia/Tokyo追加（verify/handover/monthly/sheet_manager）
+     これで全12ワークフローがTZ設定済み
+
+2. feat: GAS URL一元管理（core/config.py → generate_dashboard.py → HTML自動注入）
+   - core/config.py: GAS_URL_FULL_UPDATE / GAS_URL_KENJA 定数追加（環境変数オーバーライド可）
+   - ai_dashboard_v13.html: 3箇所のハードコードURLを%%プレースホルダー%%に置換
+   - generate_dashboard.py: config.pyから読み込み→出力前にプレースホルダーを実URLに置換
+   - GAS再デプロイ時はcore/config.pyの1行を変更するだけで全体に反映
 
 ================================================================
 ## 2026/03/31（セッション7）のコミット履歴
