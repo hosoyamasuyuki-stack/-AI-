@@ -110,7 +110,7 @@ def build_phase_gauge_html(ss):
     bar = f'<div style="flex:1;background:#1e293b;border-radius:3px;height:5px;position:relative;"><div style="position:absolute;left:30%;width:1px;height:5px;background:#374151;"></div><div style="position:absolute;left:60%;width:1px;height:5px;background:#374151;"></div><div style="width:{pct}%;height:5px;border-radius:3px;background:{cm};transition:width .3s;"></div></div>'
     return (
         f'<div style="background:#0d1117;border:1px solid {cbr};border-radius:6px;'
-        f'padding:6px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">'
+        f'padding:4px 10px;margin-bottom:4px;display:flex;align-items:center;gap:10px;">'
         f'<span style="width:8px;height:8px;border-radius:50%;background:{cm};'
         f'display:inline-block;flex-shrink:0;box-shadow:0 0 6px {cm};"></span>'
         f'<span style="font-size:var(--fs-md);font-weight:800;color:{cm};white-space:nowrap;">'
@@ -890,6 +890,57 @@ if degradation_alerts:
 else:
     print("OK: abar ランク異常なし")
 
+# アラートストリップ動的生成（VIX値に基づく短期リスク＋長期買い場）
+vix_val = MKT.get('vix_v', 0)
+if vix_val >= 30:
+    alert_html = (
+        '<div id="alert-strip" style="display:flex;align-items:center;gap:12px;'
+        'padding:2px 12px;background:#0d1117;border-bottom:1px solid #1e2d40;'
+        'flex-shrink:0;flex-wrap:wrap;">'
+        f'<span style="color:#f87171;font-size:var(--fs-xs);font-weight:900;">'
+        f'&#9888; &#30701;&#26399;&#12522;&#12473;&#12463;&#39640;</span>'
+        f'<span style="color:#fca5a5;font-size:var(--fs-xs);font-weight:700;">'
+        f'VIX {vix_val:.1f}&#8230;&#26032;&#35215;&#36023;&#12356;&#12399;'
+        f'&#25511;&#12360;&#12390;&#12367;&#12384;&#12373;&#12356;</span>'
+        '<span style="color:#1e2d40;">|</span>'
+        '<span style="color:#fbbf24;font-size:var(--fs-xs);font-weight:900;">'
+        '&#9733; &#38263;&#26399;&#25237;&#36039;&#23478;&#12395;&#12399;'
+        '&#27508;&#21490;&#30340;&#36023;&#12356;&#22580;</span>'
+        '<span style="color:#fcd34d;font-size:var(--fs-xs);font-weight:700;">'
+        'H005-B&#26908;&#35388;&#28168;&#65306;&#26292;&#33853;&#26178;&#36023;&#12356;'
+        '5&#24180;&#20445;&#26377;&#8594;+21.81%/&#24180;&#65288;p=0.0035&#65289;</span>'
+        '<span style="color:#6b7280;font-size:var(--fs-micro);font-weight:700;">'
+        '&#8251;&#25237;&#36039;&#21161;&#35328;&#12391;&#12399;&#12354;&#12426;&#12414;'
+        '&#12379;&#12435;&#12290;&#36942;&#21435;&#12398;&#26908;&#35388;&#32080;&#26524;'
+        '&#12398;&#34920;&#31034;&#12391;&#12377;</span>'
+        '</div>')
+elif vix_val >= 25:
+    alert_html = (
+        '<div id="alert-strip" style="display:flex;align-items:center;gap:12px;'
+        'padding:2px 12px;background:#0d1117;border-bottom:1px solid #1e2d40;'
+        'flex-shrink:0;flex-wrap:wrap;">'
+        f'<span style="color:#fbbf24;font-size:var(--fs-xs);font-weight:900;">'
+        f'&#9888; &#35686;&#25106;</span>'
+        f'<span style="color:#fcd34d;font-size:var(--fs-xs);font-weight:700;">'
+        f'VIX {vix_val:.1f}&#8230;&#26032;&#35215;&#36023;&#12356;&#12399;'
+        f'&#24910;&#37325;&#12395;</span>'
+        '</div>')
+else:
+    alert_html = ''
+
+# ALERT_STRIP置換
+alert_start = src.find('<!-- ALERT_STRIP_START -->')
+alert_end = src.find('<!-- ALERT_STRIP_END -->')
+if alert_start >= 0 and alert_end >= 0:
+    alert_end_full = alert_end + len('<!-- ALERT_STRIP_END -->')
+    if alert_html:
+        src = src[:alert_start] + '<!-- ALERT_STRIP_START -->\n    ' + alert_html + '\n    <!-- ALERT_STRIP_END -->' + src[alert_end_full:]
+    else:
+        src = src[:alert_start] + '<!-- ALERT_STRIP_START --><!-- ALERT_STRIP_END -->' + src[alert_end_full:]
+    print(f"OK: アラートストリップ動的生成 (VIX={vix_val:.1f})")
+else:
+    print(f"WARN: アラートストリップ置換スキップ (start={alert_start} end={alert_end})")
+
 # 四半期レビューリマインダー（sbar）
 import calendar
 now_month = datetime.now().month
@@ -966,8 +1017,8 @@ yld_us_lbl  = '株式有利' if yld_us_cls=='g' else '中立' if yld_us_cls=='y'
 buf_jp_lbl  = '割安圏' if buf_jp_cls=='g' else '割高圏注意' if buf_jp_cls=='y' else '割高警戒'
 buf_us_lbl  = '割安圏' if buf_us_cls=='g' else '割高圏注意' if buf_us_cls=='y' else '割高警戒'
 
-vi_style  = 'padding:4px 8px;border-right:1px solid #1e2d40;cursor:pointer;'
-vn_style  = 'font-size:var(--fs-sm);font-weight:800;color:#cbd5e1;margin-bottom:4px;text-decoration:underline dotted;text-underline-offset:2px;'
+vi_style  = 'padding:3px 6px;border-right:1px solid #1e2d40;cursor:pointer;'
+vn_style  = 'font-size:var(--fs-sm);font-weight:800;color:#cbd5e1;margin-bottom:2px;text-decoration:underline dotted;text-underline-offset:2px;'
 row_style = 'display:flex;align-items:center;gap:5px;margin-bottom:1px;'
 flag_style= 'font-size:var(--fs-sm);min-width:14px;'
 val_style_g='font-size:var(--fs-lg);font-weight:900;font-family:monospace;color:#34d399;min-width:36px;'
@@ -979,7 +1030,7 @@ vc = {'g':val_style_g,'y':val_style_y,'r':val_style_r}
 updated_display = VAL['updated_at']
 
 VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs 米国（過去10年との比較）<span style="font-size:var(--fs-micro);color:#34d399;font-weight:600;margin-left:8px;">✓ {updated_display}</span></div>
-        <div style="background:#0f1420;border:1px solid #1e2d40;border-radius:6px;padding:6px 4px;">
+        <div style="background:#0f1420;border:1px solid #1e2d40;border-radius:6px;padding:4px 4px;">
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;">
           <div style="{vi_style}" onclick="showVI('cape')">
             <div style="{vn_style}">シラーPER ⓘ</div>
@@ -1082,6 +1133,13 @@ print('OK: マクロフェーズゲージ置換')
 # モーダル挿入（</body>直前）
 src = src.replace('</body>', VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
 print("OK: モーダル挿入")
+
+# charset宣言を保証（文字化け防止）
+if '<!DOCTYPE html>' not in src:
+    src = '<!DOCTYPE html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n</head>\n' + src
+elif '<meta charset' not in src:
+    src = src.replace('<!DOCTYPE html>', '<!DOCTYPE html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n</head>', 1)
+print("OK: charset宣言保証")
 
 out = 'ai_dashboard_v13.html'
 with open(out, 'w', encoding='utf-8') as f:

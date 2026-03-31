@@ -1,4 +1,8 @@
-
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+</head>
 <style>
 :root{--fs-micro:12px;--fs-xs:13px;--fs-sm:14px;--fs-base:15px;--fs-md:16px;--fs-lg:18px;--fs-xl:22px;--fs-2xl:26px;--fs-3xl:30px;}
 @media(max-width:1600px){:root{--fs-micro:11px;--fs-xs:12px;--fs-sm:13px;--fs-base:14px;--fs-md:15px;--fs-lg:16px;--fs-xl:20px;--fs-2xl:24px;--fs-3xl:28px;}}
@@ -21,8 +25,8 @@
 .livedot{width:5px;height:5px;background:#22c55e;border-radius:50%;animation:blink 1.8s ease infinite;display:inline-block;}
 
 /* TOP */
-#top{background:#0d1117;border-bottom:1px solid #1e2d40;padding:5px 12px;flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:4px;}
-.sl{color:#f6ad55;font-size:var(--fs-xs);font-weight:800;letter-spacing:1.5px;display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+#top{background:#0d1117;border-bottom:1px solid #1e2d40;padding:3px 12px;flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:2px;}
+.sl{color:#f6ad55;font-size:var(--fs-xs);font-weight:800;letter-spacing:1.5px;display:flex;align-items:center;gap:5px;margin-bottom:1px;}
 .sl::after{content:'';flex:1;height:1px;background:#1e2d40;}
 
 /* 市場体温計 */
@@ -228,75 +232,78 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
   <div style="flex:1 1 0;min-height:0;display:flex;flex-direction:column;">
     <div class="sl">4層マクロダッシュボード<span style="font-size:var(--fs-micro);color:#475569;margin-left:8px;">2026/03/25 04:36 更新</span></div>
     <!-- TICKER_START --><div id="sys-ticker-wrap" style="background:#060810;border-bottom:1px solid #1e2d40;height:20px;overflow:hidden;flex-shrink:0;"><div id="sys-ticker" style="display:inline-flex;flex-wrap:nowrap;align-items:center;height:20px;width:max-content;animation:ticker_scroll 60s linear infinite;" onmouseover="this.style.animationPlayState='paused'" onmouseout="this.style.animationPlayState='running'"><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-xs);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="color:#f59e0b;font-weight:900;">AI LEARNING</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">保有銘柄(46)</span><span style="color:#34d399;">日次価格学習中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">監視銘柄(27)</span><span style="color:#34d399;">日次価格学習中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">マクロ指標(32)</span><span style="color:#34d399;">日次データ学習中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">日経225</span><span style="color:#34d399;">53,780</span><span style="color:#475569;">|</span><span style="color:#e2e8f0;font-weight:800;">SP500</span><span style="color:#34d399;">日次追跡中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#fbbf24;flex-shrink:0;box-shadow:0 0 4px #fbbf24;"></span><span style="color:#e2e8f0;font-weight:800;">学習用(99)</span><span style="color:#fbbf24;">月次バッチ学習</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">因子劣化</span><span style="color:#34d399;">週次監視中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#fbbf24;flex-shrink:0;box-shadow:0 0 4px #fbbf24;"></span><span style="color:#e2e8f0;font-weight:800;">EDINET</span><span style="color:#fbbf24;">GAS接続済</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#fbbf24;flex-shrink:0;box-shadow:0 0 4px #fbbf24;"></span><span style="color:#e2e8f0;font-weight:800;">04/15検証</span><span style="color:#fbbf24;">準備完了</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-xs);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="color:#475569;">v4.3</span><span style="color:#94a3b8;">合計172銘柄追跡中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-xs);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="color:#f59e0b;font-weight:900;">AI LEARNING</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">保有銘柄(46)</span><span style="color:#34d399;">日次価格学習中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">監視銘柄(27)</span><span style="color:#34d399;">日次価格学習中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">マクロ指標(32)</span><span style="color:#34d399;">日次データ学習中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">日経225</span><span style="color:#34d399;">53,780</span><span style="color:#475569;">|</span><span style="color:#e2e8f0;font-weight:800;">SP500</span><span style="color:#34d399;">日次追跡中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#fbbf24;flex-shrink:0;box-shadow:0 0 4px #fbbf24;"></span><span style="color:#e2e8f0;font-weight:800;">学習用(99)</span><span style="color:#fbbf24;">月次バッチ学習</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 4px #34d399;"></span><span style="color:#e2e8f0;font-weight:800;">因子劣化</span><span style="color:#34d399;">週次監視中</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#fbbf24;flex-shrink:0;box-shadow:0 0 4px #fbbf24;"></span><span style="color:#e2e8f0;font-weight:800;">EDINET</span><span style="color:#fbbf24;">GAS接続済</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="width:5px;height:5px;border-radius:50%;background:#fbbf24;flex-shrink:0;box-shadow:0 0 4px #fbbf24;"></span><span style="color:#e2e8f0;font-weight:800;">04/15検証</span><span style="color:#fbbf24;">準備完了</span></span><span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;border-right:1px solid #1e2d40;font-size:var(--fs-xs);font-family:monospace;height:20px;flex-shrink:0;white-space:nowrap;"><span style="color:#475569;">v4.3</span><span style="color:#94a3b8;">合計172銘柄追跡中</span></span></div></div><!-- TICKER_END -->
+    <!-- ALERT_STRIP_START -->
+    <div id="alert-strip" style="display:flex;align-items:center;gap:12px;padding:2px 12px;background:#0d1117;border-bottom:1px solid #1e2d40;flex-shrink:0;flex-wrap:wrap;">
+      <span style="color:#f87171;font-size:var(--fs-xs);font-weight:900;">&#9888; &#30701;&#26399;&#12522;&#12473;&#12463;&#39640;</span>
+      <span style="color:#fca5a5;font-size:var(--fs-xs);font-weight:700;">VIX 30.6&#8230;&#26032;&#35215;&#36023;&#12356;&#12399;&#25511;&#12360;&#12390;&#12367;&#12384;&#12373;&#12356;</span>
+      <span style="color:#1e2d40;">|</span>
+      <span style="color:#fbbf24;font-size:var(--fs-xs);font-weight:900;">&#9733; &#38263;&#26399;&#25237;&#36039;&#23478;&#12395;&#12399;&#27508;&#21490;&#30340;&#36023;&#12356;&#22580;</span>
+      <span style="color:#fcd34d;font-size:var(--fs-xs);font-weight:700;">H005-B&#26908;&#35388;&#28168;&#65306;&#26292;&#33853;&#26178;&#36023;&#12356;5&#24180;&#20445;&#26377;&#8594;+21.81%/&#24180;&#65288;p=0.0035&#65289;</span>
+      <span style="color:#6b7280;font-size:var(--fs-micro);font-weight:700;">&#8251;&#25237;&#36039;&#21161;&#35328;&#12391;&#12399;&#12354;&#12426;&#12414;&#12379;&#12435;&#12290;&#36942;&#21435;&#12398;&#26908;&#35388;&#32080;&#26524;&#12398;&#34920;&#31034;&#12391;&#12377;</span>
+    </div>
+    <!-- ALERT_STRIP_END -->
     <!-- 4層マクロカード：上段4列 -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;">
 
       <!-- リスク環境 -->
-      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #f87171;border-radius:6px;padding:6px 8px;">
-        <div style="font-size:var(--fs-xs);font-weight:900;color:#fca5a5;margin-bottom:5px;letter-spacing:.5px;">リスク環境</div>
-        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('vix')">
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #f87171;border-radius:6px;padding:4px 6px;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:#fca5a5;margin-bottom:2px;letter-spacing:.5px;">リスク環境</div>
+        <div style="cursor:pointer;margin-bottom:2px;" onclick="showHelp('vix')">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">VIX</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:#fbbf24;">27.0</span><span style="background:#92400e;color:#fbbf24;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">警戒</span></div>
-          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">恐怖が高まっている</div>
         </div>
-        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('hyg')">
+        <div style="cursor:pointer;margin-bottom:2px;" onclick="showHelp('hyg')">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">HYG</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:#f87171;">79.17</span><span style="background:#7f1d1d;color:#f87171;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">悪化</span></div>
-          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">企業の信用力が低下</div>
         </div>
-        <div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">
+        <div style="border-top:1px solid #1e2d40;padding-top:2px;margin-top:1px;">
           <div style="color:#f87171;font-size:var(--fs-xs);font-weight:800;">危険度: やや高い</div>
         </div>
       </div>
 
       <!-- 金融政策 -->
-      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #34d399;border-radius:6px;padding:6px 8px;">
-        <div style="font-size:var(--fs-xs);font-weight:900;color:#6ee7b7;margin-bottom:5px;letter-spacing:.5px;">金融政策</div>
-        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('yield_spread')">
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #34d399;border-radius:6px;padding:4px 6px;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:#6ee7b7;margin-bottom:2px;letter-spacing:.5px;">金融政策</div>
+        <div style="cursor:pointer;margin-bottom:2px;" onclick="showHelp('yield_spread')">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">逆イールド</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:#34d399;">+0.51</span><span style="background:#064e3b;color:#34d399;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">正常</span></div>
-          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">正常化=安心材料</div>
         </div>
-        <div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">
+        <div style="border-top:1px solid #1e2d40;padding-top:2px;margin-top:1px;">
           <div style="color:#34d399;font-size:var(--fs-xs);font-weight:800;">安心度: 良好</div>
         </div>
       </div>
 
       <!-- コモディティ -->
-      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #a78bfa;border-radius:6px;padding:6px 8px;">
-        <div style="font-size:var(--fs-xs);font-weight:900;color:#c4b5fd;margin-bottom:5px;letter-spacing:.5px;">コモディティ</div>
-        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('wti')">
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #a78bfa;border-radius:6px;padding:4px 6px;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:#c4b5fd;margin-bottom:2px;letter-spacing:.5px;">コモディティ</div>
+        <div style="cursor:pointer;margin-bottom:2px;" onclick="showHelp('wti')">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">WTI原油</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:#fbbf24;">$69.1</span><span style="background:#92400e;color:#fbbf24;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">やや安</span></div>
-          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">インフレ・エネルギーの先行指標</div>
         </div>
-        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('gold')">
+        <div style="cursor:pointer;margin-bottom:2px;" onclick="showHelp('gold')">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">金(Gold)</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:#f87171;">$3,022</span><span style="background:#7f1d1d;color:#f87171;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">高騰</span></div>
-          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">安全資産に資金が逃避中</div>
         </div>
-        <div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">
+        <div style="border-top:1px solid #1e2d40;padding-top:2px;margin-top:1px;">
           <div style="color:#a78bfa;font-size:var(--fs-xs);font-weight:800;">資源: インフレ警戒</div>
         </div>
       </div>
 
       <!-- 経済活動 -->
-      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #60a5fa;border-radius:6px;padding:6px 8px;">
-        <div style="font-size:var(--fs-xs);font-weight:900;color:#93c5fd;margin-bottom:5px;letter-spacing:.5px;">経済活動</div>
-        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('m2')">
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #60a5fa;border-radius:6px;padding:4px 6px;">
+        <div style="font-size:var(--fs-xs);font-weight:900;color:#93c5fd;margin-bottom:2px;letter-spacing:.5px;">経済活動</div>
+        <div style="cursor:pointer;margin-bottom:2px;" onclick="showHelp('m2')">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">日本M2</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:#34d399;">+2.11%</span><span style="background:#064e3b;color:#34d399;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">加速</span></div>
-          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">お金の量が増えている</div>
         </div>
-        <div style="cursor:pointer;margin-bottom:4px;" onclick="showHelp('nikkei')">
+        <div style="cursor:pointer;margin-bottom:2px;" onclick="showHelp('nikkei')">
           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">日経225</span><span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:#34d399;">53,780</span><span style="background:#064e3b;color:#34d399;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">+2.9%</span></div>
-          <div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">52週の81%位置</div>
         </div>
-        <div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">
+        <div style="border-top:1px solid #1e2d40;padding-top:2px;margin-top:1px;">
           <div style="color:#60a5fa;font-size:var(--fs-xs);font-weight:800;">勢い: 良好</div>
         </div>
       </div>
 
     </div>
     <!-- 割安度 + マクロ総合：横長バー -->
-    <div style="display:grid;grid-template-columns:3fr 1.2fr;gap:4px;margin-top:4px;">
+    <div style="display:grid;grid-template-columns:3fr 1.2fr;gap:2px;margin-top:2px;">
       <!-- 割安度：日本 vs 米国 比較テーブル -->
-      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #fb923c;border-radius:6px;padding:6px 10px;">
-        <div style="display:flex;align-items:center;margin-bottom:6px;">
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #fb923c;border-radius:6px;padding:4px 8px;">
+        <div style="display:flex;align-items:center;margin-bottom:3px;">
           <span style="font-size:var(--fs-sm);font-weight:900;color:#fdba74;letter-spacing:.5px;">割安度</span>
           <span style="font-size:var(--fs-micro);color:#475569;font-weight:700;margin-left:6px;">- 日本と米国、今どっちが割安？</span>
         </div>
@@ -309,17 +316,17 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
           <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:var(--fs-xs);font-weight:800;">益回り</span></div>
           <div style="text-align:center;padding:2px 0;border-bottom:1px solid #1e2d40;"><span style="color:#94a3b8;font-size:var(--fs-xs);font-weight:800;">BF指数</span></div>
           <!-- 日本行 -->
-          <div style="padding:3px 0;display:flex;align-items:center;"><span style="font-size:var(--fs-sm);font-weight:900;color:#e2e8f0;">🇯🇵 日本</span></div>
-          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('cape')"><span style="font-size:var(--fs-md);font-weight:900;color:#f87171;">29倍</span></div>
-          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('pbr')"><span style="font-size:var(--fs-md);font-weight:900;color:#fbbf24;">1.76倍</span></div>
-          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('earnings_yield')"><span style="font-size:var(--fs-md);font-weight:900;color:#34d399;">6.25%</span></div>
-          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('buffett')"><span style="font-size:var(--fs-md);font-weight:900;color:#fbbf24;">140%</span></div>
+          <div style="padding:2px 0;display:flex;align-items:center;"><span style="font-size:var(--fs-sm);font-weight:900;color:#e2e8f0;">🇯🇵 日本</span></div>
+          <div style="text-align:center;padding:2px 0;cursor:pointer;" onclick="showHelp('cape')"><span style="font-size:var(--fs-md);font-weight:900;color:#f87171;">29倍</span></div>
+          <div style="text-align:center;padding:2px 0;cursor:pointer;" onclick="showHelp('pbr')"><span style="font-size:var(--fs-md);font-weight:900;color:#fbbf24;">1.76倍</span></div>
+          <div style="text-align:center;padding:2px 0;cursor:pointer;" onclick="showHelp('earnings_yield')"><span style="font-size:var(--fs-md);font-weight:900;color:#34d399;">6.25%</span></div>
+          <div style="text-align:center;padding:2px 0;cursor:pointer;" onclick="showHelp('buffett')"><span style="font-size:var(--fs-md);font-weight:900;color:#fbbf24;">140%</span></div>
           <!-- 米国行 -->
-          <div style="padding:3px 0;display:flex;align-items:center;"><span style="font-size:var(--fs-sm);font-weight:900;color:#e2e8f0;">🇺🇸 米国</span></div>
-          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('cape')"><span style="font-size:var(--fs-md);font-weight:900;color:#f87171;">38倍</span></div>
-          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('pbr')"><span style="font-size:var(--fs-md);font-weight:900;color:#f87171;">4.80倍</span></div>
-          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('earnings_yield')"><span style="font-size:var(--fs-md);font-weight:900;color:#fbbf24;">3.86%</span></div>
-          <div style="text-align:center;padding:3px 0;cursor:pointer;" onclick="showHelp('buffett')"><span style="font-size:var(--fs-md);font-weight:900;color:#f87171;">200%</span></div>
+          <div style="padding:2px 0;display:flex;align-items:center;"><span style="font-size:var(--fs-sm);font-weight:900;color:#e2e8f0;">🇺🇸 米国</span></div>
+          <div style="text-align:center;padding:2px 0;cursor:pointer;" onclick="showHelp('cape')"><span style="font-size:var(--fs-md);font-weight:900;color:#f87171;">38倍</span></div>
+          <div style="text-align:center;padding:2px 0;cursor:pointer;" onclick="showHelp('pbr')"><span style="font-size:var(--fs-md);font-weight:900;color:#f87171;">4.80倍</span></div>
+          <div style="text-align:center;padding:2px 0;cursor:pointer;" onclick="showHelp('earnings_yield')"><span style="font-size:var(--fs-md);font-weight:900;color:#fbbf24;">3.86%</span></div>
+          <div style="text-align:center;padding:2px 0;cursor:pointer;" onclick="showHelp('buffett')"><span style="font-size:var(--fs-md);font-weight:900;color:#f87171;">200%</span></div>
           <!-- 判定行 -->
           <div style="padding:2px 0;border-top:1px solid #1e2d40;"><span style="color:#fb923c;font-size:var(--fs-micro);font-weight:800;">判定</span></div>
           <div style="text-align:center;padding:2px 0;border-top:1px solid #1e2d40;"><span style="background:#7f1d1d;color:#f87171;font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">割高</span></div>
@@ -329,7 +336,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
         </div>
       </div>
       <!-- マクロ総合スコア -->
-      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #f59e0b;border-radius:6px;padding:6px 10px;display:flex;flex-direction:column;justify-content:space-between;">
+      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid #f59e0b;border-radius:6px;padding:4px 8px;display:flex;flex-direction:column;justify-content:space-between;">
         <div style="font-size:var(--fs-xs);font-weight:900;color:#f59e0b;letter-spacing:.5px;">マクロ総合</div>
         <div style="text-align:center;">
           <span style="font-size:var(--fs-xl);font-weight:900;font-family:monospace;color:#f59e0b;">45</span><span style="font-size:var(--fs-micro);color:#475569;">/100</span>
@@ -1571,7 +1578,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
         </tr>
       </table>
     </div>
-    <div class="gbar"><span class="gl">現在の環境</span><span class="gi">短期29点・中期25点ともに弱気</span><span class="gi">押し目形成後に再評価</span></div>
+    <!-- GBAR_DYNAMIC -->
     <!-- スクリーニングTop50 -->
     <div class="ph" style="border-top:1px solid #1e2d40;">
       <span class="t">🔍 AI Market Scan Top 50</span>
