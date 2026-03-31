@@ -8,6 +8,9 @@ on:
     - cron: '0 0 15 4 *'
   workflow_dispatch:  # 手動実行も可能
 
+env:
+  TZ: Asia/Tokyo
+
 jobs:
   verify:
     runs-on: ubuntu-latest

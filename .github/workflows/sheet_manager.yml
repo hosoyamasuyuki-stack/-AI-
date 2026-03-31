@@ -6,6 +6,9 @@ on:
     - cron: '0 0 1 * *'
   workflow_dispatch:  # 手動実行も可能
 
+env:
+  TZ: Asia/Tokyo
+
 jobs:
   sheet_manager:
     runs-on: ubuntu-latest

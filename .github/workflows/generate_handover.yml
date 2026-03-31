@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
     # 手動実行も可能
 
+env:
+  TZ: Asia/Tokyo
+
 jobs:
   generate:
     runs-on: ubuntu-latest
