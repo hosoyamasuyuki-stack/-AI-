@@ -32,6 +32,18 @@ GSHEETS_SCOPE = [
     'https://www.googleapis.com/auth/drive',
 ]
 
+# ── GAS (Google Apps Script) URLs ───────────────────────────
+# GAS再デプロイ時はここだけ更新すれば全スクリプトに反映される
+# 取得元: GASプロジェクト → デプロイ → ウェブアプリ → URL
+GAS_URL_FULL_UPDATE = os.environ.get(
+    'GAS_URL_FULL_UPDATE',
+    'https://script.google.com/macros/s/AKfycbzS5b6XPlrkI_toQssXQQ3ivBeWXD-uL_4aXFZnZW-wWO4TgRbNOObpf3XRVJu_M8vF/exec'
+)
+GAS_URL_KENJA = os.environ.get(
+    'GAS_URL_KENJA',
+    'https://script.google.com/macros/s/AKfycbySl1p0RI2uskdlkNU0p6NthJUfBnUPsAWErkocmRLH_qXqlywRHwFIi0hCiinpaEEz/exec'
+)
+
 # ── v4.3 Scoring Thresholds ─────────────────────────────────
 # Variable 1: Real ROIC
 ROE_THR = [(25,100),(20,85),(15,70),(12,58),(10,46),(8,35),(5,20),(0,8)]

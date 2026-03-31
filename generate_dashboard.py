@@ -86,6 +86,7 @@ def scrape_cape_us():
 
 # ── 認証 ────────────────────────────────────────────────────
 from core.auth import get_spreadsheet
+from core.config import GAS_URL_FULL_UPDATE, GAS_URL_KENJA
 ss = get_spreadsheet()
 NOW = datetime.now().strftime('%Y/%m/%d %H:%M')
 
@@ -1281,7 +1282,7 @@ if 'mgmt-overlay' not in src:
 <script>
 function openStockMgmt(){document.getElementById('mgmt-overlay').style.display='flex';document.getElementById('mgmt-code').value='';document.getElementById('mgmt-status').textContent='';document.getElementById('mgmt-code').focus();}
 function closeMgmt(e){if(!e||e.target===document.getElementById('mgmt-overlay'))document.getElementById('mgmt-overlay').style.display='none';}
-function execMgmt(action){var code=document.getElementById('mgmt-code').value.trim();if(!code||code.length!==4||!/^\d{4}$/.test(code)){document.getElementById('mgmt-status').innerHTML='<span style="color:#f87171;">4\u6841\u306E\u9298\u67C4\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044</span>';return;}var target=document.querySelector('input[name="mgmt-target"]:checked').value;var al={'add':'\u8FFD\u52A0','remove':'\u524A\u9664','move':'\u79FB\u52D5'}[action];var st=document.getElementById('mgmt-status');st.innerHTML='<span style="color:#fbbf24;">&#x23F3; '+code+' \u3092'+target+'\u306B'+al+'\u4E2D...</span>';var btns=document.querySelectorAll('#mgmt-overlay button');btns.forEach(function(b){b.style.pointerEvents='none';b.style.opacity='0.5';});var GAS='https://script.google.com/macros/s/AKfycbzS5b6XPlrkI_toQssXQQ3ivBeWXD-uL_4aXFZnZW-wWO4TgRbNOObpf3XRVJu_M8vF/exec';fetch(GAS+'?action=manage_stock&code='+code+'&operation='+action+'&target='+encodeURIComponent(target),{method:'POST',mode:'no-cors'}).then(function(){st.innerHTML='<span style="color:#34d399;">&#x2705; GitHub Actions\u8D77\u52D5! '+code+'\u3092'+target+'\u306B'+al+' (2-3\u5206\u3067\u53CD\u6620)</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});}).catch(function(){st.innerHTML='<span style="color:#f87171;">&#x274C; \u30A8\u30E9\u30FC</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});});}
+function execMgmt(action){var code=document.getElementById('mgmt-code').value.trim();if(!code||code.length!==4||!/^\d{4}$/.test(code)){document.getElementById('mgmt-status').innerHTML='<span style="color:#f87171;">4\u6841\u306E\u9298\u67C4\u30B3\u30FC\u30C9\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044</span>';return;}var target=document.querySelector('input[name="mgmt-target"]:checked').value;var al={'add':'\u8FFD\u52A0','remove':'\u524A\u9664','move':'\u79FB\u52D5'}[action];var st=document.getElementById('mgmt-status');st.innerHTML='<span style="color:#fbbf24;">&#x23F3; '+code+' \u3092'+target+'\u306B'+al+'\u4E2D...</span>';var btns=document.querySelectorAll('#mgmt-overlay button');btns.forEach(function(b){b.style.pointerEvents='none';b.style.opacity='0.5';});var GAS='{GAS_URL_FULL_UPDATE}';fetch(GAS+'?action=manage_stock&code='+code+'&operation='+action+'&target='+encodeURIComponent(target),{method:'POST',mode:'no-cors'}).then(function(){st.innerHTML='<span style="color:#34d399;">&#x2705; GitHub Actions\u8D77\u52D5! '+code+'\u3092'+target+'\u306B'+al+' (2-3\u5206\u3067\u53CD\u6620)</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});}).catch(function(){st.innerHTML='<span style="color:#f87171;">&#x274C; \u30A8\u30E9\u30FC</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});});}
 </script>
 """
     src += MGMT_MODAL
@@ -1289,6 +1290,12 @@ function execMgmt(action){var code=document.getElementById('mgmt-code').value.tr
 else:
     print("OK: \u9298\u67C4\u7BA1\u7406\u30E2\u30FC\u30C0\u30EB\u5B58\u5728\u78BA\u8A8D")
 print("OK: モーダル挿入")
+
+# GAS URL注入（core/config.pyから一元管理）
+src = src.replace('%%GAS_URL_FULL_UPDATE%%', GAS_URL_FULL_UPDATE)
+src = src.replace('%%GAS_URL_KENJA%%', GAS_URL_KENJA)
+print(f"OK: GAS URL注入（FULL_UPDATE={GAS_URL_FULL_UPDATE[:60]}...）")
+print(f"OK: GAS URL注入（KENJA={GAS_URL_KENJA[:60]}...）")
 
 # charset宣言を保証（文字化け防止）
 if '<!DOCTYPE html>' not in src:

@@ -2270,7 +2270,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
 
 <script>
 /* === 全更新ボタン === */
-var FULL_UPDATE_GAS_URL='https://script.google.com/macros/s/AKfycbzS5b6XPlrkI_toQssXQQ3ivBeWXD-uL_4aXFZnZW-wWO4TgRbNOObpf3XRVJu_M8vF/exec';
+var FULL_UPDATE_GAS_URL='%%GAS_URL_FULL_UPDATE%%';
 function triggerFullUpdate(){
   var btn=document.getElementById('update-btn');
   if(!btn)return;
@@ -2801,7 +2801,7 @@ function updMx(roe,fcr,rt,ft,peg,fy){
 }
 
 // ── 賢者の審判 v2（EDINET連携 + GASプロキシ） ──
-var KENJA_GAS_URL='https://script.google.com/macros/s/AKfycbySl1p0RI2uskdlkNU0p6NthJUfBnUPsAWErkocmRLH_qXqlywRHwFIi0hCiinpaEEz/exec';
+var KENJA_GAS_URL='%%GAS_URL_KENJA%%';
 
 function updateDetailLinks(c,n){
   window._curCode=c;window._curName=n;
@@ -2958,5 +2958,5 @@ function escH(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 <script>
 function openStockMgmt(){document.getElementById('mgmt-overlay').style.display='flex';document.getElementById('mgmt-code').value='';document.getElementById('mgmt-status').textContent='';document.getElementById('mgmt-code').focus();}
 function closeMgmt(e){if(!e||e.target===document.getElementById('mgmt-overlay'))document.getElementById('mgmt-overlay').style.display='none';}
-function execMgmt(action){var code=document.getElementById('mgmt-code').value.trim();if(!code||code.length!==4||!/^\d{4}$/.test(code)){document.getElementById('mgmt-status').innerHTML='<span style="color:#f87171;">4桁の銘柄コードを入力してください</span>';return;}var target=document.querySelector('input[name="mgmt-target"]:checked').value;var al={'add':'追加','remove':'削除','move':'移動'}[action];var st=document.getElementById('mgmt-status');st.innerHTML='<span style="color:#fbbf24;">&#x23F3; '+code+' を'+target+'に'+al+'中...</span>';var btns=document.querySelectorAll('#mgmt-overlay button');btns.forEach(function(b){b.style.pointerEvents='none';b.style.opacity='0.5';});var GAS_URL='https://script.google.com/macros/s/AKfycbzS5b6XPlrkI_toQssXQQ3ivBeWXD-uL_4aXFZnZW-wWO4TgRbNOObpf3XRVJu_M8vF/exec';fetch(GAS_URL+'?action=manage_stock&code='+code+'&operation='+action+'&target='+encodeURIComponent(target),{method:'POST',mode:'no-cors'}).then(function(){st.innerHTML='<span style="color:#34d399;">&#x2705; GitHub Actions起動! '+code+'を'+target+'に'+al+' (2-3分で反映)</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});}).catch(function(){st.innerHTML='<span style="color:#f87171;">&#x274C; エラー</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});});}
+function execMgmt(action){var code=document.getElementById('mgmt-code').value.trim();if(!code||code.length!==4||!/^\d{4}$/.test(code)){document.getElementById('mgmt-status').innerHTML='<span style="color:#f87171;">4桁の銘柄コードを入力してください</span>';return;}var target=document.querySelector('input[name="mgmt-target"]:checked').value;var al={'add':'追加','remove':'削除','move':'移動'}[action];var st=document.getElementById('mgmt-status');st.innerHTML='<span style="color:#fbbf24;">&#x23F3; '+code+' を'+target+'に'+al+'中...</span>';var btns=document.querySelectorAll('#mgmt-overlay button');btns.forEach(function(b){b.style.pointerEvents='none';b.style.opacity='0.5';});var GAS_URL='%%GAS_URL_FULL_UPDATE%%';fetch(GAS_URL+'?action=manage_stock&code='+code+'&operation='+action+'&target='+encodeURIComponent(target),{method:'POST',mode:'no-cors'}).then(function(){st.innerHTML='<span style="color:#34d399;">&#x2705; GitHub Actions起動! '+code+'を'+target+'に'+al+' (2-3分で反映)</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});}).catch(function(){st.innerHTML='<span style="color:#f87171;">&#x274C; エラー</span>';btns.forEach(function(b){b.style.pointerEvents='';b.style.opacity='';});});}
 </script>
