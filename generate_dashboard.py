@@ -1212,6 +1212,16 @@ vc = {'g':val_style_g,'y':val_style_y,'r':val_style_r}
 # 更新日時表示（ソース更新済みを明示）
 updated_display = VAL['updated_at']
 
+# マクロ総合スコア変数（VAL_HTMLの5列目で使用）
+_mp_bar_w = min(max(_mp_score, 0), 100)
+_mp_col = '#34d399' if _mp_lbl == 'GREEN' else '#f59e0b' if _mp_lbl == 'YELLOW' else '#f87171'
+_short_col = '#34d399' if SHORT_SCORE >= 55 else '#fbbf24' if SHORT_SCORE >= 45 else '#f87171'
+_short_bdr = '#065f46' if SHORT_SCORE >= 55 else '#92400e' if SHORT_SCORE >= 45 else '#991b1b'
+_mid_col   = '#34d399' if MID_SCORE >= 55 else '#fbbf24' if MID_SCORE >= 45 else '#f87171'
+_mid_bdr   = '#065f46' if MID_SCORE >= 55 else '#92400e' if MID_SCORE >= 45 else '#991b1b'
+_s_txt = '強気' if SHORT_SCORE >= 55 else '中立' if SHORT_SCORE >= 45 else '弱気'
+_m_txt = '強気' if MID_SCORE >= 55 else '中立' if MID_SCORE >= 45 else '弱気'
+
 VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs 米国（過去10年との比較）<span style="font-size:var(--fs-micro);color:#34d399;font-weight:600;margin-left:8px;">✓ {updated_display}</span></div>
         <div style="background:#0f1420;border:1px solid #1e2d40;border-radius:6px;padding:4px 4px;">
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;">
@@ -1316,16 +1326,7 @@ function showVI(k){{
 function closeVI(){{document.getElementById('vi-modal').classList.remove('open');}}
 </script>"""
 
-# マクロ総合スコアHTML動的生成
-_mp_bar_w = min(max(_mp_score, 0), 100)
-_mp_col = '#34d399' if _mp_lbl == 'GREEN' else '#f59e0b' if _mp_lbl == 'YELLOW' else '#f87171'
-_short_col = '#34d399' if SHORT_SCORE >= 55 else '#fbbf24' if SHORT_SCORE >= 45 else '#f87171'
-_short_bdr = '#065f46' if SHORT_SCORE >= 55 else '#92400e' if SHORT_SCORE >= 45 else '#991b1b'
-_mid_col   = '#34d399' if MID_SCORE >= 55 else '#fbbf24' if MID_SCORE >= 45 else '#f87171'
-_mid_bdr   = '#065f46' if MID_SCORE >= 55 else '#92400e' if MID_SCORE >= 45 else '#991b1b'
-_s_txt = '\u5F37\u6C17' if SHORT_SCORE >= 55 else '\u4E2D\u7ACB' if SHORT_SCORE >= 45 else '\u5F31\u6C17'
-_m_txt = '\u5F37\u6C17' if MID_SCORE >= 55 else '\u4E2D\u7ACB' if MID_SCORE >= 45 else '\u5F31\u6C17'
-
+# MACRO_TOTAL_HTML（単体表示用のフォールバック・通常はVAL_HTML 5列目に統合済み）
 MACRO_TOTAL_HTML = (
     f'      <!-- \u30DE\u30AF\u30ED\u7DCF\u5408\u30B9\u30B3\u30A2 -->\n'
     f'      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid {_mp_col};border-radius:6px;padding:4px 8px;display:flex;flex-direction:column;justify-content:space-between;">\n'
