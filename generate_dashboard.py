@@ -802,23 +802,24 @@ print("OK: CSS修正")
 # ── 4層マクロカード動的生成 ──────────────────────────────────
 def _mc_item(label, val, badge_text, val_color, badge_bg, badge_fg, onclick='', sub_text=''):
     oc = f" onclick=\"showHelp('{onclick}')\"" if onclick else ''
+    sub = f'<div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">{sub_text}</div>' if sub_text else ''
     return (
-        f'<div style="cursor:pointer;margin-bottom:4px;"{oc}>'
+        f'<div style="cursor:pointer;margin-bottom:2px;"{oc}>'
         f'<div style="display:flex;justify-content:space-between;align-items:center;">'
         f'<span style="color:#cbd5e1;font-size:var(--fs-sm);font-weight:800;">{label}</span>'
         f'<span style="font-size:var(--fs-md);font-weight:900;font-family:monospace;color:{val_color};">{val}</span>'
         f'<span style="background:{badge_bg};color:{badge_fg};font-size:var(--fs-micro);font-weight:900;padding:1px 4px;border-radius:2px;">{badge_text}</span>'
         f'</div>'
-        f'<div style="color:#475569;font-size:var(--fs-micro);margin-top:1px;">{sub_text}</div>'
+        f'{sub}'
         f'</div>'
     )
 
 def _mc_card(border_color, title_color, title, items_html, summary_color, summary):
     return (
-        f'<div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid {border_color};border-radius:6px;padding:6px 8px;">'
-        f'<div style="font-size:var(--fs-xs);font-weight:900;color:{title_color};margin-bottom:5px;letter-spacing:.5px;">{title}</div>'
+        f'<div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid {border_color};border-radius:6px;padding:4px 6px;">'
+        f'<div style="font-size:var(--fs-xs);font-weight:900;color:{title_color};margin-bottom:2px;letter-spacing:.5px;">{title}</div>'
         f'{items_html}'
-        f'<div style="border-top:1px solid #1e2d40;padding-top:4px;margin-top:2px;">'
+        f'<div style="border-top:1px solid #1e2d40;padding-top:2px;margin-top:1px;">'
         f'<div style="color:{summary_color};font-size:var(--fs-xs);font-weight:800;">{summary}</div>'
         f'</div></div>'
     )
@@ -877,10 +878,13 @@ card4 = _mc_card('#60a5fa','#93c5fd','\u7D4C\u6E08\u6D3B\u52D5',
     _mc_item('\u65E5\u7D4C225',f'{_nk:,}',_nk_lbl,_nk_col,_nk_bg,_nk_col,'nikkei',f'52\u9031\u306E{MKT["nk_p52"]}%\u4F4D\u7F6E'),
     _eco_col,_eco_txt)
 
-MACRO_CARDS_HTML = ('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">\n'
+MACRO_CARDS_HTML = ('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;">\n'
     f'      {card1}\n      {card2}\n      {card3}\n      {card4}\n    </div>')
 
-cards_start = src.find('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">')
+# gap:2px or gap:4px どちらでもマッチするようにする
+cards_start = src.find('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;">')
+if cards_start < 0:
+    cards_start = src.find('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">')
 cards_end = src.find('    <!-- \u5272\u5B89\u5EA6 + \u30DE\u30AF\u30ED\u7DCF\u5408', cards_start) if cards_start >= 0 else -1
 if cards_start >= 0 and cards_end >= 0:
     src = src[:cards_start] + MACRO_CARDS_HTML + '\n' + src[cards_end:]
@@ -913,7 +917,7 @@ src = re.sub(r'最終更新：[^<"\']+', f'最終更新：{NOW}', src)
 # ヘッダー日時バッジを現在日時に更新
 BADGE_NOW = datetime.now().strftime('%Y-%m-%d %H:%M')
 src = re.sub(
-    r'<span class="badge">\d{4}-\d{2}-\d{2}\s*&nbsp;\s*\d{2}:\d{2}\s*JST</span>',
+    r'<span class="badge">\d{4}-\d{2}-\d{2}\s*(?:&nbsp;)?\s*\d{2}:\d{2}\s*JST</span>',
     f'<span class="badge">{BADGE_NOW} JST</span>',
     src
 )
@@ -1218,14 +1222,49 @@ function showVI(k){{
 function closeVI(){{document.getElementById('vi-modal').classList.remove('open');}}
 </script>"""
 
-# バリュエーション置換
-val_start = src.find('<div class="sl">バリュエーション')
+# マクロ総合スコアHTML動的生成
+_mp_bar_w = min(max(_mp_score, 0), 100)
+_mp_col = '#34d399' if _mp_lbl == 'GREEN' else '#f59e0b' if _mp_lbl == 'YELLOW' else '#f87171'
+_short_col = '#34d399' if SHORT_SCORE >= 55 else '#fbbf24' if SHORT_SCORE >= 45 else '#f87171'
+_short_bdr = '#065f46' if SHORT_SCORE >= 55 else '#92400e' if SHORT_SCORE >= 45 else '#991b1b'
+_mid_col   = '#34d399' if MID_SCORE >= 55 else '#fbbf24' if MID_SCORE >= 45 else '#f87171'
+_mid_bdr   = '#065f46' if MID_SCORE >= 55 else '#92400e' if MID_SCORE >= 45 else '#991b1b'
+_s_txt = '\u5F37\u6C17' if SHORT_SCORE >= 55 else '\u4E2D\u7ACB' if SHORT_SCORE >= 45 else '\u5F31\u6C17'
+_m_txt = '\u5F37\u6C17' if MID_SCORE >= 55 else '\u4E2D\u7ACB' if MID_SCORE >= 45 else '\u5F31\u6C17'
+
+MACRO_TOTAL_HTML = (
+    f'      <!-- \u30DE\u30AF\u30ED\u7DCF\u5408\u30B9\u30B3\u30A2 -->\n'
+    f'      <div style="background:#111827;border:1px solid #1e2d40;border-top:2px solid {_mp_col};border-radius:6px;padding:4px 8px;display:flex;flex-direction:column;justify-content:space-between;">\n'
+    f'        <div style="font-size:var(--fs-xs);font-weight:900;color:{_mp_col};letter-spacing:.5px;">\u30DE\u30AF\u30ED\u7DCF\u5408</div>\n'
+    f'        <div style="text-align:center;">\n'
+    f'          <span style="font-size:var(--fs-xl);font-weight:900;font-family:monospace;color:{_mp_col};">{_mp_score}</span><span style="font-size:var(--fs-micro);color:#475569;">/100</span>\n'
+    f'          <span style="font-size:var(--fs-sm);font-weight:800;color:{_mp_col};margin-left:6px;">{_mp_txt}</span>\n'
+    f'        </div>\n'
+    f'        <div style="background:#1e293b;border-radius:3px;height:4px;"><div style="width:{_mp_bar_w}%;height:4px;border-radius:3px;background:{_mp_col};"></div></div>\n'
+    f'        <div style="display:flex;gap:4px;">\n'
+    f'          <div style="flex:1;background:#0a0d16;border:1px solid {_short_bdr};border-radius:4px;padding:4px 6px;text-align:center;cursor:pointer;" onclick="showHelp(\'short_score\')">\n'
+    f'            <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">\u77ED\u671F(1\u5E74)</div>\n'
+    f'            <div><span style="color:{_short_col};font-size:var(--fs-lg);font-weight:900;font-family:monospace;">{SHORT_SCORE}</span> <span style="color:{_short_col};font-size:var(--fs-micro);font-weight:800;">{_s_txt}</span></div>\n'
+    f'          </div>\n'
+    f'          <div style="flex:1;background:#0a0d16;border:1px solid {_mid_bdr};border-radius:4px;padding:4px 6px;text-align:center;cursor:pointer;" onclick="showHelp(\'medium_score\')">\n'
+    f'            <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">\u4E2D\u671F(3\u5E74)</div>\n'
+    f'            <div><span style="color:{_mid_col};font-size:var(--fs-lg);font-weight:900;font-family:monospace;">{MID_SCORE}</span> <span style="color:{_mid_col};font-size:var(--fs-micro);font-weight:800;">{_m_txt}</span></div>\n'
+    f'          </div>\n'
+    f'        </div>\n'
+    f'      </div>\n'
+    f'    </div>')
+
+# バリュエーション + マクロ総合置換
+# 新フォーマット（<div class="sl">バリュエーション）と旧フォーマット（<!-- 割安度 + マクロ総合）の両方に対応
+val_start = src.find('<div class="sl">\u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3')
+if val_start < 0:
+    val_start = src.find('<!-- \u5272\u5B89\u5EA6 + \u30DE\u30AF\u30ED\u7DCF\u5408')
 val_end   = src.find('<div id="body">')
 if val_start >= 0 and val_end >= 0:
-    src = src[:val_start] + VAL_HTML + '\n    ' + src[val_end:]
-    print("OK: バリュエーション置換")
+    src = src[:val_start] + VAL_HTML + '\n' + MACRO_TOTAL_HTML + '\n    ' + src[val_end:]
+    print(f"OK: \u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3+\u30DE\u30AF\u30ED\u7DCF\u5408\u7F6E\u63DB (\u30B9\u30B3\u30A2{_mp_score} \u77ED\u671F{SHORT_SCORE} \u4E2D\u671F{MID_SCORE})")
 else:
-    print(f"WARN: バリュエーション置換スキップ (start={val_start} end={val_end})")
+    print(f"WARN: \u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3\u7F6E\u63DB\u30B9\u30AD\u30C3\u30D7 (start={val_start} end={val_end})")
 
 # マクロフェーズゲージ挿入
 PHASE_HTML = build_phase_gauge_html(ss)
