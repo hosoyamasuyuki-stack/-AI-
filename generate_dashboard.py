@@ -1237,20 +1237,20 @@ VAL_HTML = f"""        <div class="sl">バリュエーション — 日本 vs �
             <div style="{vn_style}">バフェット指数 ⓘ</div>
             <div style="{row_style}"><span style="{flag_style}">🇯🇵</span><span style="{vc[buf_jp_cls]}">{buf_jp:.0f}%</span><div style="flex:1">{g_buf_jp}</div></div>
             <div style="{row_style}"><span style="{flag_style}">🇺🇸</span><span style="{vc[buf_us_cls]}">{buf_us:.0f}%</span><div style="flex:1">{g_buf_us}</div></div>
-            <div style="margin-top:4px;display:flex;justify-content:space-between;">{badge('\u65E5\u672C '+buf_jp_lbl,buf_jp_cls)}{badge('\u7C73\u56FD '+buf_us_lbl,buf_us_cls)}</div>
+            <div style="margin-top:4px;display:flex;justify-content:space-between;">{badge('日本 '+buf_jp_lbl,buf_jp_cls)}{badge('米国 '+buf_us_lbl,buf_us_cls)}</div>
           </div>
           <div style="padding:3px 6px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;">
-            <div style="font-size:var(--fs-sm);font-weight:900;color:{_mp_col};letter-spacing:.5px;margin-bottom:4px;">\u30DE\u30AF\u30ED\u7DCF\u5408</div>
+            <div style="font-size:var(--fs-sm);font-weight:900;color:{_mp_col};letter-spacing:.5px;margin-bottom:4px;">マクロ総合</div>
             <div><span style="font-size:var(--fs-xl);font-weight:900;font-family:monospace;color:{_mp_col};">{_mp_score}</span><span style="font-size:var(--fs-micro);color:#475569;">/100</span></div>
             <div style="font-size:var(--fs-sm);font-weight:800;color:{_mp_col};">{_mp_txt}</div>
             <div style="background:#1e293b;border-radius:3px;height:4px;width:100%;margin:4px 0;"><div style="width:{_mp_bar_w}%;height:4px;border-radius:3px;background:{_mp_col};"></div></div>
             <div style="display:flex;gap:3px;width:100%;">
               <div style="flex:1;background:#0a0d16;border:1px solid {_short_bdr};border-radius:3px;padding:2px 3px;text-align:center;">
-                <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">\u77ED\u671F</div>
+                <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">短期</div>
                 <div><span style="color:{_short_col};font-size:var(--fs-base);font-weight:900;">{SHORT_SCORE}</span><span style="color:{_short_col};font-size:var(--fs-micro);"> {_s_txt}</span></div>
               </div>
               <div style="flex:1;background:#0a0d16;border:1px solid {_mid_bdr};border-radius:3px;padding:2px 3px;text-align:center;">
-                <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">\u4E2D\u671F</div>
+                <div style="color:#94a3b8;font-size:var(--fs-micro);font-weight:800;">中期</div>
                 <div><span style="color:{_mid_col};font-size:var(--fs-base);font-weight:900;">{MID_SCORE}</span><span style="color:{_mid_col};font-size:var(--fs-micro);"> {_m_txt}</span></div>
               </div>
             </div>
