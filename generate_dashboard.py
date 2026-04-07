@@ -381,22 +381,37 @@ MKT = fetch_market()
 _m2_yoy = None
 _m2_label = '---'
 try:
-    _m2_ws = ss.worksheet('日本M2')
-    _m2_rows = _m2_ws.get_all_values()
-    if len(_m2_rows) >= 2:
-        _m2_hdr = _m2_rows[0]
-        if '前年比%' in _m2_hdr:
-            _m2_idx = _m2_hdr.index('前年比%')
-            for _r in reversed(_m2_rows[1:]):
-                if len(_r) > _m2_idx and _r[_m2_idx]:
-                    try:
-                        _m2_yoy = float(_r[_m2_idx])
-                        break
-                    except: pass
+    # 日銀APIから直接M2前年比%を取得（スプレッドシート経由の計算エラーを回避）
+    import requests as _req
+    _boj_r = _req.get("https://www.stat-search.boj.or.jp/api/v1/getDataCode",
+        params={"db":"MD02","code":"MAM1YAM2M2MO","format":"json",
+                "from":(datetime.now()-timedelta(days=60)).strftime("%Y%m"),
+                "to":datetime.now().strftime("%Y%m"),"lang":"EN"}, timeout=30)
+    if _boj_r.status_code == 200:
+        _boj_d = _boj_r.json()
+        _boj_vals = _boj_d["RESULTSET"][0]["VALUES"]["VALUES"]
+        if _boj_vals:
+            _m2_yoy = float(_boj_vals[-1])
+    if _m2_yoy is None:
+        # フォールバック: スプレッドシートの前年比%列
+        _m2_ws = ss.worksheet('日本M2')
+        _m2_rows = _m2_ws.get_all_values()
+        if len(_m2_rows) >= 2:
+            _m2_hdr = _m2_rows[0]
+            if '前年比%' in _m2_hdr:
+                _m2_idx = _m2_hdr.index('前年比%')
+                for _r in reversed(_m2_rows[1:]):
+                    if len(_r) > _m2_idx and _r[_m2_idx]:
+                        try:
+                            v = float(_r[_m2_idx])
+                            if abs(v) < 50:  # 異常値ガード
+                                _m2_yoy = v
+                                break
+                        except: pass
     if _m2_yoy is not None:
         _m2_label = '加速中' if _m2_yoy > 3.0 else '拡大中' if _m2_yoy > 0 else '縮小中'
     else:
-        _m2_label = 'ソース停止'
+        _m2_label = 'データなし'
     print(f"  日本M2前年比: {_m2_yoy}% ({_m2_label})")
 except Exception as e:
     print(f"  WARN: 日本M2取得失敗: {e}")
