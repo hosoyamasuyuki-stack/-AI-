@@ -1337,7 +1337,9 @@ val_start = src.find('<!-- VAL_MACRO_START -->')
 val_end   = src.find('<!-- VAL_MACRO_END -->')
 if val_start >= 0 and val_end >= 0:
     val_end_full = val_end + len('<!-- VAL_MACRO_END -->')
-    src = src[:val_start] + '<!-- VAL_MACRO_START -->\n' + VAL_HTML + '\n' + MACRO_TOTAL_HTML + '\n    <!-- VAL_MACRO_END -->' + src[val_end_full:]
+    COMBINED = ('    <div style="display:grid;grid-template-columns:3fr 1.2fr;gap:2px;margin-top:2px;">\n'
+                + VAL_HTML + '\n' + MACRO_TOTAL_HTML + '\n    </div>')
+    src = src[:val_start] + '<!-- VAL_MACRO_START -->\n' + COMBINED + '\n    <!-- VAL_MACRO_END -->' + src[val_end_full:]
     print(f"OK: \u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3+\u30DE\u30AF\u30ED\u7DCF\u5408\u7F6E\u63DB (\u30B9\u30B3\u30A2{_mp_score} \u77ED\u671F{SHORT_SCORE} \u4E2D\u671F{MID_SCORE})")
 else:
     print(f"WARN: \u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3\u7F6E\u63DB\u30B9\u30AD\u30C3\u30D7 (start={val_start} end={val_end})")
