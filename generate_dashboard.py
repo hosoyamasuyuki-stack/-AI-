@@ -395,6 +395,8 @@ try:
                     except: pass
     if _m2_yoy is not None:
         _m2_label = '加速中' if _m2_yoy > 3.0 else '拡大中' if _m2_yoy > 0 else '縮小中'
+    else:
+        _m2_label = 'ソース停止'
     print(f"  日本M2前年比: {_m2_yoy}% ({_m2_label})")
 except Exception as e:
     print(f"  WARN: 日本M2取得失敗: {e}")

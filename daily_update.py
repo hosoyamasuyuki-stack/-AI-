@@ -36,7 +36,8 @@ FRED_DAILY = {
 
 FRED_MONTHLY = {
     "米M2":             "M2SL",
-    "日本M2":           "MYAGM2JPM189S",
+    # "日本M2": "MYAGM2JPM189S",  # 2017年2月で打ち切り（FRED側でデータ更新停止）
+    # 将来: 日銀API（https://www.stat-search.boj.or.jp/）から直接取得に切替予定
     "ユーロM3":         "MABMM301EZM189S",
     "FRBバランスシート":"WALCL",
     "米CPI":            "CPIAUCSL",
