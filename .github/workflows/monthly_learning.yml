@@ -2,8 +2,8 @@ name: Monthly Learning Batch
 
 on:
   schedule:
-    # 毎月1日 9:00 JST（00:00 UTC）
-    - cron: '0 0 1 * *'
+    # 毎月1日 12:00 JST（03:00 UTC）- 他ワークフローとの競合回避
+    - cron: '0 3 1 * *'
   workflow_dispatch:
     # 手動実行ボタン（テスト用）
 

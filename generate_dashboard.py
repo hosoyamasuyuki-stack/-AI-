@@ -742,7 +742,7 @@ for row, stype in screen_data:
         f'          <td style="color:#fbbf24;">{short_label(MID_SCORE)}</td>\n'
         f'          <td><span style="background:{rb2};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
-        f'          <td>{DAYS_LABEL}</td>\n'
+        f'          <td style="font-size:var(--fs-xs);color:#94a3b8;">{sect}</td>\n'
         f'          <td><span class="s-buy" style="background:{rbg(rank)};color:{sc};">'
         f'{st}</span></td>\n'
         f'        </tr>'
@@ -960,13 +960,12 @@ card4 = _mc_card('#60a5fa','#93c5fd','\u7D4C\u6E08\u6D3B\u52D5',
 MACRO_CARDS_HTML = ('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;">\n'
     f'      {card1}\n      {card2}\n      {card3}\n      {card4}\n    </div>')
 
-# gap:2px or gap:4px どちらでもマッチするようにする
-cards_start = src.find('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2px;">')
-if cards_start < 0:
-    cards_start = src.find('    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;">')
-cards_end = src.find('    <!-- \u5272\u5B89\u5EA6 + \u30DE\u30AF\u30ED\u7DCF\u5408', cards_start) if cards_start >= 0 else -1
+# ROBUST: コメントマーカーで置換（手動CSS編集に影響されない）
+cards_start = src.find('<!-- MACRO_CARDS_START -->')
+cards_end   = src.find('<!-- MACRO_CARDS_END -->')
 if cards_start >= 0 and cards_end >= 0:
-    src = src[:cards_start] + MACRO_CARDS_HTML + '\n' + src[cards_end:]
+    cards_end_full = cards_end + len('<!-- MACRO_CARDS_END -->')
+    src = src[:cards_start] + '<!-- MACRO_CARDS_START -->\n' + MACRO_CARDS_HTML + '\n    <!-- MACRO_CARDS_END -->' + src[cards_end_full:]
     print(f"OK: 4\u5C64\u30DE\u30AF\u30ED\u30AB\u30FC\u30C9\u52D5\u7684\u7F6E\u63DB (VIX={_vix_v} WTI=${_wti} Gold=${_gold:,})")
 else:
     print(f"WARN: 4\u5C64\u30DE\u30AF\u30ED\u30AB\u30FC\u30C9\u7F6E\u63DB\u30B9\u30AD\u30C3\u30D7 (start={cards_start} end={cards_end})")
@@ -1046,7 +1045,7 @@ if rows_s:
           <th class="sh" onclick="srt('tS',3,this)" style="color:#93c5fd;">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',4,this)" style="color:#93c5fd;">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th class="sh">日数</th><th class="sh">シグナル</th>
+          <th class="sh">業種</th><th class="sh">シグナル</th>
         </tr>
 """ + '\n'.join(rows_s) + "\n      </table>"
     src = re.sub(r'<table id="tS">.*?</table>',
@@ -1333,14 +1332,12 @@ MACRO_TOTAL_HTML = (
     f'      </div>\n'
     f'    </div>')
 
-# バリュエーション + マクロ総合置換
-# 新フォーマット（<div class="sl">バリュエーション）と旧フォーマット（<!-- 割安度 + マクロ総合）の両方に対応
-val_start = src.find('<div class="sl">\u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3')
-if val_start < 0:
-    val_start = src.find('<!-- \u5272\u5B89\u5EA6 + \u30DE\u30AF\u30ED\u7DCF\u5408')
-val_end   = src.find('<div id="body">')
+# ROBUST: コメントマーカーで置換（手動HTML編集に影響されない）
+val_start = src.find('<!-- VAL_MACRO_START -->')
+val_end   = src.find('<!-- VAL_MACRO_END -->')
 if val_start >= 0 and val_end >= 0:
-    src = src[:val_start] + VAL_HTML + '\n' + MACRO_TOTAL_HTML + '\n    ' + src[val_end:]
+    val_end_full = val_end + len('<!-- VAL_MACRO_END -->')
+    src = src[:val_start] + '<!-- VAL_MACRO_START -->\n' + VAL_HTML + '\n' + MACRO_TOTAL_HTML + '\n    <!-- VAL_MACRO_END -->' + src[val_end_full:]
     print(f"OK: \u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3+\u30DE\u30AF\u30ED\u7DCF\u5408\u7F6E\u63DB (\u30B9\u30B3\u30A2{_mp_score} \u77ED\u671F{SHORT_SCORE} \u4E2D\u671F{MID_SCORE})")
 else:
     print(f"WARN: \u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3\u7F6E\u63DB\u30B9\u30AD\u30C3\u30D7 (start={val_start} end={val_end})")
@@ -1422,12 +1419,39 @@ elif '<meta charset' not in src:
     src = src.replace('<!DOCTYPE html>', '<!DOCTYPE html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n</head>', 1)
 print("OK: charset宣言保証")
 
+# ── サニティチェック（置換が実際に成功したか検証） ──────────────
+_errors = []
+if str(MKT['vix_v']) not in src:
+    _errors.append(f"VIX\u5024{MKT['vix_v']}\u304cHTML\u306B\u542B\u307E\u308C\u306A\u3044")
+if BADGE_NOW not in src:
+    _errors.append(f"\u30D0\u30C3\u30B8{BADGE_NOW}\u304cHTML\u306B\u542B\u307E\u308C\u306A\u3044")
+if '<!-- MACRO_CARDS_START -->' not in src or '<!-- MACRO_CARDS_END -->' not in src:
+    _errors.append("\u30DE\u30AF\u30ED\u30AB\u30FC\u30C9\u30DE\u30FC\u30AB\u30FC\u304C\u6B20\u843D")
+if '<!-- VAL_MACRO_START -->' not in src or '<!-- VAL_MACRO_END -->' not in src:
+    _errors.append("\u30D0\u30EA\u30E5\u30A8\u30FC\u30B7\u30E7\u30F3\u30DE\u30FC\u30AB\u30FC\u304C\u6B20\u843D")
+if '<!-- TICKER_START -->' not in src or '<!-- TICKER_END -->' not in src:
+    _errors.append("\u30C6\u30A3\u30C3\u30AB\u30FC\u30DE\u30FC\u30AB\u30FC\u304C\u6B20\u843D")
+if '<!-- ALERT_STRIP_START -->' not in src:
+    _errors.append("\u30A2\u30E9\u30FC\u30C8\u30B9\u30C8\u30EA\u30C3\u30D7\u30DE\u30FC\u30AB\u30FC\u304C\u6B20\u843D")
+if f'{MKT["nk_v"]:,.0f}' not in src and str(int(MKT['nk_v'])) not in src:
+    _errors.append(f"\u65E5\u7D4C225\u5024{MKT['nk_v']}\u304cHTML\u306B\u542B\u307E\u308C\u306A\u3044")
+if '%%GAS_URL_FULL_UPDATE%%' in src:
+    _errors.append("GAS URL\u30D7\u30EC\u30FC\u30B9\u30DB\u30EB\u30C0\u30FC\u304C\u672A\u7F6E\u63DB")
+
+if _errors:
+    print("\n\u274C \u30B5\u30CB\u30C6\u30A3\u30C1\u30A7\u30C3\u30AF\u5931\u6557:")
+    for e in _errors:
+        print(f"   - {e}")
+    print("\u26A0 HTML\u306F\u66F8\u304D\u51FA\u3057\u307E\u3059\u304C\u3001\u4E0A\u8A18\u306E\u52D5\u7684\u66F4\u65B0\u304C\u5931\u6557\u3057\u3066\u3044\u307E\u3059\u3002")
+else:
+    print("\n\u2705 \u30B5\u30CB\u30C6\u30A3\u30C1\u30A7\u30C3\u30AF\u5168\u30D1\u30B9")
+
 out = 'ai_dashboard_v13.html'
 with open(out, 'w', encoding='utf-8') as f:
     f.write(src)
-print(f"\n✅ 出力完了: {out}")
-print(f"   保有:{len(rows_h)} 監視:{len(rows_w)} スコア:{len(SCORES)}")
-print(f"   短期:{SHORT_SCORE}点 / 中期:{MID_SCORE}点")
-print(f"   PBR 日本:{VAL['pbr_jp']} 米国:{VAL['pbr_us']}")
-print(f"   CAPE 日本:{VAL['cape_jp']} 米国:{VAL['cape_us']}")
-print(f"   ソース: 日本PBR=日経プロフィル / 米国PBR・CAPE=multpl.com")
+print(f"\n\u2705 \u51FA\u529B\u5B8C\u4E86: {out}")
+print(f"   \u4FDD\u6709:{len(rows_h)} \u76E3\u8996:{len(rows_w)} \u30B9\u30B3\u30A2:{len(SCORES)}")
+print(f"   \u77ED\u671F:{SHORT_SCORE}\u70B9 / \u4E2D\u671F:{MID_SCORE}\u70B9")
+print(f"   PBR \u65E5\u672C:{VAL['pbr_jp']} \u7C73\u56FD:{VAL['pbr_us']}")
+print(f"   CAPE \u65E5\u672C:{VAL['cape_jp']} \u7C73\u56FD:{VAL['cape_us']}")
+print(f"   \u30BD\u30FC\u30B9: \u65E5\u672CPBR=\u65E5\u7D4C\u30D7\u30ED\u30D5\u30A3\u30EB / \u7C73\u56FDPBR\u30FBCAPE=multpl.com")
