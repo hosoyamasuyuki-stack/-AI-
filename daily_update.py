@@ -36,8 +36,7 @@ FRED_DAILY = {
 
 FRED_MONTHLY = {
     "米M2":             "M2SL",
-    # "日本M2": "MYAGM2JPM189S",  # 2017年2月で打ち切り（FRED側でデータ更新停止）
-    # 将来: 日銀API（https://www.stat-search.boj.or.jp/）から直接取得に切替予定
+    # "日本M2": FRED MYAGM2JPM189S は2017年で打ち切り → 日銀APIに切替済み（下記）
     "ユーロM3":         "MABMM301EZM189S",
     "FRBバランスシート":"WALCL",
     "米CPI":            "CPIAUCSL",
@@ -94,6 +93,32 @@ def fetch_fred_latest(series_id, days=400):
             return df.dropna().reset_index(drop=True)
     except: pass
     return None
+
+def fetch_boj_m2():
+    """日銀APIから日本M2マネーストック（月次・億円）を取得"""
+    try:
+        start_ym = (datetime.today() - timedelta(days=800)).strftime("%Y%m")
+        end_ym   = datetime.today().strftime("%Y%m")
+        res = requests.get(
+            "https://www.stat-search.boj.or.jp/api/v1/getDataCode",
+            params={"db": "MD02", "code": "MAM1NAM2M2MO",
+                    "format": "json", "from": start_ym, "to": end_ym, "lang": "EN"},
+            timeout=30
+        )
+        if res.status_code != 200:
+            return None
+        data = res.json()
+        vals = data["RESULTSET"][0]["VALUES"]
+        dates = vals["SURVEY_DATES"]
+        values = vals["VALUES"]
+        rows = []
+        for dt, v in zip(dates, values):
+            d = f"{dt // 100}-{dt % 100:02d}-01"
+            rows.append({"date": d, "value": float(v)})
+        return pd.DataFrame(rows)
+    except Exception as e:
+        print(f"    BOJ API error: {e}")
+        return None
 
 def fetch_yf_latest(ticker, days=400):
     """yfinanceから最新データを取得"""
@@ -199,6 +224,17 @@ for name, sid in FRED_MONTHLY.items():
     else:
         print(f"  $26A0$FE0F {name}: 取得失敗")
     time.sleep(3)
+
+# ── 日銀API: 日本M2 ──
+print("\n【日銀API 日本M2】")
+df_m2 = fetch_boj_m2()
+if df_m2 is not None:
+    added = append_new_rows("日本M2", df_m2)
+    print(f"  $2705 日本M2: +{added}行（日銀API）")
+    total_added += added
+else:
+    print(f"  $26A0$FE0F 日本M2: 日銀API取得失敗")
+time.sleep(3)
 
 # ── yfinance 日次 ──
 print("\n【yfinance 日次指標】")
