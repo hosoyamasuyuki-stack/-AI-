@@ -455,7 +455,8 @@ cape_bc = 'br' if cape_jp > 25 else 'ba' if cape_jp > 18 else 'bg'
 pbr_bc  = 'br' if pbr_jp > 2.0 else 'ba' if pbr_jp > 1.5 else 'bg'
 buf_bc  = 'br' if buf_jp > 160 else 'ba' if buf_jp > 130 else 'bg'
 yld_bc  = 'bg' if yld_jp > 4.0 else 'ba' if yld_jp > 2.5 else 'br'
-MSTRIP_HTML = f"""    <div class="mstrip">
+# mstripは現在のHTMLに存在しないため生成をスキップ（4層カード+マクロ総合で代替済み）
+_MSTRIP_UNUSED = f"""    <div class="mstrip">
       <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2px 5px;border-right:1px solid #374151;min-width:24px;"><div style="font-size:var(--fs-xs);color:#ef4444;font-weight:700;writing-mode:vertical-rl;">🔴 リスク環境</div></div>
       <div class="mc {vix_bc}" onclick="showMC('vix')" style="cursor:pointer;">
         <div class="mc-l">VIX 恐怖指数 ⓘ</div>
@@ -758,30 +759,108 @@ resp.raise_for_status()
 src = resp.text
 print(f"  OK: {len(src):,} bytes")
 
-# 市場ストリップ置換
-mstrip_start = src.find('<div class="mstrip">')
-mstrip_end   = src.find('<div class="sl">バリュエーション', mstrip_start)
-if mstrip_start >= 0 and mstrip_end >= 0:
-    src = src[:mstrip_start] + MSTRIP_HTML + '\n    ' + src[mstrip_end:]
-    print("OK: 市場ストリップ置換")
-else:
-    print(f"WARN: 市場ストリップ置換スキップ (start={mstrip_start} end={mstrip_end})")
+# ── ティッカー動的生成（実データに基づくシステム稼働状況） ─────────
+_n_hold = len(rows_h)
+_n_watch = len(rows_w)
+_n_screen = len(rows_s)
+_n_total = _n_hold + _n_watch
 
-# ティッカーHTML生成
-TICKER_HTML = '<div style="overflow:hidden;white-space:nowrap;background:#0a0e17;padding:3px 0;font-size:var(--fs-base);border-bottom:1px solid #1e293b;"><div style="display:inline-block;animation:ticker_scroll 60s linear infinite;"><span style="color:#6ee7b7;margin:0 18px;">AI LEARNING</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">保有銘柄46 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">監視銘柄27 日次価格学習中</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">学習用99 月次バッチ学習</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">日次データ学習中(FRED 32指標)</span><span style="color:#94a3b8;margin:0 10px;">|</span><span style="color:#e2e8f0;margin:0 10px;">全172銘柄 v4.3スコアリング稼働中</span></div></div>'
+# MacroPhaseシートの最終行から日時を取得（日次マクロ更新の最終実行日）
+try:
+    _macro_last = _mp_row[0] if _mp_row and _mp_row[0] else ''
+except:
+    _macro_last = ''
 
-# ティッカー挿入
-SL_ANCHOR    = '<div class="sl">市場体温計 &amp; 短期・中期シグナル</div>'
-MSTRIP_ANCHOR = '<div class="mstrip">'
-sl_pos     = src.find(SL_ANCHOR)
-mstrip_pos = src.find(MSTRIP_ANCHOR)
-if sl_pos >= 0 and mstrip_pos >= 0 and mstrip_pos > sl_pos:
-    src = (src[:sl_pos + len(SL_ANCHOR)] +
-           '\n    ' + TICKER_HTML + '\n    ' +
-           src[mstrip_pos:])
-    print("OK: ティッカー置換（全蓄積クリア）")
+# コアスキャン_日次シートから株価更新の最終日時を取得
+try:
+    _daily_ws = ss.worksheet('\u30B3\u30A2\u30B9\u30AD\u30E3\u30F3_\u65E5\u6B21')
+    _daily_rows = _daily_ws.get_all_values()
+    _price_last = _daily_rows[-1][0] if len(_daily_rows) > 1 and _daily_rows[-1][0] else ''
+except:
+    _price_last = ''
+
+# 週次更新の最終日時（保有銘柄シートのヘッダーやログから推定 → generate時刻で代用）
+_gen_time = datetime.now().strftime('%m/%d %H:%M')
+
+# 日経225とSP500のリアルタイム値
+_nk_now = f'{MKT["nk_v"]:,.0f}' if MKT.get('nk_v') else '---'
+_sp_now = f'{MKT["sp_v"]:,.0f}' if MKT.get('sp_v') else '---'
+_nk_chg = MKT.get('nk_chg', 0)
+_sp_chg = MKT.get('sp_chg', 0)
+_nk_cc = '#34d399' if _nk_chg >= 0 else '#f87171'
+_sp_cc = '#34d399' if _sp_chg >= 0 else '#f87171'
+
+# VIXステータス
+_vix_status = '\u5E73\u9759' if MKT['vix_v'] <= 20 else '\u8B66\u6212' if MKT['vix_v'] <= 30 else '\u6050\u6016'
+_vix_cc = '#34d399' if MKT['vix_v'] <= 20 else '#fbbf24' if MKT['vix_v'] <= 30 else '#f87171'
+
+# ティッカーアイテム生成
+def _ti(dot_color, label, value):
+    return (
+        f'<span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;'
+        f'border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;'
+        f'height:20px;flex-shrink:0;white-space:nowrap;">'
+        f'<span style="width:5px;height:5px;border-radius:50%;background:{dot_color};'
+        f'flex-shrink:0;box-shadow:0 0 4px {dot_color};"></span>'
+        f'<span style="color:#e2e8f0;font-weight:800;">{label}</span>'
+        f'<span style="color:{dot_color};">{value}</span></span>'
+    )
+
+ticker_items = []
+# 保有銘柄数（実数）
+ticker_items.append(_ti('#34d399', f'\u4FDD\u6709({_n_hold})', f'\u66F4\u65B0{_gen_time}'))
+# 監視銘柄数（実数）
+ticker_items.append(_ti('#34d399', f'\u76E3\u8996({_n_watch})', f'\u66F4\u65B0{_gen_time}'))
+# 日経225（リアルタイム）
+ticker_items.append(_ti(_nk_cc, '\u65E5\u7D4C225', f'{_nk_now} ({_nk_chg:+.1f}%)'))
+# SP500（リアルタイム）
+ticker_items.append(_ti(_sp_cc, 'SP500', f'{_sp_now} ({_sp_chg:+.1f}%)'))
+# VIX（リアルタイム）
+ticker_items.append(_ti(_vix_cc, 'VIX', f'{MKT["vix_v"]} {_vix_status}'))
+# マクロ指標更新日（実データ）
+_macro_dot = '#34d399' if _macro_last else '#f87171'
+_macro_txt = f'\u6700\u7D42{_macro_last}' if _macro_last else '\u672A\u53D6\u5F97'
+ticker_items.append(_ti(_macro_dot, '\u30DE\u30AF\u30ED\u6307\u6A19', _macro_txt))
+# スクリーニングTop50（実数）
+_screen_dot = '#34d399' if _n_screen > 0 else '#f87171'
+ticker_items.append(_ti(_screen_dot, f'Top50', f'{_n_screen}\u9298\u67C4'))
+# 合計追跡数
+ticker_items.append(
+    f'<span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;'
+    f'border-right:1px solid #1e2d40;font-size:var(--fs-xs);font-family:monospace;'
+    f'height:20px;flex-shrink:0;white-space:nowrap;">'
+    f'<span style="color:#475569;">v4.3</span>'
+    f'<span style="color:#94a3b8;">\u5408\u8A08{_n_total}\u9298\u67C4\u8FFD\u8DE1\u4E2D</span></span>'
+)
+
+# ヘッダーラベル
+_hdr = (
+    f'<span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;'
+    f'border-right:1px solid #1e2d40;font-size:var(--fs-xs);font-family:monospace;'
+    f'height:20px;flex-shrink:0;white-space:nowrap;">'
+    f'<span style="color:#f59e0b;font-weight:900;">SYSTEM STATUS</span></span>'
+)
+_all_items = _hdr + ''.join(ticker_items)
+# ループ再生のため2回繰り返す
+TICKER_DYN = (
+    f'<div id="sys-ticker-wrap" style="background:#060810;border-bottom:1px solid #1e2d40;'
+    f'height:20px;overflow:hidden;flex-shrink:0;">'
+    f'<div id="sys-ticker" style="display:inline-flex;flex-wrap:nowrap;align-items:center;'
+    f'height:20px;width:max-content;animation:ticker_scroll 60s linear infinite;" '
+    f'onmouseover="this.style.animationPlayState=\'paused\'" '
+    f'onmouseout="this.style.animationPlayState=\'running\'">'
+    f'{_all_items}{_all_items}</div></div>'
+)
+
+# TICKER_START/TICKER_END マーカーで置換
+tk_start = src.find('<!-- TICKER_START -->')
+tk_end   = src.find('<!-- TICKER_END -->')
+if tk_start >= 0 and tk_end >= 0:
+    tk_end_full = tk_end + len('<!-- TICKER_END -->')
+    src = src[:tk_start] + '<!-- TICKER_START -->' + TICKER_DYN + '<!-- TICKER_END -->' + src[tk_end_full:]
+    print(f"OK: \u30C6\u30A3\u30C3\u30AB\u30FC\u52D5\u7684\u66F4\u65B0 (\u4FDD\u6709{_n_hold} \u76E3\u8996{_n_watch} \u65E5\u7D4C{_nk_now} VIX{MKT['vix_v']})")
 else:
-    print(f"WARN: ティッカー挿入スキップ (sl={sl_pos} mstrip={mstrip_pos})")
+    print(f"WARN: \u30C6\u30A3\u30C3\u30AB\u30FC\u7F6E\u63DB\u30B9\u30AD\u30C3\u30D7 (start={tk_start} end={tk_end})")
 
 # ticker_scroll keyframe追加
 src = src.replace(
