@@ -1433,15 +1433,7 @@ print('OK: マクロフェーズゲージ置換')
 # ── 折りたたみトグル注入（マーカー外側にラッパー配置・置換ロジックに影響なし）──
 TOGGLE_CSS = '<style>#hdr-fold-btn{cursor:pointer;user-select:none;padding:1px 10px;font-size:var(--fs-xs);font-weight:800;color:#94a3b8;background:#111827;border:1px solid #374151;border-radius:4px;transition:all .2s;}#hdr-fold-btn:hover{color:#f1f5f9;border-color:#6b7280;}</style>'
 TOGGLE_BTN = '<div style="text-align:center;margin:2px 0;"><span id="hdr-fold-btn" onclick="toggleHdr()">&#x25B2; 閉じる</span></div>'
-TOGGLE_JS = """<script>
-function toggleHdr(){
-  var w=document.getElementById('hdr-fold-wrap');
-  var b=document.getElementById('hdr-fold-btn');
-  if(!w||!b)return;
-  if(w.style.display==='none'){w.style.display='';b.innerHTML='\\u25B2 閉じる';}
-  else{w.style.display='none';b.innerHTML='\\u25BC 開く';}
-}
-</script>"""
+TOGGLE_JS = '<script>function toggleHdr(){var w=document.getElementById("hdr-fold-wrap");var b=document.getElementById("hdr-fold-btn");if(!w||!b)return;if(w.style.display==="none"){w.style.display="";b.innerHTML="&#x25B2; 閉じる";}else{w.style.display="none";b.innerHTML="&#x25BC; 開く";}}</script>'
 
 # MACRO_CARDS_STARTの直前に<div id="hdr-fold-wrap">を追加
 # VAL_MACRO_ENDの直後に</div>を追加
@@ -1460,8 +1452,15 @@ if 'hdr-fold-wrap' not in src:
 else:
     print("OK: 折りたたみトグル既存確認")
 
-# モーダル挿入（</body>直前）
-src = src.replace('</body>', TOGGLE_JS + VI_MODAL_HTML + MC_MODAL_HTML + '</body>', 1)
+# モーダル+JS挿入（</body>直前、なければ末尾に追加）
+INJECT_HTML = TOGGLE_JS + VI_MODAL_HTML + MC_MODAL_HTML
+if '</body>' in src:
+    src = src.replace('</body>', INJECT_HTML + '</body>', 1)
+elif '</html>' in src:
+    src = src.replace('</html>', INJECT_HTML + '</html>', 1)
+else:
+    src += INJECT_HTML
+print("OK: モーダル+トグルJS注入")
 
 # 銘柄管理ボタン挿入（ヘッダーに存在しなければ追加）
 MGMT_BTN = '<span id="mgmt-btn" onclick="openStockMgmt()" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#1e293b;border:1px solid #f97316;border-radius:6px;cursor:pointer;font-size:var(--fs-xs);font-weight:900;color:#f97316;transition:all .2s;" onmouseover="this.style.background=\'#f97316\';this.style.color=\'#000\'" onmouseout="this.style.background=\'#1e293b\';this.style.color=\'#f97316\'">&#x1F4DD; \u9298\u67C4\u7BA1\u7406</span>'
