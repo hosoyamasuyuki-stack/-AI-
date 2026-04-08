@@ -24,7 +24,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 
 # ── ヘルパー関数（スクレイピング・API取得）────────────────────
-UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
 
 def get_yf_info(ticker, key):
     """yfinanceからinfo値を安全に取得"""
@@ -48,41 +48,72 @@ def get_fred(series_id):
     except: pass
     return None
 
-def scrape_pbr_japan():
-    """日経プロフィルから日本PBRを取得"""
+def scrape_nikkei225jp():
+    """nikkei225jp.comのdaily2.jsonから日経225 PER/PBR/配当利回りを取得
+    Returns: dict with per, pbr, div_yield or None
+    Data columns: [timestamp, price, volume, ..., col12=PER, col13=PBR, col14=div_yield, ...]
+    """
     try:
-        r = requests.get('https://indexes.nikkei.co.jp/nkave/index/profile?idx=0009', headers=UA, timeout=10)
+        headers = {**UA, 'Referer': 'https://nikkei225jp.com/data/per.php'}
+        cache_buster = int(time.time() // 100)
+        url = f'https://nikkei225jp.com/_data/_nfsWEB/DAY/daily2.json?{cache_buster}'
+        r = requests.get(url, headers=headers, timeout=15)
+        if r.status_code != 200:
+            print(f"  WARN: nikkei225jp daily2.json status={r.status_code}")
+            return None
+        text = r.text.strip()
+        # 最後のデータ行を取得
+        lines = text.rstrip(']').rstrip().split('\n')
+        for line in reversed(lines):
+            line = line.strip().rstrip(',')
+            if line.startswith('['):
+                vals = [v.strip().strip('"') for v in line.strip('[]').split(',')]
+                if len(vals) >= 15:
+                    per = float(vals[12]) if vals[12] else None
+                    pbr = float(vals[13]) if vals[13] else None
+                    div_y = float(vals[14]) if vals[14] else None
+                    # サニティチェック
+                    if per and 5 < per < 60 and pbr and 0.5 < pbr < 5:
+                        print(f"  OK: nikkei225jp PER={per} PBR={pbr} DivY={div_y}")
+                        return {'per': per, 'pbr': pbr, 'div_yield': div_y}
+                    else:
+                        print(f"  WARN: nikkei225jp abnormal PER={per} PBR={pbr}")
+                break
+    except Exception as e:
+        print(f"  WARN: nikkei225jp fetch failed: {e}")
+    return None
+
+def scrape_multpl(path, min_val, max_val):
+    """multpl.comからid='current'直後の数値を取得
+    HTML構造: id="current"> ... </b> 数値 <span>
+    """
+    try:
+        url = f'https://www.multpl.com/{path}'
+        r = requests.get(url, headers=UA, timeout=10)
         if r.status_code == 200:
-            m = re.search(r'PBR.*?([\d.]+)\s*倍', r.text)
+            m = re.search(r'id="current"[^>]*>\s*<b>.*?</b>\s*([\d.]+)', r.text, re.DOTALL)
             if m:
                 v = float(m.group(1))
-                if 0.5 < v < 5.0: return v
-    except: pass
+                if min_val < v < max_val:
+                    return v
+                else:
+                    print(f"  WARN: multpl {path} value {v} out of range ({min_val}-{max_val})")
+    except Exception as e:
+        print(f"  WARN: multpl {path} failed: {e}")
     return None
+
+def scrape_pbr_japan():
+    """nikkei225jp.comから日本PBRを取得（scrape_nikkei225jpのラッパー）"""
+    data = scrape_nikkei225jp()
+    return data['pbr'] if data else None
 
 def scrape_pbr_us():
     """multpl.comから米国PBRを取得"""
-    try:
-        r = requests.get('https://www.multpl.com/s-p-500-price-to-book', headers=UA, timeout=10)
-        if r.status_code == 200:
-            m = re.search(r'([\d.]+)\s*</div>', r.text)
-            if m:
-                v = float(m.group(1))
-                if 1.0 < v < 10.0: return v
-    except: pass
-    return None
+    return scrape_multpl('s-p-500-price-to-book', 1.0, 10.0)
 
 def scrape_cape_us():
     """multpl.comからシラーPER米国を取得"""
-    try:
-        r = requests.get('https://www.multpl.com/shiller-pe', headers=UA, timeout=10)
-        if r.status_code == 200:
-            m = re.search(r'([\d.]+)\s*</div>', r.text)
-            if m:
-                v = float(m.group(1))
-                if 5.0 < v < 80.0: return v
-    except: pass
-    return None
+    return scrape_multpl('shiller-pe', 5.0, 80.0)
 
 # ── 認証 ────────────────────────────────────────────────────
 from core.auth import get_spreadsheet
@@ -148,14 +179,14 @@ def load_valuation():
                 sf = lambda k, fb: float(rec[k]) if rec.get(k,'') not in ('','None','-') else fb
                 print(f"  → 本日取得済みデータを使用")
                 return {
-                    'per_jp':    sf('PER_日本',     16),
-                    'per_us':    sf('PER_米国',     22),
-                    'pbr_jp':    sf('PBR_日本',     1.76),
-                    'pbr_us':    sf('PBR_米国',     4.8),
-                    'div_jp':    sf('配当利回り_日本', 2.0),
-                    'div_us':    sf('配当利回り_米国', 1.3),
-                    'yield_jp':  sf('益回り_日本',   6.25),
-                    'yield_us':  sf('益回り_米国',   4.5),
+                    'per_jp':    sf('PER_日本',     20.57),
+                    'per_us':    sf('PER_米国',     29.11),
+                    'pbr_jp':    sf('PBR_日本',     1.82),
+                    'pbr_us':    sf('PBR_米国',     5.36),
+                    'div_jp':    sf('配当利回り_日本', 1.59),
+                    'div_us':    sf('配当利回り_米国', 1.16),
+                    'yield_jp':  sf('益回り_日本',   4.86),
+                    'yield_us':  sf('益回り_米国',   3.44),
                     'roe_jp':    sf('ROE_日本',     10.5),
                     'roe_us':    sf('ROE_米国',     21.8),
                     'cape_jp':   sf('シラーPER_日本', 24.0),
@@ -173,68 +204,88 @@ def load_valuation():
                 }
     except: pass
 
-    # フォールバック：ハードコード値（未定義関数の代替）
+    # フォールバック：前回値（取得失敗時のみ使用・更新日時で古さを判別可能）
+    # 2026/04/08時点の正確な値で初期化
     prev = {
-        'per_jp': 16, 'per_us': 22, 'pbr_jp': 1.76, 'pbr_us': 4.8,
-        'div_jp': 2.0, 'div_us': 1.3, 'yield_jp': 6.25, 'yield_us': 4.5,
-        'roe_jp': 10.5, 'roe_us': 21.8, 'cape_jp': 24.0, 'cape_us': 38.0,
+        'per_jp': 20.57, 'per_us': 29.11, 'pbr_jp': 1.82, 'pbr_us': 5.36,
+        'div_jp': 1.59, 'div_us': 1.16, 'yield_jp': 4.86, 'yield_us': 3.44,
+        'roe_jp': 8.8, 'roe_us': 18.4, 'cape_jp': 26.7, 'cape_us': 39.14,
         'rate_jp': 1.5, 'rate_us': 4.3, 'rate_diff': 2.8,
-        'buffett_jp': 140, 'buffett_us': 200, 'usdjpy': 149,
+        'buffett_jp': 133, 'buffett_us': 195, 'usdjpy': 158,
     }
 
-    # ── yfinance取得（PER・配当等）────────────────────────
-    per_jp  = get_yf_info('^N225', 'trailingPE')
-    per_us  = get_yf_info('^GSPC', 'trailingPE') or get_yf_info('SPY', 'trailingPE')
-    div_jp_r= get_yf_info('1306.T', 'dividendYield')
-    div_us_r= get_yf_info('SPY',    'dividendYield')
-    div_jp  = round(div_jp_r*100, 2) if div_jp_r else 2.0
-    div_us  = round(div_us_r*100, 2) if div_us_r else 1.3
+    # ── Phase 1: 日本PER/PBR/配当利回り（nikkei225jp.com）────
+    # yfinanceの^N225はPER=Noneを返す（指数はPER情報を持たない）
+    # nikkei225jp.comのdaily2.jsonが最も正確なソース（加重平均PER/PBR）
+    jp_data = scrape_nikkei225jp()
+    per_jp  = jp_data['per']       if jp_data else None
+    pbr_jp  = jp_data['pbr']       if jp_data else None
+    div_jp  = jp_data['div_yield'] if jp_data else None
+    fail_sources = []
+    if not per_jp:
+        per_jp = prev['per_jp']
+        fail_sources.append('PER_JP')
+        print(f"  WARN: 日本PER取得失敗 → フォールバック値{per_jp}（不正確な可能性）")
+    if not pbr_jp:
+        pbr_jp = prev['pbr_jp']
+        fail_sources.append('PBR_JP')
+        print(f"  WARN: 日本PBR取得失敗 → フォールバック値{pbr_jp}（不正確な可能性）")
+    if not div_jp:
+        div_jp = prev.get('div_jp', 2.0)
+        fail_sources.append('DIV_JP')
+        print(f"  WARN: 日本配当利回り取得失敗 → フォールバック値{div_jp}")
+
+    # ── Phase 2: 米国PER/PBR/CAPE/配当利回り（multpl.com）──
+    per_us  = scrape_multpl('s-p-500-pe-ratio', 5.0, 60.0)
+    if not per_us:
+        per_us = prev['per_us']
+        fail_sources.append('PER_US')
+        print(f"  WARN: 米国PER取得失敗 → フォールバック値{per_us}")
+    time.sleep(0.5)
+
+    pbr_us = scrape_pbr_us()
+    if pbr_us is None:
+        pbr_us = prev['pbr_us']
+        fail_sources.append('PBR_US')
+        print(f"  WARN: 米国PBR取得失敗 → フォールバック値{pbr_us}倍")
+    time.sleep(0.5)
+
+    cape_us = scrape_cape_us()
+    if cape_us is None:
+        cape_us = prev['cape_us']
+        fail_sources.append('CAPE_US')
+        print(f"  WARN: シラーPER米国取得失敗 → フォールバック値{cape_us}倍")
+    time.sleep(0.5)
+
+    div_us_multpl = scrape_multpl('s-p-500-dividend-yield', 0.5, 10.0)
+    div_us = div_us_multpl if div_us_multpl else prev.get('div_us', 1.3)
+    if not div_us_multpl:
+        fail_sources.append('DIV_US')
+        print(f"  WARN: 米国配当利回り取得失敗 → フォールバック値{div_us}")
+
+    # ── Phase 3: 為替（yfinance）────────────────────────
     usdjpy  = None
     try:
         h = yf.Ticker('USDJPY=X').history(period='2d')
         if len(h) > 0: usdjpy = round(float(h['Close'].iloc[-1]), 1)
     except: pass
 
-    # ── FRED取得（金利・バフェット指数）──────────────────
+    # ── Phase 4: FRED取得（金利・バフェット指数）──────────
     rate_us    = get_fred('DGS10')
     rate_jp    = get_fred('IRLTLT01JPM156N')
     buffett_us = get_fred('DDDM01USA156NWDB')
     buffett_jp = get_fred('DDDM01JPA156NWDB')
 
-    # ── Phase 1-A: 日本PBR（日経プロフィルスクレイピング）──
-    # 失敗時は前回値にフォールバック（0や1.2倍の誤値を記録しない）
-    pbr_jp = scrape_pbr_japan()
-    if pbr_jp is None:
-        pbr_jp = prev['pbr_jp']
-        print(f"  ℹ️ 日本PBR → 前回値使用: {pbr_jp}倍")
-    time.sleep(1)  # スクレイピング間隔
-
-    # ── Phase 1-B: 米国PBR（multpl.comスクレイピング）──────
-    pbr_us = scrape_pbr_us()
-    if pbr_us is None:
-        pbr_us = prev['pbr_us']
-        print(f"  ℹ️ 米国PBR → 前回値使用: {pbr_us}倍")
-    time.sleep(1)
-
-    # ── Phase 1-B: シラーPER米国（multpl.comスクレイピング）─
-    cape_us = scrape_cape_us()
-    if cape_us is None:
-        cape_us = prev['cape_us']
-        print(f"  ℹ️ シラーPER米国 → 前回値使用: {cape_us}倍")
-    time.sleep(1)
-
-    # ── Phase 1-C: シラーPER日本（per×補正係数・暫定）──────
-    # per×1.5は誤り（失敗(19)）。日本の景気循環を考慮した補正係数を使用。
-    # 実測値の日本CAPEは概ね20-26倍程度（米国38倍より大幅に低い）
+    # ── Phase 5: シラーPER日本（per×補正係数・暫定）──────
     # 暫定：per_jp × 1.3 ただし範囲は15-35倍でクリップ
     # TODO: EDINET/財務DB整備後に10年平均利益ベースの正確な計算に変更
     if per_jp:
         cape_jp_raw = round(per_jp * 1.3, 1)
-        cape_jp = max(15.0, min(35.0, cape_jp_raw))  # 15-35倍でクリップ
-        print(f"  ℹ️ シラーPER日本: PER{per_jp:.1f}×1.3={cape_jp:.1f}倍（暫定・クリップ済）")
+        cape_jp = max(15.0, min(35.0, cape_jp_raw))
+        print(f"  OK: シラーPER日本: PER{per_jp:.1f}x1.3={cape_jp:.1f}倍（暫定）")
     else:
         cape_jp = prev['cape_jp']
-        print(f"  ℹ️ シラーPER日本 → 前回値使用: {cape_jp}倍")
+        print(f"  WARN: シラーPER日本 → 前回値使用: {cape_jp}倍")
 
     # ── 派生指標計算 ────────────────────────────────────
     yield_jp  = round(1/per_jp*100,  2) if per_jp  else 6.25
@@ -242,6 +293,10 @@ def load_valuation():
     roe_jp    = round(pbr_jp/per_jp*100, 1) if (pbr_jp and per_jp) else 10.5
     roe_us    = round(pbr_us/per_us*100, 1) if (pbr_us and per_us) else 21.8
     rate_diff = round(rate_us-rate_jp, 2)   if (rate_us and rate_jp) else 2.8
+
+    # ── フォールバック警告（取得失敗があれば明示）───────
+    if fail_sources:
+        print(f"  ⚠️ フォールバック使用中: {', '.join(fail_sources)}（データ不正確の可能性）")
 
     # ── 総合判定 ────────────────────────────────────────
     jp_adv = sum([
