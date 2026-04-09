@@ -41,7 +41,7 @@ GAS_URL_FULL_UPDATE = os.environ.get(
 )
 GAS_URL_KENJA = os.environ.get(
     'GAS_URL_KENJA',
-    'https://script.google.com/macros/s/AKfycbySl1p0RI2uskdlkNU0p6NthJUfBnUPsAWErkocmRLH_qXqlywRHwFIi0hCiinpaEEz/exec'
+    'https://script.google.com/macros/s/AKfycbyt3zG6eqUlYa3Yhq6hYitsv9tWTBv9uv2NxWRbWpgTFhmWI4ezRYgeJcginVp6dMg/exec'
 )
 
 # ── v4.3 Scoring Thresholds ─────────────────────────────────
