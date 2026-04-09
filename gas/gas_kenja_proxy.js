@@ -281,9 +281,9 @@ function fetchDocText(docID, apiKey) {
     var text = allText.trim();
     Logger.log('fetchDocText: total text ' + text.length + ' chars from ' + htmlFiles.length + ' files');
 
-    // 60,000文字にトリム（GPT-4o 128Kトークン内に十分収まる）
-    if (text.length > 60000) {
-      text = text.substring(0, 60000) + '\n\n[... 以降省略 ...]';
+    // 20,000文字にトリム（OpenAI TPM制限30,000トークン対策）
+    if (text.length > 20000) {
+      text = text.substring(0, 20000) + '\n\n[... 以降省略 ...]';
     }
 
     Logger.log('fetchDocText: text extracted, ' + text.length + ' chars');
