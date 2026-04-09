@@ -1559,6 +1559,12 @@ if _errors:
 else:
     print("\n\u2705 \u30B5\u30CB\u30C6\u30A3\u30C1\u30A7\u30C3\u30AF\u5168\u30D1\u30B9")
 
+# HTMLの終了タグを保証（テンプレートに</body></html>がない場合に追加）
+if '</body>' not in src:
+    src += '\n</body>'
+if '</html>' not in src:
+    src += '\n</html>'
+
 out = 'ai_dashboard_v13.html'
 with open(out, 'w', encoding='utf-8') as f:
     f.write(src)
