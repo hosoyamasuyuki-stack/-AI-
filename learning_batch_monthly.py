@@ -20,8 +20,20 @@ from core.auth import get_spreadsheet
 
 warnings.filterwarnings('ignore')
 
-# ── 認証 ────────────────────────────────────────────────────
-ss = get_spreadsheet()
+# ── 認証（リトライ付き・429対策）─────────────────────────────
+for _retry in range(3):
+    try:
+        ss = get_spreadsheet()
+        break
+    except Exception as e:
+        if '429' in str(e) or 'Quota' in str(e):
+            wait = 30 * (_retry + 1)
+            print(f"  ⚠️ Sheets API 429 → {wait}秒待機してリトライ ({_retry+1}/3)")
+            time.sleep(wait)
+        else:
+            raise
+else:
+    raise RuntimeError("Sheets API 429: 3回リトライ後も失敗")
 NOW             = datetime.now().strftime('%Y/%m/%d %H:%M')
 TODAY           = datetime.now()
 print(f"✅ 接続完了: {ss.title}  実行日時: {NOW}")
