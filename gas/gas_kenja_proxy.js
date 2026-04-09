@@ -241,42 +241,44 @@ function fetchDocText(docID, apiKey) {
       return null;
     }
 
-    // HTMLファイルを探索（最大サイズのHTMLが本文）
-    var bestHtml = null;
-    var bestSize = 0;
+    // 全HTMLファイルをファイル名順に結合（企業概況→事業→設備→会社→経理の順）
+    var htmlFiles = [];
     for (var i = 0; i < files.length; i++) {
       var fname = files[i].getName().toLowerCase();
-      if (fname.match(/\.htm[l]?$/) && !fname.match(/manifest|ixbrl|viewer/i)) {
-        var size = files[i].getBytes().length;
-        if (size > bestSize) {
-          bestSize = size;
-          bestHtml = files[i];
-        }
+      if (fname.match(/\.htm[l]?$/) && !fname.match(/manifest|viewer/i)) {
+        htmlFiles.push({ name: files[i].getName(), blob: files[i] });
       }
     }
 
-    if (!bestHtml) {
+    if (htmlFiles.length === 0) {
       Logger.log('fetchDocText: no HTML found in ZIP (' + files.length + ' files)');
-      // フォールバック: XBRLファイルを試す
-      for (var j = 0; j < files.length; j++) {
-        var fn = files[j].getName().toLowerCase();
-        if (fn.match(/\.xbrl$/)) {
-          bestHtml = files[j];
-          break;
-        }
-      }
-      if (!bestHtml) return null;
+      return null;
     }
 
-    Logger.log('fetchDocText: using ' + bestHtml.getName() + ' (' + bestSize + ' bytes)');
+    // ファイル名順にソート（0101010→0102010→...→0105020の順になる）
+    htmlFiles.sort(function(a, b) { return a.name.localeCompare(b.name); });
+    Logger.log('fetchDocText: ' + htmlFiles.length + ' HTML files found, concatenating...');
 
-    // HTMLをプレーンテキスト化
-    var htmlContent = bestHtml.getDataAsString('UTF-8');
-    var text = htmlToText(htmlContent);
+    // 全HTMLを結合してテキスト化
+    var allText = '';
+    for (var k = 0; k < htmlFiles.length; k++) {
+      if (isTimeout(TIMEOUT_FETCH)) {
+        Logger.log('fetchDocText: timeout at file ' + k + '/' + htmlFiles.length);
+        break;
+      }
+      var htmlContent = htmlFiles[k].blob.getDataAsString('UTF-8');
+      var sectionText = htmlToText(htmlContent);
+      if (sectionText.length > 100) {  // 空ファイルをスキップ
+        allText += '\n\n=== ' + htmlFiles[k].name + ' ===\n' + sectionText;
+      }
+    }
 
-    // 30,000文字にトリム（GPT-4oトークン制限内）
-    if (text.length > 30000) {
-      text = text.substring(0, 30000) + '\n\n[... 以降省略（全文の一部のみ表示）...]';
+    var text = allText.trim();
+    Logger.log('fetchDocText: total text ' + text.length + ' chars from ' + htmlFiles.length + ' files');
+
+    // 60,000文字にトリム（GPT-4o 128Kトークン内に十分収まる）
+    if (text.length > 60000) {
+      text = text.substring(0, 60000) + '\n\n[... 以降省略 ...]';
     }
 
     Logger.log('fetchDocText: text extracted, ' + text.length + ' chars');
@@ -367,10 +369,14 @@ function buildPrompt(secCode, name, scores, edinetData, dataSource) {
   // ── メインプロンプト ──
   var dataInstruction = '';
   if (dataSource === 'full_text') {
-    dataInstruction = '上記のEDINET書類の実データ（売上高、利益、セグメント情報、キャッシュフロー、'
-      + '経営方針、リスク情報等）のみに基づいて分析してください。\n'
-      + '書類に記載された具体的な数値を必ず引用してください。推測は「推測:」と明記してください。\n'
-      + 'この会社の独自性（他社と何が違うのか）、気を付けるべきリスクを特に詳しく分析してください。\n';
+    dataInstruction = '【最重要ルール】上記のEDINET書類の実データのみに基づいて分析してください。\n'
+      + '- 書類に記載された具体的な数値（売上高、営業利益、営業利益率、前年比%等）を必ず引用すること\n'
+      + '- セグメント別の売上・利益がある場合、絶好調のセグメントと不調のセグメントを特定すること\n'
+      + '- キャッシュフロー（営業CF、投資CF、フリーCF）の具体的金額を記載すること\n'
+      + '- 経営陣の業績予想（次期の売上・利益予想と前年比）を記載すること\n'
+      + '- リスク要因を書類から具体的に抽出すること（「為替リスク」のような一般論ではなく、この会社固有のリスク）\n'
+      + '- 推測は「推測ですが」と必ず明記すること\n'
+      + '- 一般論・定型文は厳禁。この書類に書いてある事実だけを使うこと\n';
   } else {
     dataInstruction = '公開情報に基づいて分析してください。EDINET書類が取得できなかったため、'
       + '信頼度は下がります。可能な範囲で具体的な数値を使用してください。\n';
