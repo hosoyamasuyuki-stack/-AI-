@@ -22,7 +22,7 @@
 - Colab             : https://colab.research.google.com/drive/1D99_hP0eyFw9GPp92sD2zeYPmiLeung3
 - GASプロジェクト   : https://script.google.com/u/0/home/projects/10AJhsVjzs6dUsSu9f-NCIE0F9Dbt1ECykKPSaRkppCtRz_XQpu7EQ6lo/edit
 - GAS URL（2026/03/25デプロイ済み）: https://script.google.com/macros/s/AKfycbwVDZ9IhuGEz7onU9uCvhSFd7N84cGQouIcnBMQO5iIlFwbNbVP4J8_tPtOj8X7yxAw/exec
-- 賢者の審判AI : OpenAI GPT-4o（2026/03/28切替・GASプロパティにOPENAI_API_KEY設定要）
+- 賢者の審判AI : OpenAI GPT-4o v2（2026/04/09 EDINET全文分析版・GASバージョン18・kenja-rich-api設定要）
 - 機密情報          : .envファイル参照（GITHUB_TOKEN / EDINET_API_KEY / SPREADSHEET_ID / JQUANTS_EMAIL）
 - FRED APIキー      : .envファイル参照
 - 実運用口座        : SBI証券・楽天証券（2口座合計46銘柄保有）
@@ -1547,6 +1547,24 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
 - B. フォールバック値: 全12指標が2026/04/08正確値と一致
 - C. GitHub Actions: 全6ワークフローの依存パッケージ・環境変数OK
 - D. テンプレートHTML: 全4マーカーが正順で存在
+
+### 賢者の審判v2 — EDINET書類全文分析（PR#78）
+- 根本問題: 旧版はメタデータのみ取得→GPTに分析データを渡していない→定型文
+- 新機能fetchDocText(): XBRL ZIP→解凍→HTML本文テキスト化→30,000文字
+- GPT-4oの128Kコンテキストに全文投入（正規表現による抽出なし=エラーリスクゼロ）
+- 3段階フォールバック: full_text/metadata_only/no_edinet
+- タイムアウト管理: 4分超過でfetchDocText打ち切り→フォールバック
+- max_tokens 4000→8000、プロンプト強化（独自性・リスク・5-8文に拡充）
+- UIにdataSourceバッジ追加（緑:EDINET全文/黄:メタデータ/グレー:公開情報）
+- GASバージョン18デプロイ（2026/04/09 13:29）
+
+### GAS_URL_KENJA更新（PR#79）
+- core/config.pyのGAS_URL_KENJAをv2デプロイURLに更新
+
+### 商用化チェック実施（セキュリティ+コード品質）
+- 緊急エラー: なし（現在の自分用ツールは正常稼働）
+- 販売前必須: スプレッドシートID露出・GAS URL露出・bare except・テスト・ライセンス
+- 販売版で別アーキテクチャになるため自然に解消する項目が多い
 
 ================================================================
 ## 2026/04/07（セッション9）のコミット履歴
