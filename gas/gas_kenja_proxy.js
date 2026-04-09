@@ -114,7 +114,7 @@ function searchEdinet(secCode) {
   // 直近90日を1日刻みで検索（EDINET APIは指定日の提出書類のみ返すため）
   // 見つかり次第終了するので、通常は数日分のAPI呼び出しで済む
   for (var d = 0; d < 90; d++) {
-    if (isTimeout(90000)) break;  // 1.5分超で検索打ち切り
+    if (isTimeout(120000)) break;  // 2分超で検索打ち切り
 
     var dt = new Date(today);
     dt.setDate(dt.getDate() - d);
@@ -128,9 +128,12 @@ function searchEdinet(secCode) {
       var json = JSON.parse(resp.getContentText());
       if (!json.results) continue;
 
+      // メイン書類のみ収集（有価証券報告書/四半期報告書/半期報告書）
+      // 自己株券買付報告書・臨時報告書等は分析に不向きなので無視
+      var MAIN_FORMS = { '030000': true, '030001': true, '043000': true, '043001': true, '050000': true };
       for (var i = 0; i < json.results.length; i++) {
         var doc = json.results[i];
-        if (doc.secCode === sec5) {
+        if (doc.secCode === sec5 && MAIN_FORMS[doc.formCode]) {
           allDocs.push({
             docID: doc.docID,
             filerName: doc.filerName,
@@ -147,16 +150,8 @@ function searchEdinet(secCode) {
       continue;
     }
 
-    // 有価証券報告書・四半期報告書が見つかったら検索終了
-    if (allDocs.length > 0) {
-      var hasMainDoc = false;
-      for (var j = 0; j < allDocs.length; j++) {
-        if (allDocs[j].formCode === '030000' || allDocs[j].formCode === '043000' || allDocs[j].formCode === '050000') {
-          hasMainDoc = true; break;
-        }
-      }
-      if (hasMainDoc) break;
-    }
+    // メイン書類が見つかったら検索終了
+    if (allDocs.length > 0) break;
     Utilities.sleep(300);  // APIレート制限対策
   }
 
