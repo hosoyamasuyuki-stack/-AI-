@@ -111,9 +111,10 @@ function searchEdinet(secCode) {
   var today = new Date();
   var allDocs = [];
 
-  // 直近90日を7日刻みで検索
-  for (var d = 0; d < 90; d += 7) {
-    if (isTimeout(60000)) break;  // 1分超で検索打ち切り
+  // 直近90日を1日刻みで検索（EDINET APIは指定日の提出書類のみ返すため）
+  // 見つかり次第終了するので、通常は数日分のAPI呼び出しで済む
+  for (var d = 0; d < 90; d++) {
+    if (isTimeout(90000)) break;  // 1.5分超で検索打ち切り
 
     var dt = new Date(today);
     dt.setDate(dt.getDate() - d);
@@ -146,8 +147,17 @@ function searchEdinet(secCode) {
       continue;
     }
 
-    if (allDocs.length > 0) break;
-    Utilities.sleep(500);  // APIレート制限対策
+    // 有価証券報告書・四半期報告書が見つかったら検索終了
+    if (allDocs.length > 0) {
+      var hasMainDoc = false;
+      for (var j = 0; j < allDocs.length; j++) {
+        if (allDocs[j].formCode === '030000' || allDocs[j].formCode === '043000' || allDocs[j].formCode === '050000') {
+          hasMainDoc = true; break;
+        }
+      }
+      if (hasMainDoc) break;
+    }
+    Utilities.sleep(300);  // APIレート制限対策
   }
 
   if (allDocs.length === 0) {
