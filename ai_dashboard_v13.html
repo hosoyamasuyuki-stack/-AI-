@@ -2817,8 +2817,8 @@ function runKenja(){
   if(btn){btn.disabled=true;btn.textContent='Analyzing...';}
   res.innerHTML='<div style="text-align:center;padding:20px;">'
     +'<div style="display:inline-block;width:28px;height:28px;border:3px solid #1e2d40;border-top-color:#f59e0b;border-radius:50%;animation:spin 1s linear infinite;"></div>'
-    +'<div style="color:#f59e0b;font-size:var(--fs-base);font-weight:700;margin-top:8px;">EDINET + AI Analysis</div>'
-    +'<div style="font-size:var(--fs-xs);color:#475569;margin-top:4px;">'+escH(name)+' ('+code+') / 30-60sec</div>'
+    +'<div style="color:#f59e0b;font-size:var(--fs-base);font-weight:700;margin-top:8px;">EDINET書類取得 + AI分析中</div>'
+    +'<div style="font-size:var(--fs-xs);color:#475569;margin-top:4px;">'+escH(name)+' ('+code+') / 1-2分</div>'
     +'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
   var sc=STOCK_SCORES[code]||[0,0,0];
   var payload={secCode:code,name:name,scores:{v42:window._curV42||'',rank:window._curRank||'',s1:sc[0],s2:sc[1],s3:sc[2],shortScore:window._curShort||'',midScore:window._curMid||''}};
@@ -2856,9 +2856,11 @@ function renderKenjaResult(el,data,code,name){
   function row(emoji,label,item){return '<div style="padding:8px 0;border-bottom:1px solid #1e2d4033;"><div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;"><span style="font-size:var(--fs-lg);">'+emoji+'</span><span style="color:#cbd5e1;font-size:var(--fs-md);font-weight:800;">'+escH(label)+'</span><span style="color:#64748b;font-size:var(--fs-base);margin-left:auto;">'+escH(item.title||'')+'</span></div>'+bar(item.score)+'<div style="color:#94a3b8;font-size:var(--fs-base);margin-top:4px;line-height:1.6;">'+escH(item.summary||'')+'</div></div>';}
   var pA=a.partA||{};
   var html='';
-  // EDINET badge
-  if(ed.found){html+='<div style="display:flex;align-items:center;gap:5px;padding:5px 0;margin-bottom:6px;"><span style="background:#064e3b;color:#34d399;font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">EDINET</span><span style="color:#64748b;font-size:var(--fs-sm);">'+escH(ed.docType||'')+' '+escH((ed.submitDate||'').substring(0,10))+'</span></div>';}
-  else{html+='<div style="padding:4px 0;margin-bottom:6px;"><span style="background:#1e2d40;color:#94a3b8;font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">\u76F4\u8FD190\u65E5\u4EE5\u5185\u306E\u958B\u793A\u66F8\u985E\u306A\u3057</span></div>';}
+  // Data source badge
+  var ds=data.dataSource||'no_edinet';
+  if(ds==='full_text'){html+='<div style="display:flex;align-items:center;gap:5px;padding:5px 0;margin-bottom:6px;"><span style="background:#064e3b;color:#34d399;font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">EDINET全文分析</span><span style="color:#64748b;font-size:var(--fs-sm);">'+escH(ed.docType||'')+' '+escH((ed.submitDate||'').substring(0,10))+'</span></div>';}
+  else if(ds==='metadata_only'){html+='<div style="display:flex;align-items:center;gap:5px;padding:5px 0;margin-bottom:6px;"><span style="background:#92400e;color:#fbbf24;font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">メタデータのみ</span><span style="color:#64748b;font-size:var(--fs-sm);">'+escH(ed.docType||'')+' 全文取得に失敗</span></div>';}
+  else{html+='<div style="padding:4px 0;margin-bottom:6px;"><span style="background:#1e2d40;color:#94a3b8;font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">公開情報ベース（EDINET書類なし）</span></div>';}
   // Score total (sum of partA scores / 30)
   var scoreSum=0;var scoreCnt=0;
   ['businessResults','growthQuality','sustainability','outlook','defense','cashFlow'].forEach(function(k){if(pA[k]&&pA[k].score){scoreSum+=pA[k].score;scoreCnt++;}});
