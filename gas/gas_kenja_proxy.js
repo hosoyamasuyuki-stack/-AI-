@@ -1,12 +1,31 @@
 /**
- * 賢者の審判 GASプロキシ
+ * 賢者の審判 GASプロキシ v2（EDINET全文分析版）
  *
  * スクリプトプロパティに以下を設定:
  *   EDINET_API_KEY  : EDINET APIキー
  *   kenja-rich-api  : OpenAI APIキー（GPT-4o使用）
  *
+ * v1からの変更点:
+ *   - EDINET書類のXBRL ZIPを取得→解凍→HTML本文テキスト化
+ *   - GPT-4oの128Kコンテキストに全文を投入（正規表現抽出なし）
+ *   - 段階的フォールバック（どの段階で失敗してもサービスは継続）
+ *   - タイムアウト管理（GAS 6分制限対策）
+ *   - max_tokens 4000→8000（詳細分析出力）
+ *
  * デプロイ: ウェブアプリ → 誰でもアクセス可 → 新バージョン
  */
+
+// ── グローバル: タイムアウト管理 ────────────────────────────
+var SCRIPT_START = new Date().getTime();
+var TIMEOUT_FETCH = 240000;  // fetchDocText打ち切り: 4分
+var TIMEOUT_TOTAL = 330000;  // 全体打ち切り: 5.5分（6分制限にマージン）
+
+function elapsed() { return new Date().getTime() - SCRIPT_START; }
+function isTimeout(limit) { return elapsed() > limit; }
+
+// ══════════════════════════════════════════════════════════════
+// メインエントリポイント
+// ══════════════════════════════════════════════════════════════
 
 function doPost(e) {
   try {
@@ -15,39 +34,70 @@ function doPost(e) {
     var name = params.name || '';
     var scores = params.scores || {};
 
-    // 1. EDINET検索
+    Logger.log('START: ' + secCode + ' ' + name);
+
+    // 1. EDINET検索 + 書類本文取得
     var edinetData = searchEdinet(secCode);
+    Logger.log('EDINET: ' + elapsed() + 'ms, found=' + edinetData.found +
+               ', hasText=' + (edinetData.docText ? edinetData.docText.length + 'chars' : 'none'));
 
-    // 2. プロンプト構築
-    var prompt = buildPrompt(secCode, name, scores, edinetData);
+    // 2. データソース判定
+    var dataSource = 'no_edinet';
+    if (edinetData.found && edinetData.docText) {
+      dataSource = 'full_text';
+    } else if (edinetData.found) {
+      dataSource = 'metadata_only';
+    }
 
-    // 3. AI API呼び出し（OpenAI GPT-4o）
+    // 3. プロンプト構築
+    var prompt = buildPrompt(secCode, name, scores, edinetData, dataSource);
+    Logger.log('PROMPT: ' + elapsed() + 'ms, length=' + prompt.length);
+
+    // 4. タイムアウトチェック
+    if (isTimeout(TIMEOUT_TOTAL)) {
+      return jsonResponse({ ok: false, error: 'Timeout before AI call (' + elapsed() + 'ms)' });
+    }
+
+    // 5. AI API呼び出し
     var analysis = callAI(prompt);
+    Logger.log('AI DONE: ' + elapsed() + 'ms');
 
-    // 4. レスポンス
-    return ContentService.createTextOutput(JSON.stringify({
+    // 6. レスポンス
+    return jsonResponse({
       ok: true,
-      edinet: edinetData,
-      analysis: analysis
-    })).setMimeType(ContentService.MimeType.JSON);
+      edinet: {
+        found: edinetData.found,
+        docType: edinetData.docType || '',
+        docDescription: edinetData.docDescription || '',
+        submitDate: edinetData.submitDate || '',
+        filerName: edinetData.filerName || ''
+      },
+      analysis: analysis,
+      dataSource: dataSource
+    });
 
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({
-      ok: false,
-      error: err.message
-    })).setMimeType(ContentService.MimeType.JSON);
+    Logger.log('ERROR: ' + err.message);
+    return jsonResponse({ ok: false, error: err.message });
   }
 }
 
 function doGet(e) {
-  return ContentService.createTextOutput(JSON.stringify({
-    status: 'kenja-proxy-v1',
-    usage: 'POST with {secCode, name, scores}'
-  })).setMimeType(ContentService.MimeType.JSON);
+  return jsonResponse({ status: 'kenja-proxy-v2', usage: 'POST with {secCode, name, scores}' });
 }
 
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ══════════════════════════════════════════════════════════════
+// EDINET API: 書類検索 + 本文取得
+// ══════════════════════════════════════════════════════════════
+
 /**
- * EDINET API: 直近90日の書類を検索し、指定銘柄の最新決算書類を返す
+ * EDINET API: 直近90日の書類を検索し、最新の決算書類本文を取得
+ * 返却: { found, docID, docType, docDescription, submitDate, filerName, docText }
  */
 function searchEdinet(secCode) {
   var props = PropertiesService.getScriptProperties();
@@ -59,30 +109,29 @@ function searchEdinet(secCode) {
   if (sec5.length === 4) sec5 = sec5 + '0';
 
   var today = new Date();
-  var docs = [];
+  var allDocs = [];
 
-  // 直近90日を検索（1日ずつAPIを叩く）
-  // 効率化：7日刻みで検索し、ヒットしたら詳細検索
+  // 直近90日を7日刻みで検索
   for (var d = 0; d < 90; d += 7) {
+    if (isTimeout(60000)) break;  // 1分超で検索打ち切り
+
     var dt = new Date(today);
     dt.setDate(dt.getDate() - d);
     var dateStr = Utilities.formatDate(dt, 'Asia/Tokyo', 'yyyy-MM-dd');
 
-    var url = 'https://api.edinet-fsa.go.jp/api/v2/documents.json?date=' + dateStr + '&type=2&Subscription-Key=' + apiKey;
-
+    var url = 'https://api.edinet-fsa.go.jp/api/v2/documents.json?date=' + dateStr +
+              '&type=2&Subscription-Key=' + apiKey;
     try {
       var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
       if (resp.getResponseCode() !== 200) continue;
-
       var json = JSON.parse(resp.getContentText());
       if (!json.results) continue;
 
       for (var i = 0; i < json.results.length; i++) {
         var doc = json.results[i];
         if (doc.secCode === sec5) {
-          docs.push({
+          allDocs.push({
             docID: doc.docID,
-            edinetCode: doc.edinetCode,
             filerName: doc.filerName,
             docDescription: doc.docDescription,
             submitDateTime: doc.submitDateTime,
@@ -94,35 +143,56 @@ function searchEdinet(secCode) {
         }
       }
     } catch (e) {
-      // API呼び出しエラーは無視して次の日付へ
       continue;
     }
 
-    // 書類が見つかったら終了
-    if (docs.length > 0) break;
+    if (allDocs.length > 0) break;
+    Utilities.sleep(500);  // APIレート制限対策
   }
 
-  if (docs.length === 0) {
+  if (allDocs.length === 0) {
     return { found: false, reason: 'no_documents' };
   }
 
-  // 最新の書類を返す
-  var latest = docs[0];
+  // 書類の優先順位で選択（決算短信 > 有価証券報告書 > 四半期報告書 > その他）
+  var selected = selectBestDoc(allDocs);
+  var docType = getDocTypeName(selected.ordinanceCode, selected.formCode);
 
-  // 書類種別の日本語名
-  var docType = getDocTypeName(latest.ordinanceCode, latest.formCode);
+  // 書類本文の取得を試みる
+  var docText = null;
+  if (!isTimeout(TIMEOUT_FETCH)) {
+    Utilities.sleep(3000);  // EDINETレート制限（3秒間隔推奨）
+    docText = fetchDocText(selected.docID, apiKey);
+  } else {
+    Logger.log('TIMEOUT: fetchDocText skipped at ' + elapsed() + 'ms');
+  }
 
   return {
     found: true,
-    docID: latest.docID,
-    filerName: latest.filerName,
-    docDescription: latest.docDescription,
-    submitDate: latest.submitDateTime,
+    docID: selected.docID,
+    filerName: selected.filerName,
+    docDescription: selected.docDescription,
+    submitDate: selected.submitDateTime,
     docType: docType,
-    periodStart: latest.periodStart,
-    periodEnd: latest.periodEnd,
-    totalDocs: docs.length
+    periodStart: selected.periodStart,
+    periodEnd: selected.periodEnd,
+    totalDocs: allDocs.length,
+    docText: docText
   };
+}
+
+/**
+ * 書類の優先順位で最適な書類を選択
+ * 優先: 有価証券報告書(030000) > 四半期報告書(043000) > 半期報告書(050000) > その他
+ */
+function selectBestDoc(docs) {
+  var priority = { '030000': 1, '043000': 2, '050000': 3 };
+  docs.sort(function(a, b) {
+    var pa = priority[a.formCode] || 99;
+    var pb = priority[b.formCode] || 99;
+    return pa - pb;
+  });
+  return docs[0];
 }
 
 function getDocTypeName(ordCode, formCode) {
@@ -135,10 +205,132 @@ function getDocTypeName(ordCode, formCode) {
   return ordCode + '/' + formCode;
 }
 
+// ══════════════════════════════════════════════════════════════
+// EDINET書類本文取得（XBRL ZIP → 解凍 → テキスト化）
+// ══════════════════════════════════════════════════════════════
+
 /**
- * Deep Insight v2プロンプト構築
+ * EDINET API v2から書類ZIPを取得し、HTML本文をプレーンテキスト化して返す
+ * 失敗時はnullを返す（フォールバック用）
  */
-function buildPrompt(secCode, name, scores, edinetData) {
+function fetchDocText(docID, apiKey) {
+  try {
+    // type=1: XBRL ZIP
+    var url = 'https://api.edinet-fsa.go.jp/api/v2/documents/' + docID +
+              '?type=1&Subscription-Key=' + apiKey;
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+
+    if (resp.getResponseCode() !== 200) {
+      Logger.log('fetchDocText: HTTP ' + resp.getResponseCode());
+      return null;
+    }
+
+    // ZIP解凍
+    var blob = resp.getBlob();
+    blob.setContentType('application/zip');
+    var files;
+    try {
+      files = Utilities.unzip(blob);
+    } catch (e) {
+      Logger.log('fetchDocText: unzip failed: ' + e.message);
+      return null;
+    }
+
+    if (!files || files.length === 0) {
+      Logger.log('fetchDocText: ZIP empty');
+      return null;
+    }
+
+    // HTMLファイルを探索（最大サイズのHTMLが本文）
+    var bestHtml = null;
+    var bestSize = 0;
+    for (var i = 0; i < files.length; i++) {
+      var fname = files[i].getName().toLowerCase();
+      if (fname.match(/\.htm[l]?$/) && !fname.match(/manifest|ixbrl|viewer/i)) {
+        var size = files[i].getBytes().length;
+        if (size > bestSize) {
+          bestSize = size;
+          bestHtml = files[i];
+        }
+      }
+    }
+
+    if (!bestHtml) {
+      Logger.log('fetchDocText: no HTML found in ZIP (' + files.length + ' files)');
+      // フォールバック: XBRLファイルを試す
+      for (var j = 0; j < files.length; j++) {
+        var fn = files[j].getName().toLowerCase();
+        if (fn.match(/\.xbrl$/)) {
+          bestHtml = files[j];
+          break;
+        }
+      }
+      if (!bestHtml) return null;
+    }
+
+    Logger.log('fetchDocText: using ' + bestHtml.getName() + ' (' + bestSize + ' bytes)');
+
+    // HTMLをプレーンテキスト化
+    var htmlContent = bestHtml.getDataAsString('UTF-8');
+    var text = htmlToText(htmlContent);
+
+    // 30,000文字にトリム（GPT-4oトークン制限内）
+    if (text.length > 30000) {
+      text = text.substring(0, 30000) + '\n\n[... 以降省略（全文の一部のみ表示）...]';
+    }
+
+    Logger.log('fetchDocText: text extracted, ' + text.length + ' chars');
+    return text;
+
+  } catch (e) {
+    Logger.log('fetchDocText: error: ' + e.message);
+    return null;
+  }
+}
+
+/**
+ * HTMLをプレーンテキストに変換
+ * テーブル構造を維持しつつ、タグを除去
+ */
+function htmlToText(html) {
+  // scriptとstyleを除去
+  var text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+
+  // テーブル構造を維持するための変換
+  text = text.replace(/<\/th>/gi, '\t');
+  text = text.replace(/<\/td>/gi, '\t');
+  text = text.replace(/<\/tr>/gi, '\n');
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n\n');
+  text = text.replace(/<\/div>/gi, '\n');
+  text = text.replace(/<\/h[1-6]>/gi, '\n\n');
+
+  // 全タグ除去
+  text = text.replace(/<[^>]+>/g, '');
+
+  // HTMLエンティティ変換
+  text = text.replace(/&nbsp;/g, ' ');
+  text = text.replace(/&amp;/g, '&');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#\d+;/g, '');
+
+  // 連続空白・空行を整理
+  text = text.replace(/[ \t]+/g, ' ');
+  text = text.replace(/\n\s*\n\s*\n/g, '\n\n');
+  text = text.trim();
+
+  return text;
+}
+
+// ══════════════════════════════════════════════════════════════
+// プロンプト構築（Deep Insight v3）
+// ══════════════════════════════════════════════════════════════
+
+function buildPrompt(secCode, name, scores, edinetData, dataSource) {
+  // ── スコア情報 ──
   var scoreInfo = '';
   if (scores.v42) {
     scoreInfo = '\n\n## Dashboard Score Data\n'
@@ -150,96 +342,121 @@ function buildPrompt(secCode, name, scores, edinetData) {
       + '- Mid-term score: ' + (scores.midScore || '?') + '\n';
   }
 
-  var edinetInfo = '';
-  if (edinetData.found) {
-    edinetInfo = '\n\n## Latest EDINET Filing\n'
+  // ── EDINET情報 ──
+  var edinetSection = '';
+  if (dataSource === 'full_text') {
+    edinetSection = '\n\n## EDINET提出書類の全文（以下は実データです）\n'
+      + '書類種別: ' + edinetData.docType + '\n'
+      + '提出者: ' + edinetData.filerName + '\n'
+      + '対象期間: ' + (edinetData.periodStart || '') + ' ~ ' + (edinetData.periodEnd || '') + '\n'
+      + '提出日: ' + edinetData.submitDate + '\n\n'
+      + '--- 書類本文ここから ---\n'
+      + edinetData.docText + '\n'
+      + '--- 書類本文ここまで ---\n';
+  } else if (dataSource === 'metadata_only') {
+    edinetSection = '\n\n## EDINET Filing (metadata only - full text unavailable)\n'
       + '- Document: ' + edinetData.docType + '\n'
-      + '- Description: ' + edinetData.docDescription + '\n'
       + '- Filed: ' + edinetData.submitDate + '\n'
-      + '- Period: ' + (edinetData.periodStart || '') + ' to ' + (edinetData.periodEnd || '') + '\n'
-      + '- Filer: ' + edinetData.filerName + '\n';
+      + '- Filer: ' + edinetData.filerName + '\n'
+      + '⚠ Full text could not be retrieved. Use your knowledge of this company.\n';
   } else {
-    edinetInfo = '\n\n## EDINET Filing: Not found in last 90 days. Use public information.\n';
+    edinetSection = '\n\n## EDINET: No filing found in last 90 days.\n'
+      + '⚠ Use publicly available information. Note lower confidence.\n';
   }
 
-  return 'You are "The Sage" - a professional securities analyst and investment educator.\n'
-    + 'Analyze ' + name + ' (code: ' + secCode + ') for a Japanese individual investor (beginner, age 50+).\n'
-    + 'Use the latest publicly available financial data (earnings reports, financial statements) for this company.\n'
+  // ── メインプロンプト ──
+  var dataInstruction = '';
+  if (dataSource === 'full_text') {
+    dataInstruction = '上記のEDINET書類の実データ（売上高、利益、セグメント情報、キャッシュフロー、'
+      + '経営方針、リスク情報等）のみに基づいて分析してください。\n'
+      + '書類に記載された具体的な数値を必ず引用してください。推測は「推測:」と明記してください。\n'
+      + 'この会社の独自性（他社と何が違うのか）、気を付けるべきリスクを特に詳しく分析してください。\n';
+  } else {
+    dataInstruction = '公開情報に基づいて分析してください。EDINET書類が取得できなかったため、'
+      + '信頼度は下がります。可能な範囲で具体的な数値を使用してください。\n';
+  }
+
+  return 'あなたは「賢者」です。プロの証券アナリストであり、投資教育者です。\n'
+    + name + '（証券コード: ' + secCode + '）を分析してください。\n'
+    + '対象: 日本の個人投資家（50代以上の投資初心者）\n'
     + scoreInfo
-    + edinetInfo
-    + '\n## Analysis Framework (7 Sections - "Deep Insight")\n'
-    + 'Analyze this company through these 7 lenses:\n'
+    + edinetSection
+    + '\n' + dataInstruction
+    + '\n## 分析フレームワーク（7セクション「ディープ・インサイト」）\n'
     + '\n'
-    + '1. BUSINESS RESULTS - Sales trend (increase/decrease/flat, % change, main driver).\n'
-    + '   Profit trend (increase/decrease/flat, % change, root cause).\n'
-    + '   Best performing segment vs worst performing segment.\n'
+    + '1. 業績の正体 — 売上・利益の増減とその真因。最も業績を牽引しているセグメントと最も弱いセグメントを特定。\n'
+    + '   前年比の数値を必ず含める。「増収増益」のような曖昧表現ではなく、具体的%変化を記載。\n'
     + '\n'
-    + '2. GROWTH QUALITY - What is driving revenue? (new products, pricing, volume, M&A, FX, other)\n'
-    + '   Operating margin change and why.\n'
+    + '2. 成長の質 — 何で伸びているか（新製品/値上げ/数量増/M&A/為替/その他）を特定。\n'
+    + '   営業利益率の変化とその理由。この会社だけの独自の強み・弱みは何か。\n'
     + '\n'
-    + '3. SUSTAINABILITY - Is the growth structural (real capability) or temporary (one-time)?\n'
-    + '   External dependency level (low/medium/high).\n'
+    + '3. 持続力 — 構造的成長か一過性か。外部依存度（為替・特定顧客・政策等）。\n'
+    + '   同業他社と比較した場合のポジション。\n'
     + '\n'
-    + '4. OUTLOOK - Official guidance (revenue/profit forecast, YoY %).\n'
-    + '   Management tone (cautious/neutral/bullish) with evidence.\n'
-    + '   Transparency of forecast basis (1-5 stars).\n'
+    + '4. 未来への展望 — 会社発表の業績予想（売上・利益の前年比%）。\n'
+    + '   経営陣の温度感（慎重/中立/強気）を具体的な根拠とともに。予想の透明度（1-5星）。\n'
     + '\n'
-    + '5. DEFENSE (防御度) - Identify top 2-3 risks.\n'
-    + '   Does the company have countermeasures? Score 1-5 (5=very well defended, few risks; 1=many severe risks, no countermeasures).\n'
+    + '5. リスクの特定（防御度）— 上位2-3リスクを具体的に特定。\n'
+    + '   会社の対策の有無と十分性。投資家として最も気を付けるべき点。\n'
+    + '   Score 1-5（5=防御万全, 1=重大リスクあり）。\n'
     + '\n'
-    + '6. CASH FLOW - Operating CF, Investing CF, Free CF.\n'
-    + '   Is the company generating cash after investment? Healthy or concerning?\n'
+    + '6. 資金の血流 — 営業CF・投資CF・フリーCFの具体的な金額。\n'
+    + '   現金創出力の実態。設備投資の過大/過小。財務健全性。\n'
     + '\n'
-    + '7. FINAL VERDICT - Is this company\'s "winning formula" trustworthy?\n'
-    + '   Compare with dashboard v4.3 score. Flag any discrepancy.\n'
-    + '   Key question: Has anything changed recently that the score hasn\'t caught yet?\n'
+    + '7. 最終審判 — この会社の「勝ち筋」は信頼できるか。\n'
+    + '   ダッシュボードのv4.3スコアとの乖離がないか確認。\n'
+    + '   直近で何か変わったことはないか（スコアがまだ反映していない変化）。\n'
     + '\n'
-    + '## Output Requirements\n'
-    + 'Output ONLY valid JSON (no markdown, no code fences). Use this exact structure:\n'
+    + '## 出力形式\n'
+    + 'JSON形式のみ出力してください（マークダウンやコードフェンス不要）。\n'
     + '{\n'
     + '  "verdict": "S" or "A" or "B" or "C" or "D",\n'
     + '  "partA": {\n'
-    + '    "businessResults": {"score":1-5,"title":"short title in Japanese","summary":"2-3 sentences in Japanese. Include sales/profit % change."},\n'
-    + '    "growthQuality": {"score":1-5,"title":"...","summary":"2-3 sentences. What is the growth engine?"},\n'
-    + '    "sustainability": {"score":1-5,"title":"...","summary":"2-3 sentences. Structural or temporary?"},\n'
-    + '    "outlook": {"score":1-5,"title":"...","summary":"2-3 sentences. Management tone and forecast."},\n'
-    + '    "defense": {"score":1-5,"title":"...","summary":"2-3 sentences. Top risk and countermeasure. 5=well defended, 1=vulnerable."},\n'
-    + '    "cashFlow": {"score":1-5,"title":"...","summary":"2-3 sentences. FCF status."},\n'
+    + '    "businessResults": {"score":1-5,"title":"日本語タイトル","summary":"5-8文の日本語分析。必ず具体的数値を含める。"},\n'
+    + '    "growthQuality": {"score":1-5,"title":"...","summary":"5-8文。成長エンジンの正体。"},\n'
+    + '    "sustainability": {"score":1-5,"title":"...","summary":"5-8文。構造的か一過性か。"},\n'
+    + '    "outlook": {"score":1-5,"title":"...","summary":"5-8文。経営陣の温度感と根拠。"},\n'
+    + '    "defense": {"score":1-5,"title":"...","summary":"5-8文。具体的リスクと対策。"},\n'
+    + '    "cashFlow": {"score":1-5,"title":"...","summary":"5-8文。FCFの実態。"},\n'
     + '    "finalVerdict": {"credibility":"high" or "medium" or "low","reasons":["reason1","reason2","reason3"]}\n'
     + '  },\n'
     + '  "partB": {\n'
-    + '    "overview":"3-5 sentences in Japanese. Overall picture of business results.",\n'
-    + '    "growth":"3-5 sentences. Dissect the growth drivers.",\n'
-    + '    "sustainability":"3-5 sentences. Will this momentum continue?",\n'
-    + '    "future":"3-5 sentences. Management outlook and its credibility.",\n'
-    + '    "defense":"3-5 sentences. What could go wrong and how well is the company prepared?",\n'
-    + '    "cashflow":"3-5 sentences. Cash flow health assessment.",\n'
-    + '    "conclusion":"3-5 sentences. Bottom line for a beginner investor."\n'
+    + '    "overview":"5-8文。業績の全体像を初心者にもわかるように。",\n'
+    + '    "growth":"5-8文。成長ドライバーを深掘り。",\n'
+    + '    "sustainability":"5-8文。この勢いは続くのか。",\n'
+    + '    "future":"5-8文。経営陣の見通しとその信頼性。",\n'
+    + '    "defense":"5-8文。何が怖くて、どう備えているか。",\n'
+    + '    "cashflow":"5-8文。お金の流れの健全性。",\n'
+    + '    "conclusion":"5-8文。50代投資初心者への最終アドバイス。"\n'
     + '  },\n'
-    + '  "alert": "If something has recently changed that contradicts the dashboard score, describe it here in 1-2 sentences Japanese. Otherwise null.",\n'
-    + '  "beginnerAdvice": "2-3 sentences simple advice in Japanese for a 50-year-old beginner investor"\n'
+    + '  "alert": "v4.3スコアと直近の実態に乖離がある場合、1-2文で警告。なければnull。",\n'
+    + '  "beginnerAdvice": "50代投資初心者への3-4文のアドバイス。専門用語には必ず括弧内に説明を。"\n'
     + '}\n'
-    + '\nCritical rules:\n'
-    + '- ALL Japanese text in natural, warm "です・ます" style. NOT mechanical bullet points.\n'
-    + '- Write as if explaining to a trusted friend over coffee, not writing a report.\n'
-    + '- Use concrete numbers (売上+12%, 営業利益率8.2%→9.1%) instead of vague descriptions.\n'
-    + '- If you use a financial term, add a simple explanation in parentheses.\n'
-    + '- Score 1-5: 1=very poor, 2=poor, 3=average, 4=good, 5=excellent\n'
-    + '- Be honest about risks, do not sugarcoat.\n'
-    + '- The "alert" field is the MOST IMPORTANT output: flag if recent data contradicts the v4.3 score.\n'
-    + '- Part B must read like a magazine article, not an AI output. Use storytelling.\n';
+    + '\n重要ルール:\n'
+    + '- 全て自然な日本語「です・ます」調。機械的な箇条書きではなく、信頼できる友人に説明する口調。\n'
+    + '- 数値は必ず書類から引用（売上+12.3%, 営業利益率8.2%→9.1%）。曖昧な表現禁止。\n'
+    + '- 専門用語には必ず簡単な説明を括弧内に添える。\n'
+    + '- リスクは美化しない。正直に。\n'
+    + '- Part Bは雑誌記事のように読みやすく。AIの出力ではなくプロのアナリストの語り口。\n'
+    + '- "alert"フィールドが最重要: v4.3スコアと直近実態の乖離を検出せよ。\n';
 }
 
-/**
- * AI API呼び出し（OpenAI GPT-4o）
- *
- * スクリプトプロパティ kenja-rich-api が必要。
- * レスポンスからJSON部分を抽出してパースする。
- */
+// ══════════════════════════════════════════════════════════════
+// AI API呼び出し（OpenAI GPT-4o）
+// ══════════════════════════════════════════════════════════════
+
 function callAI(prompt) {
   var props = PropertiesService.getScriptProperties();
   var apiKey = props.getProperty('kenja-rich-api');
-  if (!apiKey) throw new Error('kenja-rich-api not set');
+  if (!apiKey) throw new Error('kenja-rich-api not set in Script Properties');
+
+  var systemPrompt = 'あなたは「賢者」です。温かみのある、経験豊富な証券アナリストです。'
+    + '複雑な話題を初心者にもわかるように説明します。'
+    + '全ての日本語は自然な「です・ます」調で、信頼できる友人に話すように書いてください。'
+    + '具体的な数値を必ず使ってください。'
+    + 'EDINET書類の実データが提供されている場合、一般論ではなく、その書類に書かれた具体的な数値・事実のみに基づいて分析してください。'
+    + '書類にない情報を推測する場合は「推測ですが」と必ず明記してください。'
+    + '常にJSON形式のみで回答してください。マークダウンやコードフェンスは使わないでください。';
 
   var resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
     method: 'post',
@@ -249,10 +466,10 @@ function callAI(prompt) {
     },
     payload: JSON.stringify({
       model: 'gpt-4o',
-      max_tokens: 4000,
+      max_tokens: 8000,
       temperature: 0.3,
       messages: [
-        { role: 'system', content: 'You are "The Sage" - a warm, experienced securities analyst who explains complex topics simply. Write all Japanese in natural です・ます style, as if talking to a trusted friend. Be specific with numbers. Always respond with valid JSON only, no markdown.' },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ]
     }),
