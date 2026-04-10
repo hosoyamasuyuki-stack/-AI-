@@ -560,13 +560,14 @@ verify_0415.py が完全自動化済み
   結果: トヨクモ4058でEDINET全文分析が動作。売上54.4%増・営業利益率36.9%→33.1%等の具体数値を引用
   残課題: Part B（詳細レポート）が短い → 次回clasp導入後に2段階API呼び出しで対応
 
-【★次回最優先：clasp CLI導入 + Part B詳細化】
-GASデプロイが手動操作に依存しており、繰り返しエラーの温床になっている。
-次回やるべきこと：
-1. clasp CLI導入（npm install -g @google/clasp）→ GASデプロイをコマンド1行で自動化
-2. Part B詳細化（2段階API呼び出し：Part A + 60秒待機 + Part B）
-3. コードはPR済み（claude/laughing-ishizakaブランチ）→ clasp pushでデプロイ
-4. テスト→動作確認→保存
+【解決済み（2026/04/10 セッション11後半）】
+★clasp CLI導入 + Part B詳細化 → 完了（GASバージョン31・clasp deploy）
+  - clasp CLI v3.3.0インストール・Google認証・Apps Script API有効化
+  - clasp push + clasp deploy でコマンド1行デプロイ実現（手動操作不要に）
+  - 2段階API呼び出し: Part A(4000トークン) + 61秒待機 + Part B(8000トークン)
+  - Part B各セクション400文字以上必須の指示
+  - トヨクモ4058テスト: 2,955文字の詳細分析（前回2,144文字から38%増）
+  - gas_deploy/フォルダにclasp設定ファイル配置
 
 【将来的な大きなタスク】
 12. ポートフォリオ全体バランスチェック機能
