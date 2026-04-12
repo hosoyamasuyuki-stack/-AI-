@@ -31,7 +31,7 @@ TODAY = datetime.now()
 DATA_YEARS = 10
 CUTOFF = (TODAY - timedelta(days=365 * DATA_YEARS)).strftime('%Y-%m-%d')
 
-TOP_N = 50
+TOP_N = 75
 CHECKPOINT_INTERVAL = 500
 CHECKPOINT_FILE = '/tmp/full_scan_checkpoint.csv'
 

@@ -895,7 +895,7 @@ _macro_txt = f'\u6700\u7D42{_macro_last}' if _macro_last else '\u672A\u53D6\u5F9
 ticker_items.append(_ti(_macro_dot, '\u30DE\u30AF\u30ED\u6307\u6A19', _macro_txt))
 # スクリーニングTop50（実数）
 _screen_dot = '#34d399' if _n_screen > 0 else '#f87171'
-ticker_items.append(_ti(_screen_dot, f'Top50', f'{_n_screen}\u9298\u67C4'))
+ticker_items.append(_ti(_screen_dot, f'Top75', f'{_n_screen}\u9298\u67C4'))
 # 合計追跡数
 ticker_items.append(
     f'<span style="display:inline-flex;align-items:center;gap:4px;padding:0 10px;'
