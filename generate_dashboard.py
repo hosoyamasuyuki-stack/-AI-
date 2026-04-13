@@ -758,9 +758,10 @@ for row, stype in all_data:
                 'curr': rank, 'score': tot
             })
 
-# スクリーニングTop50のテーブル行生成（簡素表示：銘柄・株価・スコア・シグナル）
+# スクリーニングTop75のテーブル行生成（シートには150社保存・表示は上位75社）
+DISPLAY_TOP_N = 75
 rows_s = []
-for row, stype in screen_data:
+for row, stype in screen_data[:DISPLAY_TOP_N]:
     code  = str(row.get('コード',    '')).strip()
     name  = str(row.get('銘柄名',    '')).strip()
     sect  = str(row.get('業種',      '')).strip()
