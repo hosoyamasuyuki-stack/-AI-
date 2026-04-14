@@ -343,9 +343,12 @@ SHEET_COLS = ['コード', '銘柄名', '業種', '総合スコア', 'ランク'
 try:
     ws = ss.worksheet(SHEET_NAME)
     ws.clear()
-    print(f"  {SHEET_NAME} クリア完了")
+    # 行数が足りない場合は拡張（150社+ヘッダー=151行必要）
+    if ws.row_count < TOP_N + 10:
+        ws.resize(rows=TOP_N + 10)
+    print(f"  {SHEET_NAME} クリア完了（{ws.row_count}行）")
 except gspread.exceptions.WorksheetNotFound:
-    ws = ss.add_worksheet(title=SHEET_NAME, rows=60, cols=15)
+    ws = ss.add_worksheet(title=SHEET_NAME, rows=TOP_N + 10, cols=15)
     print(f"  {SHEET_NAME} 新規作成")
 
 # ヘッダー + データ書き込み
