@@ -665,6 +665,27 @@ def short_label(s):
     return ('強気' if s>=70 else 'やや強気' if s>=55 else
             '中立' if s>=45 else 'やや弱気' if s>=30 else '弱気')
 
+# ── 銘柄固有：割安度ラベル（PEGベース・3年以上保有の買い時判断） ──
+def valuation_label(peg):
+    """PEG値から割安度ラベルを返す（低いほど割安）"""
+    if peg is None or peg == 0:
+        return '-', '#94a3b8'
+    if peg <= 0.8:  return '割安',   '#4ade80'
+    if peg <= 1.2:  return '適正',   '#fbbf24'
+    if peg <= 1.8:  return 'やや割高','#f59e0b'
+    return '割高', '#f87171'
+
+# ── 銘柄固有：成長性ラベル（ROEトレンドベース・複利力の方向性） ──
+def growth_label(roeT):
+    """ROEトレンド(%/年)から成長性ラベルを返す"""
+    if roeT is None:
+        return '-', '#94a3b8'
+    if roeT >= 2.0:   return '加速',   '#4ade80'
+    if roeT >= 0.5:   return '上昇',   '#86efac'
+    if roeT >= -0.5:  return '安定',   '#fbbf24'
+    if roeT >= -2.0:  return '鈍化',   '#f59e0b'
+    return '悪化', '#f87171'
+
 def mid_sector_comment(sect, mid):
     sector_map = {
         '商社':'商社業種はM2加速の恩恵大',
@@ -729,6 +750,10 @@ for row, stype in all_data:
     lb = e(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt = e(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
+    # 銘柄固有の割安度・成長性（3年以上保有の判断材料）
+    val_lbl, val_col = valuation_label(peg)
+    grw_lbl, grw_col = growth_label(roeT)
+
     tr = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
@@ -739,8 +764,8 @@ for row, stype in all_data:
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
-        f'          <td style="color:#fbbf24;">{short_label(SHORT_SCORE)}</td>\n'
-        f'          <td style="color:#fbbf24;">{short_label(MID_SCORE)}</td>\n'
+        f'          <td style="color:{val_col};">{val_lbl}</td>\n'
+        f'          <td style="color:{grw_col};">{grw_lbl}</td>\n'
         f'          <td><span style="background:{rb};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
         f'          <td>{DAYS_LABEL}</td>\n'
@@ -800,6 +825,10 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
     lb2 = e2(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt2 = e2(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
+    # 銘柄固有の割安度・成長性（3年以上保有の判断材料）
+    val_lbl2, val_col2 = valuation_label(peg)
+    grw_lbl2, grw_col2 = growth_label(roeT)
+
     rb2 = rbg(rank)
     tr_s = (
         f'        <tr class="dr" onclick="sel(this);showD('
@@ -811,8 +840,8 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
-        f'          <td style="color:#fbbf24;">{short_label(SHORT_SCORE)}</td>\n'
-        f'          <td style="color:#fbbf24;">{short_label(MID_SCORE)}</td>\n'
+        f'          <td style="color:{val_col2};">{val_lbl2}</td>\n'
+        f'          <td style="color:{grw_col2};">{grw_lbl2}</td>\n'
         f'          <td><span style="background:{rb2};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
         f'          <td style="font-size:var(--fs-xs);color:#94a3b8;">{sect}</td>\n'
