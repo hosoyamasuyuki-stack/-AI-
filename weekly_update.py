@@ -724,3 +724,66 @@ for rk in ['S','A','B','C','D']:
 print(f"\n  [バグ修正] Part3シート名修正（失敗35・2026/03/24）")
 print(f"    日本M2_月次→日本M2 / WTI原油_月次→WTI原油 / 米GDP_月次→米設備稼働率")
 print(f"$2705 全処理完了: {NOW}")
+
+# ============================================================
+# 整合性チェック（協議合意事項#3）
+# 保有/監視シートのデータ健全性を自動監視
+# ============================================================
+print(f"\n{'='*60}")
+print(f"シート整合性チェック")
+print(f"{'='*60}")
+integrity_errors = []
+for sn in ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']:
+    try:
+        ws_chk = ss.worksheet(sn)
+        vals = ws_chk.get_all_values()
+        if len(vals) < 2:
+            continue
+        hdr = vals[0]
+        # 必須列の存在
+        required = ['コード', '総合スコア', 'ランク', '変数1', '変数2', '変数3']
+        missing = [r for r in required if r not in hdr]
+        if missing:
+            integrity_errors.append(f"{sn}: 必須列欠落 {missing}")
+            continue
+        idx = {k: hdr.index(k) for k in required}
+        bad_rows = []
+        for i, r in enumerate(vals[1:], start=2):
+            if len(r) <= max(idx.values()):
+                continue
+            code = str(r[idx['コード']]).strip()
+            if not code:
+                continue
+            try:
+                v1 = float(r[idx['変数1']] or 0)
+                v2 = float(r[idx['変数2']] or 0)
+                v3 = float(r[idx['変数3']] or 0)
+                tot = float(r[idx['総合スコア']] or 0)
+            except (ValueError, TypeError):
+                bad_rows.append(f"{code}(非数値)")
+                continue
+            # 変数が 0〜100 範囲から大きく外れていたら異常
+            if not (-20 <= v1 <= 120 and -20 <= v2 <= 120 and -20 <= v3 <= 120):
+                bad_rows.append(f"{code}(変数範囲外 {v1}/{v2}/{v3})")
+            # 絶対値 1 未満は「スコア値でない」（生データが混入）
+            if abs(v1) < 1 and abs(v2) < 1 and abs(v3) < 1:
+                bad_rows.append(f"{code}(全変数<1・生データ混入疑い)")
+            # 総合スコアと変数の整合（1点以上乖離なら警告）
+            expected = v1 * 0.4 + v2 * 0.35 + v3 * 0.25
+            if abs(tot - expected) > 1.5:
+                bad_rows.append(f"{code}(総合乖離 {tot}≠{expected:.1f})")
+        if bad_rows:
+            integrity_errors.append(f"{sn}: {len(bad_rows)}件の異常 {bad_rows[:5]}")
+    except Exception as e:
+        integrity_errors.append(f"{sn}: チェック失敗 {e}")
+
+if integrity_errors:
+    print("$26A0$FE0F 整合性 ERROR:")
+    for err in integrity_errors:
+        print(f"  {err}")
+    # CI failure として exit code を返す
+    # （weekly_update は SYNC_COLS 書き戻しまで終えた後なので、失敗扱いでもデータはコミット済み）
+    import sys as _sys
+    _sys.exit(3)
+else:
+    print("$2705 整合性チェック OK: 変数/総合/ランクすべて正常範囲")

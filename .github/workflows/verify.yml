@@ -56,13 +56,13 @@ jobs:
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python verify/verify_monday.py
 
-      - name: Run verify_0415 (4/15のみ)
+      - name: Run verify_axis 目先 (4/15のみ・旧verify_0415互換)
         if: github.event.schedule == '0 0 15 4 *'
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
-        run: python verify/verify_0415.py
+        run: python verify/verify_axis.py --axis 目先
 
       - name: Run 目先 monthly verification (毎月1日)
         if: github.event.schedule == '0 1 1 * *'
@@ -102,4 +102,4 @@ jobs:
         run: |
           python verify/verify_monday.py
           echo "---"
-          python verify/verify_0415.py
+          python verify/verify_axis.py --axis 目先

@@ -1011,6 +1011,49 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
 
 print(f"  保有:{len(rows_h)}銘柄 監視:{len(rows_w)}銘柄 スクリーニング:{len(rows_s)}銘柄")
 
+# ── 整合性ガード（協議合意事項#2）──────────────────────────
+# 「全銘柄で値が同じ」状態をサイレントに出さないための防御壁。
+# 短期/中期セルの値が全銘柄の80%超で同一 → 明らかにバグ → ERROR停止
+def _guard_cell_diversity(rows, col_idx_short=3, col_idx_mid=4, sheet_name='保有/監視'):
+    """rows: tr 文字列のリスト。各rowの短期/中期TDセルの text 分散を確認"""
+    import re as _re
+    def _extract_td_texts(tr_str):
+        # td の内側テキストだけ抽出（タグ除去）
+        cells = _re.findall(r'<td[^>]*>(.*?)</td>', tr_str, flags=_re.DOTALL)
+        # タグを剥がす
+        clean = []
+        for c in cells:
+            c = _re.sub(r'<[^>]+>', '', c).strip()
+            clean.append(c)
+        return clean
+    n = len(rows)
+    if n < 10:
+        return  # 銘柄数が少なすぎる場合はスキップ
+    shorts = []
+    mids = []
+    for tr in rows:
+        tds = _extract_td_texts(tr)
+        # TD 構成: 0=銘柄 1=株価 2=v4.3 3=短期 4=中期 5=長期 ...
+        if len(tds) > col_idx_mid:
+            shorts.append(tds[col_idx_short])
+            mids.append(tds[col_idx_mid])
+    for label, vals in (('短期', shorts), ('中期', mids)):
+        if not vals:
+            continue
+        from collections import Counter
+        top_val, top_n = Counter(vals).most_common(1)[0]
+        same_ratio = top_n / len(vals)
+        if same_ratio > 0.80:
+            print(f"  ERROR ガード発動: {sheet_name} の{label}列で "
+                  f"'{top_val}' が {top_n}/{len(vals)} ({same_ratio:.0%}) "
+                  f"を占めている。全銘柄共通値の可能性。")
+            import sys as _sys
+            _sys.exit(2)
+
+_guard_cell_diversity(rows_h + rows_w, sheet_name='保有+監視')
+_guard_cell_diversity(rows_s, sheet_name='スクリーニング')
+print(f"  整合性ガード: OK (値分散チェック通過)")
+
 BASE_URL = ('https://raw.githubusercontent.com/'
             'hosoyamasuyuki-stack/-AI-/main/ai_dashboard_v13.html')
 print(f"  ベースHTML取得中...")
