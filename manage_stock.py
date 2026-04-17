@@ -121,13 +121,25 @@ def calc_v43_score(df, price_info):
 
 # ── メイン処理 ───────────────────────────────────────────────
 def find_row_by_code(ws, code):
-    """シート内で銘柄コードの行番号を返す（1-indexed、なければNone）"""
+    """シート内で銘柄コードの行番号を返す（1-indexed、なければNone）
+    ヘッダー名が「コード」または「銘柄コード」の列を自動検出。
+    予測記録シート（行1がサブヘッダー）にも対応。
+    """
     all_vals = ws.get_all_values()
     if len(all_vals) < 2: return None, all_vals
     header = all_vals[0]
-    code_col = header.index('コード') if 'コード' in header else 0
-    for i, row in enumerate(all_vals[1:], start=2):
-        if str(row[code_col]).strip() == str(code).strip():
+    code_col = None
+    for name in ('コード', '銘柄コード'):
+        if name in header:
+            code_col = header.index(name)
+            break
+    if code_col is None:
+        code_col = 0
+    # 予測記録は行1がサブヘッダー・行2からデータ
+    sheet_title = getattr(ws, 'title', '') or ''
+    data_start = 2 if '予測記録' in sheet_title else 1
+    for i, row in enumerate(all_vals[data_start:], start=data_start + 1):
+        if len(row) > code_col and str(row[code_col]).strip() == str(code).strip():
             return i, all_vals
     return None, all_vals
 
@@ -271,18 +283,39 @@ def add_stock(code, target):
     return total, rank
 
 def remove_stock(code, target):
-    """銘柄をシートから削除"""
+    """銘柄を4シート横断で削除（破損データの残留を防ぐ・協議合意事項#1）
+    対象: 保有/監視銘柄_v4.3スコア、コアスキャン_v4.3、コアスキャン_日次、予測記録
+    """
     sheet_name = SHEET_MAP[target]
     ws = ss.worksheet(sheet_name)
-
     row_num, all_vals = find_row_by_code(ws, code)
     if not row_num:
         print(f"ERROR: {code} は {sheet_name} に存在しません")
         sys.exit(1)
-
     name = all_vals[row_num - 1][1] if len(all_vals[row_num - 1]) > 1 else code
     ws.delete_rows(row_num)
     print(f"  {sheet_name} から {code} {name} を削除（行{row_num}）")
+
+    # 派生シートからも同銘柄を削除（バグ版データの残留・伝播を防止）
+    CASCADE_SHEETS = ['コアスキャン_v4.3', 'コアスキャン_日次', '予測記録']
+    for sn in CASCADE_SHEETS:
+        try:
+            sws = ss.worksheet(sn)
+            deleted = 0
+            # 予測記録はコード列が 1 列目、それ以外は 0 列目
+            # find_row_by_code は自動検出するので安心
+            while True:
+                r, _ = find_row_by_code(sws, code)
+                if not r:
+                    break
+                sws.delete_rows(r)
+                deleted += 1
+                if deleted > 5:  # セーフガード: 無限ループ防止
+                    break
+            if deleted:
+                print(f"  {sn} からも {code} を {deleted}行 削除")
+        except Exception as e:
+            print(f"  WARNING: {sn} の削除に失敗: {e}")
 
 def move_stock(code, target):
     """銘柄を target に移動（もう一方から削除 → target に追加）"""
