@@ -2989,9 +2989,15 @@ function srt(id,col,th){
   const b=th.querySelector('.sort-btn');
   if(b)b.classList.add(asc?'asc-on':'desc-on');
   const rows=Array.from(t.querySelectorAll('tr.dr'));
+  // ランク順マップ（S=最高, D=最低）※長期列などでS→A→B→C→Dの正しい順序を保証
+  const RANK={S:4,A:3,B:2,C:1,D:0};
   rows.sort((a,b)=>{
     const ta=a.cells[col]?a.cells[col].innerText.trim():'';
     const tb=b.cells[col]?b.cells[col].innerText.trim():'';
+    // セルがランク文字（S/A/B/C/D）のみの場合はランク順序で比較
+    if(ta in RANK && tb in RANK){
+      return asc?RANK[ta]-RANK[tb]:RANK[tb]-RANK[ta];
+    }
     const na=parseFloat(ta.replace(/[^0-9.\-]/g,'')),nb=parseFloat(tb.replace(/[^0-9.\-]/g,''));
     if(!isNaN(na)&&!isNaN(nb))return asc?na-nb:nb-na;
     return asc?ta.localeCompare(tb,'ja'):tb.localeCompare(ta,'ja');
