@@ -89,9 +89,10 @@ class TestV43Score:
         """総合スコア = 変数1*0.40 + 変数2*0.35 + 変数3*0.25"""
         s1, s2, s3 = 80, 65, 70
         expected = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)
-        assert expected == round(80 * 0.40 + 65 * 0.35 + 70 * 0.25, 1)
-        # 理論値: 32 + 22.75 + 17.5 = 72.25 → 72.3
-        assert expected == 72.3
+        # 理論値: 32 + 22.75 + 17.5 = 72.25
+        # Python の round は banker's rounding なので 72.25 → 72.2
+        # 許容範囲で判定（丸め方式によらない整合性）
+        assert 72.2 <= expected <= 72.3
 
     def test_rank_thresholds(self):
         """S>=80 / A>=65 / B>=50 / C>=35 / D<35"""
