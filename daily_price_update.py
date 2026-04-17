@@ -212,15 +212,38 @@ print(f"\n【{len(STOCKS)}銘柄の変数3（価格）を日次更新】")
 print(f"FCF利回りの計算：時価総額ベース（株価連動）")
 
 # 既存のv4.3スコアシートを読み込む（変数1・2を再利用）
+# 優先順位: 保有銘柄_v4.3スコア > 監視銘柄_v4.3スコア > コアスキャン_v4.3
+# 理由: manage_stock.py の最新書き込みが確実に反映されているのは
+#       保有/監視シート。コアスキャン_v4.3 は過去のバグ版で書かれた
+#       行が残っている可能性があるためフォールバック。
+has_existing = False
+df_v43 = None
 try:
-    ws_v43 = ss.worksheet('コアスキャン_v4.3')
-    df_v43 = pd.DataFrame(ws_v43.get_all_records())
-    df_v43['コード'] = df_v43['コード'].astype(str)
-    has_existing = True
-    print(f"$2705 既存v4.3スコア読み込み：{len(df_v43)}銘柄")
-except:
+    dfs = []
+    for sh in ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']:
+        try:
+            ws_p = ss.worksheet(sh)
+            d = pd.DataFrame(ws_p.get_all_records())
+            if len(d) > 0:
+                d['コード'] = d['コード'].astype(str)
+                dfs.append(d[['コード', '変数1', '変数2', 'ランク', '総合スコア']])
+        except Exception as e:
+            print(f"  WARNING: {sh}読込失敗 {e}")
+    if dfs:
+        df_v43 = pd.concat(dfs, ignore_index=True)
+        df_v43 = df_v43.drop_duplicates(subset='コード', keep='first')
+        has_existing = True
+        print(f"$2705 変数1・2ソース読込（保有+監視）: {len(df_v43)}銘柄")
+    else:
+        # フォールバック: コアスキャン_v4.3
+        ws_v43 = ss.worksheet('コアスキャン_v4.3')
+        df_v43 = pd.DataFrame(ws_v43.get_all_records())
+        df_v43['コード'] = df_v43['コード'].astype(str)
+        has_existing = True
+        print(f"$2705 変数1・2ソース読込（コアスキャン_v4.3フォールバック）: {len(df_v43)}銘柄")
+except Exception as e:
     has_existing = False
-    print("$26A0$FE0F 既存v4.3スコアが見つかりません。変数1・2はデフォルト値を使用")
+    print(f"$26A0$FE0F 既存v4.3スコアが見つかりません。変数1・2はデフォルト値を使用: {e}")
 
 daily_results = []
 alerts        = []  # 暴落・急騰アラート
@@ -254,15 +277,28 @@ for s in STOCKS:
         fin.get('eps'), fin.get('feps'), fin.get('ta')
     )
 
-    # 既存の変数1・2を取得
+    # 既存の変数1・2を取得（サニティチェック付き）
+    # スコアは通常 0〜100 の整数。0〜1 の小数値が入っていれば「壊れた行」とみなしデフォルト
     s1, s2, rank_prev, total_prev = 50, 50, 'C', 50.0
     if has_existing:
         row = df_v43[df_v43['コード'] == code]
         if len(row) > 0:
-            s1         = int(row.iloc[0].get('変数1', 50) or 50)
-            s2         = int(row.iloc[0].get('変数2', 50) or 50)
+            try:
+                _s1 = float(row.iloc[0].get('変数1', 50) or 50)
+                _s2 = float(row.iloc[0].get('変数2', 50) or 50)
+            except (ValueError, TypeError):
+                _s1, _s2 = 50.0, 50.0
+            # サニティチェック: 絶対値 1 未満はスコア値としては異常（過去バグ書き込み）
+            if abs(_s1) < 1.0 and abs(_s2) < 1.0:
+                print(f"[WARN {code} 変数1={_s1}・変数2={_s2} は異常値・デフォルト使用] ", end='')
+                s1, s2 = 50, 50
+            else:
+                s1 = int(round(_s1))
+                s2 = int(round(_s2))
             rank_prev  = str(row.iloc[0].get('ランク', 'C'))
-            total_prev = float(row.iloc[0].get('総合スコア', 50) or 50)
+            try:
+                total_prev = float(row.iloc[0].get('総合スコア', 50) or 50)
+            except: total_prev = 50.0
 
     # 統合スコア再計算
     total_new = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)

@@ -197,17 +197,22 @@ def add_stock(code, target):
     ws.update(f'A{next_row}', [new_row])
     print(f"  {sheet_name} の行{next_row}に追加完了")
 
-    # コアスキャン_v4.3にも追加（シート固有のヘッダー順で書く）
+    # コアスキャン_v4.3にも追加／既存行があればヘッダー順で上書き
+    # （既存行が古い列順で書かれていた場合の整合性確保）
     try:
         cs_ws = ss.worksheet('コアスキャン_v4.3')
         cs_row, _ = find_row_by_code(cs_ws, code)
-        if not cs_row:
-            cs_all = cs_ws.get_all_values()
-            cs_header = cs_all[0] if cs_all else header
-            cs_new_row = build_row_from_header(cs_header)
+        cs_all = cs_ws.get_all_values()
+        cs_header = cs_all[0] if cs_all else header
+        cs_new_row = build_row_from_header(cs_header)
+        if cs_row:
+            # 既存行を最新値で上書き（古いバグ版書き込みの修復）
+            cs_ws.update(f'A{cs_row}', [cs_new_row])
+            print(f"  コアスキャン_v4.3 行{cs_row}を上書き（既存データを修復）")
+        else:
             cs_next = len(cs_all) + 1
             cs_ws.update(f'A{cs_next}', [cs_new_row])
-            print(f"  コアスキャン_v4.3 の行{cs_next}にも追加")
+            print(f"  コアスキャン_v4.3 の行{cs_next}に追加")
     except Exception as e:
         print(f"  WARNING: コアスキャン_v4.3への追加失敗: {e}")
 
