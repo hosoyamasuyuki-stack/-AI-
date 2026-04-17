@@ -211,6 +211,58 @@ def add_stock(code, target):
     except Exception as e:
         print(f"  WARNING: コアスキャン_v4.3への追加失敗: {e}")
 
+    # 予測記録シートにも初期予測を記録（ランクベースで暫定方向）
+    # 4軸予測システムの精度トラッキングを可能にする
+    try:
+        pred_ws = ss.worksheet('予測記録')
+        pred_all = pred_ws.get_all_values()
+        pred_row, _ = find_row_by_code(pred_ws, code)
+        if not pred_row and len(pred_all) >= 2:
+            # ランクベース初期予測（STEP0スタイル）
+            dir_map = {
+                'S': '強気↑↑', 'A': '強気↑',
+                'B': '中立→',   'C': '弱気↓',
+                'D': '弱気↓↓',
+            }
+            init_dir = dir_map.get(rank, '中立→')
+
+            # 目標株価（ランク別の想定騰落率）
+            target_map_pct = {'S': 15, 'A': 10, 'B': 5, 'C': -5, 'D': -10}
+            pct = target_map_pct.get(rank, 0)
+            price = details.get('price') or 0
+            target_price = round(price * (1 + pct / 100)) if price else ''
+
+            # 検証予定日（軸ごと）
+            today_dt = datetime.now()
+            ver_4w = (today_dt + timedelta(days=28)).strftime('%Y/%m/%d')
+            ver_1y = (today_dt + timedelta(days=365)).strftime('%Y/%m/%d')
+            ver_3y = (today_dt + timedelta(days=365*3)).strftime('%Y/%m/%d')
+            ver_5y = (today_dt + timedelta(days=365*5)).strftime('%Y/%m/%d')
+
+            basis = f"v4.3スコア{total}点(ランク{rank})に基づく初期予測"
+
+            # 列構成: 0:記録日 1:コード 2:名 3:業種 4:記録時株価 5:総合 6:ランク 7:アクション
+            #        8-15:目先(4週) 16-23:短期(1年) 24-31:中期(3年) 32-39:長期(5年)
+            # 各軸8列: 予測方向,目標株価,根拠,検証予定日,実績株価,騰落率,日経比超過,勝敗
+            action = '買い検討' if rank in ('S', 'A') else ('様子見' if rank == 'B' else '時期尚早')
+            pred_row_data = [
+                today_dt.strftime('%Y/%m/%d'),  # 0
+                str(code), name, sector, price, total, rank, action,  # 1-7
+                # 目先(4週) 8-15
+                init_dir, target_price, basis, ver_4w, '', '', '', '',
+                # 短期(1年) 16-23
+                init_dir, target_price, basis, ver_1y, '', '', '', '',
+                # 中期(3年) 24-31
+                init_dir, target_price, basis, ver_3y, '', '', '', '',
+                # 長期(5年) 32-39
+                init_dir, target_price, basis, ver_5y, '', '', '', '',
+            ]
+            pred_next = len(pred_all) + 1
+            pred_ws.update(f'A{pred_next}', [pred_row_data])
+            print(f"  予測記録 の行{pred_next}に初期予測登録（方向={init_dir}・目標{target_price}円）")
+    except Exception as e:
+        print(f"  WARNING: 予測記録への追加失敗: {e}")
+
     return total, rank
 
 def remove_stock(code, target):
