@@ -645,13 +645,23 @@ try:
     _pred_ws = ss.worksheet('予測記録')
     _pred_rows = _pred_ws.get_all_values()
     if len(_pred_rows) >= 3:
-        _hdr = _pred_rows[0]  # row 0 = header
-        _sub = _pred_rows[1] if len(_pred_rows) > 1 else []  # row 1 = subheader
-        _pred_data = _pred_rows[2:]  # row 2+ = data
-        print(f"  予測記録: ヘッダー={_hdr[:12]}")
+        _hdr = _pred_rows[0]   # row 0 = 時間軸グループヘッダー (◆目先/◆短期/◆中期/◆長期)
+        _sub = _pred_rows[1] if len(_pred_rows) > 1 else []  # row 1 = サブヘッダー
+        _pred_data = _pred_rows[2:]  # row 2+ = データ
+        print(f"  予測記録: 全ヘッダー={_hdr}")
+        print(f"  予測記録: 全サブヘッダー={_sub}")
         print(f"  予測記録: {len(_pred_data)}行のデータ")
 
-        # 列名から インデックスを特定（柔軟に検出）
+        # row 0 から時間軸グループの開始列を検出
+        _axis_starts = {}  # {'目先': 8, '短期': 12, '中期': 16, '長期': 20} 等
+        for i, h in enumerate(_hdr):
+            h_s = str(h).strip()
+            for k in ['目先', '短期', '中期', '長期']:
+                if k in h_s:
+                    _axis_starts[k] = i
+        print(f"  予測記録: 時間軸列 = {_axis_starts}")
+
+        # 銘柄コード列
         def _find_col(header, *names):
             for i, h in enumerate(header):
                 h_norm = str(h).strip()
@@ -659,42 +669,39 @@ try:
                     if n in h_norm:
                         return i
             return None
+        _c_code = _find_col(_hdr, 'コード', 'code')
+        if _c_code is None:
+            _c_code = 1  # デフォルト（verify_0415と整合）
 
-        _c_code   = _find_col(_hdr, 'コード', 'code')
-        _c_axis   = _find_col(_hdr, '時間軸', '軸', '期間', 'axis', 'horizon')
-        _c_dir    = _find_col(_hdr, '方向', 'direction', 'DIR')
-        _c_target = _find_col(_hdr, '目標', 'target')
-        _c_verify = _find_col(_hdr, '検証', '結果', 'result')
-        _c_date   = _find_col(_hdr, '日付', 'date')
+        # 各時間軸グループ内での「方向」列オフセットを row1 サブヘッダーから検出
+        # 例: 目先グループ start=8 で、サブヘッダー row1[8]="方向" なら direction_col=8
+        def _dir_col_in_group(start_col):
+            """グループ開始列から右を見て「方向」列を返す（次グループ手前まで）"""
+            next_starts = sorted([v for v in _axis_starts.values() if v > start_col])
+            end_col = next_starts[0] if next_starts else len(_sub)
+            for i in range(start_col, min(end_col, len(_sub))):
+                s = str(_sub[i]).strip() if i < len(_sub) else ''
+                if '方向' in s or 'direction' in s.lower() or 'DIR' in s:
+                    return i
+            # サブヘッダーに「方向」が無ければ start_col をそのまま使う（verify_0415方式）
+            return start_col
 
-        print(f"  予測記録スキーマ: code={_c_code} axis={_c_axis} "
-              f"dir={_c_dir} target={_c_target} verify={_c_verify}")
+        _axis_dir_cols = {k: _dir_col_in_group(v) for k, v in _axis_starts.items()}
+        print(f"  予測記録: 各軸の方向列 = {_axis_dir_cols}")
 
-        if _c_code is not None and _c_dir is not None:
-            for r in _pred_data:
-                if len(r) <= max(_c_code, _c_dir):
+        for r in _pred_data:
+            if len(r) <= _c_code:
+                continue
+            code = str(r[_c_code]).strip()
+            if not code:
+                continue
+            for axis_name, dir_col in _axis_dir_cols.items():
+                if len(r) <= dir_col:
                     continue
-                code = str(r[_c_code]).strip()
-                if not code:
-                    continue
-                direction = str(r[_c_dir]).strip()
-                axis = str(r[_c_axis]).strip() if _c_axis is not None and len(r) > _c_axis else ''
-                target = str(r[_c_target]).strip() if _c_target is not None and len(r) > _c_target else ''
-                verify_res = str(r[_c_verify]).strip() if _c_verify is not None and len(r) > _c_verify else ''
-                # 時間軸キーを正規化（目先/短期/中期/長期）
-                key = None
-                for k in ['目先', '短期', '中期', '長期']:
-                    if k in axis:
-                        key = k
-                        break
-                if key is None and axis == '':
-                    # 時間軸列がない場合、COL_DIR単独 → 目先扱い（verify_0415と整合）
-                    key = '目先'
-                if key:
-                    PREDICTIONS.setdefault(code, {})[key] = {
+                direction = str(r[dir_col]).strip()
+                if direction and direction not in ('-', '—', ''):
+                    PREDICTIONS.setdefault(code, {})[axis_name] = {
                         'direction': direction,
-                        'target': target,
-                        'verify': verify_res,
                     }
         print(f"  予測記録: {len(PREDICTIONS)}銘柄の予測を取得")
 except Exception as _e:
