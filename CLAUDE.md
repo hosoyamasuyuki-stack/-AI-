@@ -1664,6 +1664,25 @@ bece9d4 : feat: daily_price_update.pyがv4.3シートに株価・スコア反映
 - core/config.py にスキーマ定義を集約する統一（今回手を付けず）
 - pytest によるシート整合性の単体テスト（長期タスク）
 
+### セッション12 追加改善10項目（全完了）
+1. #1 精度バッジ実装: ダッシュボードヘッダーに目先勝率表示（46.6% REVIEW）
+2. #3 audit_corescan.py: コアスキャン_v4.3 旧バグデータ監査・37件一括修復
+3. #5 full_scan.py 拡張: Top50 S/A銘柄を予測記録に自動登録
+4. #7 core/config.py: SHEET_SCHEMA / SOURCE_OF_TRUTH / 整合性閾値集約
+5. #8 pytest 単体テスト: tests/test_scoring.py + pytest.yml
+6. #9 docs/ 拡充: README/sheet_schema/architecture/session_2026_04_17
+7. #10 教訓18 追加: REVIEW判定時のモデル見直しフィードバックループ
+8. #2 daily_price_update 動作検証: SUCCESS（修正版で株価+変数3更新）
+9. #4 weekly_update 整合性チェック検証: 6352(上場廃止)検出→削除→SUCCESS
+10. 追加: 短期/中期 方向ラベルソート順修正（DIRマップ追加・強気↑↑=7...弱気↓↓=1）
+
+### 検証結果サマリー
+- verify_axis 目先: 勝率 46.6% (54/116) → REVIEW 判定 → ダッシュボード表示済
+- audit_corescan: 37/37件修復（保有+監視の真実値でコアスキャン_v4.3 を上書き）
+- weekly_update 整合性チェック: 6352 異常検出→削除→再検証SUCCESS
+- 4792 山田コンサル: 57.3/B 維持・ダッシュボード正常表示
+- pytest: 全テストパス（丸め方式 banker's rounding 対応）
+
 ---
 
 ## 2026/04/10（セッション11）のコミット履歴
