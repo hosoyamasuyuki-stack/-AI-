@@ -10,6 +10,7 @@ on:
 
 env:
   TZ: Asia/Tokyo
+  PYTHONPATH: ${{ github.workspace }}
 
 jobs:
   verify:
