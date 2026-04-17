@@ -2,11 +2,30 @@ name: verify
 
 on:
   schedule:
-    # 毎週月曜 11:00 JST（02:00 UTC）
+    # 毎週月曜 11:00 JST（02:00 UTC） - verify_monday
     - cron: '0 2 * * 1'
-    # 2026/04/15 9:00 JST（00:00 UTC）
+    # 2026/04/15 9:00 JST（00:00 UTC） - verify_0415（STEP0目先）
     - cron: '0 0 15 4 *'
-  workflow_dispatch:  # 手動実行も可能
+    # 毎月1日 10:00 JST（01:00 UTC） - 目先(4週)検証予定日が到来した銘柄を検証
+    - cron: '0 1 1 * *'
+    # 2027/03/18 9:00 JST（2027/03/18 00:00 UTC） - 短期(1年)検証
+    - cron: '0 0 18 3 *'
+    # 2029/03/18 9:00 JST - 中期(3年)検証
+    # NOTE: GitHub Actions cron は年を指定不可のため毎年3/18に走らせる。
+    # verify_axis.py --only_past_due で検証予定日が到来した行のみ処理。
+  workflow_dispatch:
+    inputs:
+      axis:
+        description: '検証時間軸（manual実行時のみ）'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - 目先
+          - 短期
+          - 中期
+          - 長期
 
 env:
   TZ: Asia/Tokyo
@@ -45,8 +64,37 @@ jobs:
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python verify/verify_0415.py
 
-      - name: Run both (手動実行時)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Run 目先 monthly verification (毎月1日)
+        if: github.event.schedule == '0 1 1 * *'
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+        run: python verify/verify_axis.py --axis 目先 --only_past_due
+
+      - name: Run 短期 verification (毎年3/18)
+        if: github.event.schedule == '0 0 18 3 *'
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+        run: |
+          python verify/verify_axis.py --axis 短期 --only_past_due
+          echo "---"
+          python verify/verify_axis.py --axis 中期 --only_past_due
+          echo "---"
+          python verify/verify_axis.py --axis 長期 --only_past_due
+
+      - name: Run manual axis verification (手動実行・軸指定)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.axis != ''
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+        run: python verify/verify_axis.py --axis ${{ github.event.inputs.axis }}
+
+      - name: Run both (手動実行・軸未指定時)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.axis == ''
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}

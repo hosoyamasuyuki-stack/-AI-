@@ -689,21 +689,47 @@ try:
         _axis_dir_cols = {k: _dir_col_in_group(v) for k, v in _axis_starts.items()}
         print(f"  予測記録: 各軸の方向列 = {_axis_dir_cols}")
 
+        # 各時間軸グループ8列の内訳: 0=方向 1=目標 2=根拠 3=検証日 4=実績株価 5=騰落率 6=日経比 7=勝敗
         for r in _pred_data:
             if len(r) <= _c_code:
                 continue
             code = str(r[_c_code]).strip()
             if not code:
                 continue
-            for axis_name, dir_col in _axis_dir_cols.items():
-                if len(r) <= dir_col:
+            for axis_name, start_col in _axis_starts.items():
+                if len(r) <= start_col:
                     continue
-                direction = str(r[dir_col]).strip()
+                direction = str(r[start_col]).strip() if len(r) > start_col else ''
                 if direction and direction not in ('-', '—', ''):
+                    target    = str(r[start_col+1]).strip() if len(r) > start_col+1 else ''
+                    ver_date  = str(r[start_col+3]).strip() if len(r) > start_col+3 else ''
+                    result_p  = str(r[start_col+4]).strip() if len(r) > start_col+4 else ''  # 実績株価
+                    chg_pct   = str(r[start_col+5]).strip() if len(r) > start_col+5 else ''  # 騰落率
+                    vs_nk     = str(r[start_col+6]).strip() if len(r) > start_col+6 else ''  # 日経比超過
+                    win_lose  = str(r[start_col+7]).strip() if len(r) > start_col+7 else ''  # 勝敗
                     PREDICTIONS.setdefault(code, {})[axis_name] = {
                         'direction': direction,
+                        'target':    target,
+                        'ver_date':  ver_date,
+                        'result':    result_p,
+                        'chg_pct':   chg_pct,
+                        'vs_nk':     vs_nk,
+                        'win_lose':  win_lose,
                     }
         print(f"  予測記録: {len(PREDICTIONS)}銘柄の予測を取得")
+
+        # 検証済み件数の集計（勝敗列が入っている = 検証済み）
+        _verified = {'目先': 0, '短期': 0, '中期': 0, '長期': 0}
+        _wins     = {'目先': 0, '短期': 0, '中期': 0, '長期': 0}
+        for c, axes in PREDICTIONS.items():
+            for ax, info in axes.items():
+                wl = info.get('win_lose', '')
+                if wl and wl not in ('-', '', '未検証', 'pending'):
+                    _verified[ax] += 1
+                    if '勝' in wl or 'win' in wl.lower() or '○' in wl or '✓' in wl:
+                        _wins[ax] += 1
+        print(f"  予測記録: 検証済み件数 = {_verified}")
+        print(f"  予測記録: 勝ち件数 = {_wins}")
 except Exception as _e:
     print(f"  予測記録シート読み込み失敗（proxy式にフォールバック）: {_e}")
 
@@ -726,6 +752,17 @@ def direction_label(d):
     if '→' in s or '中立' in s or '横ばい' in s:
         return '中立→', '#fbbf24'
     return s[:6], '#94a3b8'  # 不明は生文字列
+
+def verify_badge(win_lose):
+    """勝敗列の文字列から✓/✗バッジHTMLを返す（未検証は空）"""
+    if not win_lose or win_lose in ('-', '', '未検証', 'pending'):
+        return ''
+    s = win_lose.strip()
+    if '勝' in s or 'win' in s.lower() or '○' in s or '✓' in s:
+        return '<span style="color:#4ade80;font-weight:900;">✓</span>'
+    if '負' in s or 'lose' in s.lower() or '×' in s or '✗' in s:
+        return '<span style="color:#f87171;font-weight:900;">✗</span>'
+    return ''
 
 def sf(v, d=0):
     try:
@@ -842,15 +879,19 @@ for row, stype in all_data:
 
     # 予測記録シートから各銘柄の短期/中期予測を取得。なければ proxy へフォールバック
     _pred = PREDICTIONS.get(code, {})
-    # 短期（1年）: 予測記録があれば方向ラベル、なければ proxy 計算
-    _s_pred = _pred.get('短期', {}).get('direction', '')
+    # 短期（1年）: 予測記録があれば方向ラベル＋勝敗バッジ、なければ proxy 計算
+    _s_info = _pred.get('短期', {})
+    _s_pred = _s_info.get('direction', '')
     _sl, _sc = direction_label(_s_pred) if _s_pred else (None, None)
+    _s_badge = verify_badge(_s_info.get('win_lose', ''))
     if _sl is None:
         _short_s = short_stock_score(s3)
         _sl, _sc = short_label(_short_s), label_color(_short_s)
     # 中期（3年）: 同様
-    _m_pred = _pred.get('中期', {}).get('direction', '')
+    _m_info = _pred.get('中期', {})
+    _m_pred = _m_info.get('direction', '')
     _ml, _mc = direction_label(_m_pred) if _m_pred else (None, None)
+    _m_badge = verify_badge(_m_info.get('win_lose', ''))
     if _ml is None:
         _mid_s = mid_stock_score(s2)
         _ml, _mc = short_label(_mid_s), label_color(_mid_s)
@@ -867,8 +908,8 @@ for row, stype in all_data:
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
-        f'          <td style="color:{_sc};">{_sl}</td>\n'
-        f'          <td style="color:{_mc};">{_ml}</td>\n'
+        f'          <td style="color:{_sc};">{_sl}{_s_badge}</td>\n'
+        f'          <td style="color:{_mc};">{_ml}{_m_badge}</td>\n'
         f'          <td><span style="background:{rb};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
         f'          <td>{DAYS_LABEL}</td>\n'
@@ -930,13 +971,17 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
 
     # 予測記録シートから取得（なければ proxy）
     _pred2 = PREDICTIONS.get(code, {})
-    _s_pred2 = _pred2.get('短期', {}).get('direction', '')
+    _s_info2 = _pred2.get('短期', {})
+    _s_pred2 = _s_info2.get('direction', '')
     _sl2, _sc2 = direction_label(_s_pred2) if _s_pred2 else (None, None)
+    _s_badge2 = verify_badge(_s_info2.get('win_lose', ''))
     if _sl2 is None:
         _short_s2 = short_stock_score(s3)
         _sl2, _sc2 = short_label(_short_s2), label_color(_short_s2)
-    _m_pred2 = _pred2.get('中期', {}).get('direction', '')
+    _m_info2 = _pred2.get('中期', {})
+    _m_pred2 = _m_info2.get('direction', '')
     _ml2, _mc2 = direction_label(_m_pred2) if _m_pred2 else (None, None)
+    _m_badge2 = verify_badge(_m_info2.get('win_lose', ''))
     if _ml2 is None:
         _mid_s2 = mid_stock_score(s2)
         _ml2, _mc2 = short_label(_mid_s2), label_color(_mid_s2)
@@ -953,8 +998,8 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
-        f'          <td style="color:{_sc2};">{_sl2}</td>\n'
-        f'          <td style="color:{_mc2};">{_ml2}</td>\n'
+        f'          <td style="color:{_sc2};">{_sl2}{_s_badge2}</td>\n'
+        f'          <td style="color:{_mc2};">{_ml2}{_m_badge2}</td>\n'
         f'          <td><span style="background:{rb2};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
         f'          <td style="font-size:var(--fs-xs);color:#94a3b8;">{sect}</td>\n'
