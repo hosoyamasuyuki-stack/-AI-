@@ -2981,12 +2981,22 @@ function srt(id,col,th){
   const rows=Array.from(t.querySelectorAll('tr.dr'));
   // ランク順マップ（S=最高, D=最低）※長期列などでS→A→B→C→Dの正しい順序を保証
   const RANK={S:4,A:3,B:2,C:1,D:0};
+  // 方向ラベル順マップ（強気↑↑>強気↑>やや強気>中立→>中立>やや弱気>弱気↓>弱気↓↓）
+  // 短期/中期 列のソート用。強気が上位、弱気が下位。
+  const DIR={'強気↑↑':7,'強気':6,'強気↑':6,'やや強気':5,'中立→':4,'中立':4,
+             'やや弱気':3,'弱気↓':2,'弱気':2,'弱気↓↓':1,'-':0};
   rows.sort((a,b)=>{
     const ta=a.cells[col]?a.cells[col].innerText.trim():'';
     const tb=b.cells[col]?b.cells[col].innerText.trim():'';
     // セルがランク文字（S/A/B/C/D）のみの場合はランク順序で比較
     if(ta in RANK && tb in RANK){
       return asc?RANK[ta]-RANK[tb]:RANK[tb]-RANK[ta];
+    }
+    // 方向ラベル（✓/✗バッジを除去してから判定）
+    const taClean=ta.replace(/[✓✗]/g,'').trim();
+    const tbClean=tb.replace(/[✓✗]/g,'').trim();
+    if(taClean in DIR && tbClean in DIR){
+      return asc?DIR[taClean]-DIR[tbClean]:DIR[tbClean]-DIR[taClean];
     }
     const na=parseFloat(ta.replace(/[^0-9.\-]/g,'')),nb=parseFloat(tb.replace(/[^0-9.\-]/g,''));
     if(!isNaN(na)&&!isNaN(nb))return asc?na-nb:nb-na;
