@@ -665,26 +665,26 @@ def short_label(s):
     return ('強気' if s>=70 else 'やや強気' if s>=55 else
             '中立' if s>=45 else 'やや弱気' if s>=30 else '弱気')
 
-# ── 銘柄固有：割安度ラベル（PEGベース・3年以上保有の買い時判断） ──
-def valuation_label(peg):
-    """PEG値から割安度ラベルを返す（低いほど割安）"""
-    if peg is None or peg == 0:
-        return '-', '#94a3b8'
-    if peg <= 0.8:  return '割安',   '#4ade80'
-    if peg <= 1.2:  return '適正',   '#fbbf24'
-    if peg <= 1.8:  return 'やや割高','#f59e0b'
-    return '割高', '#f87171'
+def label_color(s):
+    """スコアからラベル色を返す（5段階）"""
+    if s is None:   return '#94a3b8'
+    if s >= 70:     return '#4ade80'   # 強気=緑
+    if s >= 55:     return '#86efac'   # やや強気=薄緑
+    if s >= 45:     return '#fbbf24'   # 中立=黄
+    if s >= 30:     return '#f59e0b'   # やや弱気=橙
+    return '#f87171'                    # 弱気=赤
 
-# ── 銘柄固有：成長性ラベル（ROEトレンドベース・複利力の方向性） ──
-def growth_label(roeT):
-    """ROEトレンド(%/年)から成長性ラベルを返す"""
-    if roeT is None:
-        return '-', '#94a3b8'
-    if roeT >= 2.0:   return '加速',   '#4ade80'
-    if roeT >= 0.5:   return '上昇',   '#86efac'
-    if roeT >= -0.5:  return '安定',   '#fbbf24'
-    if roeT >= -2.0:  return '鈍化',   '#f59e0b'
-    return '悪化', '#f87171'
+def short_stock_score(s3, market=None):
+    """銘柄固有の短期（1年）スコア = 市場短期 × 0.5 + 変数3(割安度) × 0.5"""
+    m = SHORT_SCORE if market is None else market
+    v = 50 if s3 is None else s3
+    return int(round(m * 0.5 + v * 0.5))
+
+def mid_stock_score(s2, market=None):
+    """銘柄固有の中期（3年）スコア = 市場中期 × 0.5 + 変数2(トレンド) × 0.5"""
+    m = MID_SCORE if market is None else market
+    v = 50 if s2 is None else s2
+    return int(round(m * 0.5 + v * 0.5))
 
 def mid_sector_comment(sect, mid):
     sector_map = {
@@ -750,22 +750,22 @@ for row, stype in all_data:
     lb = e(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt = e(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
-    # 銘柄固有の割安度・成長性（3年以上保有の判断材料）
-    val_lbl, val_col = valuation_label(peg)
-    grw_lbl, grw_col = growth_label(roeT)
+    # 銘柄固有の短期・中期スコア（市場環境 × 当該銘柄の変数）
+    _short_s = short_stock_score(s3)
+    _mid_s   = mid_stock_score(s2)
 
     tr = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
-        f"{tot},'{rank}',{SHORT_SCORE},'down','down','{rank}',"
+        f"{tot},'{rank}',{_short_s},'down','down','{rank}',"
         f"'{sb}','{mb}','{lb}','{nt}','{DAYS_LABEL}'"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
-        f'          <td style="color:{val_col};">{val_lbl}</td>\n'
-        f'          <td style="color:{grw_col};">{grw_lbl}</td>\n'
+        f'          <td style="color:{label_color(_short_s)};">{short_label(_short_s)}</td>\n'
+        f'          <td style="color:{label_color(_mid_s)};">{short_label(_mid_s)}</td>\n'
         f'          <td><span style="background:{rb};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
         f'          <td>{DAYS_LABEL}</td>\n'
@@ -825,23 +825,23 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
     lb2 = e2(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt2 = e2(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
-    # 銘柄固有の割安度・成長性（3年以上保有の判断材料）
-    val_lbl2, val_col2 = valuation_label(peg)
-    grw_lbl2, grw_col2 = growth_label(roeT)
+    # 銘柄固有の短期・中期スコア（市場環境 × 当該銘柄の変数）
+    _short_s2 = short_stock_score(s3)
+    _mid_s2   = mid_stock_score(s2)
 
     rb2 = rbg(rank)
     tr_s = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
-        f"{tot},'{rank}',{SHORT_SCORE},'down','down','{rank}',"
+        f"{tot},'{rank}',{_short_s2},'down','down','{rank}',"
         f"'{sb2}','{mb2}','{lb2}','{nt2}','{DAYS_LABEL}'"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
-        f'          <td style="color:{val_col2};">{val_lbl2}</td>\n'
-        f'          <td style="color:{grw_col2};">{grw_lbl2}</td>\n'
+        f'          <td style="color:{label_color(_short_s2)};">{short_label(_short_s2)}</td>\n'
+        f'          <td style="color:{label_color(_mid_s2)};">{short_label(_mid_s2)}</td>\n'
         f'          <td><span style="background:{rb2};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
         f'          <td style="font-size:var(--fs-xs);color:#94a3b8;">{sect}</td>\n'
@@ -1109,8 +1109,8 @@ hold_open = """      <table id="tH">
           <th class="sh" onclick="srt('tH',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tH',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tH',2,this)" style="color:#f59e0b;">v4.3<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th class="sh" onclick="srt('tH',3,this)" style="color:#93c5fd;" title="PEGベースの割安度（低いほど買い時）">割安度<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th class="sh" onclick="srt('tH',4,this)" style="color:#93c5fd;" title="ROEトレンドベースの成長性（銘柄固有）">成長性<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tH',3,this)" style="color:#93c5fd;" title="短期(1年)予測＝市場環境×当該銘柄の割安度。精度はverify_0415等で継続測定">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tH',4,this)" style="color:#93c5fd;" title="中期(3年)予測＝市場環境×当該銘柄のトレンド。精度はverify_0415等で継続測定">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tH',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh">日数</th><th class="sh">判定</th>
         </tr>
@@ -1126,8 +1126,8 @@ watch_open = """      <table id="tW">
           <th class="sh" onclick="srt('tW',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',2,this)" style="color:#f59e0b;">v4.3<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th class="sh" onclick="srt('tW',3,this)" style="color:#93c5fd;" title="PEGベースの割安度（低いほど買い時）">割安度<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th class="sh" onclick="srt('tW',4,this)" style="color:#93c5fd;" title="ROEトレンドベースの成長性（銘柄固有）">成長性<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tW',3,this)" style="color:#93c5fd;" title="短期(1年)予測。市場環境×当該銘柄の信号。verify_0415等で精度継続測定">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tW',4,this)" style="color:#93c5fd;" title="中期(3年)予測。市場環境×当該銘柄の信号。verify_0415等で精度継続測定">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tW',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh">日数</th><th class="sh">シグナル</th>
         </tr>
@@ -1144,8 +1144,8 @@ if rows_s:
           <th class="sh" onclick="srt('tS',0,this)">銘柄<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',1,this)">株価<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',2,this)" style="color:#f59e0b;">v4.3<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th class="sh" onclick="srt('tS',3,this)" style="color:#93c5fd;" title="PEGベースの割安度（低いほど買い時）">割安度<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
-          <th class="sh" onclick="srt('tS',4,this)" style="color:#93c5fd;" title="ROEトレンドベースの成長性（銘柄固有）">成長性<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',3,this)" style="color:#93c5fd;" title="短期(1年)予測。市場環境×当該銘柄の信号。verify_0415等で精度継続測定">短期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
+          <th class="sh" onclick="srt('tS',4,this)" style="color:#93c5fd;" title="中期(3年)予測。市場環境×当該銘柄の信号。verify_0415等で精度継続測定">中期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh" onclick="srt('tS',5,this)" style="color:#93c5fd;">長期<span class="sort-btn"><span class="au"></span><span class="ad"></span></span></th>
           <th class="sh">業種</th><th class="sh">シグナル</th>
         </tr>
