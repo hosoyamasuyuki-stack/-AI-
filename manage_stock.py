@@ -104,7 +104,8 @@ def calc_v43_score(df, price_info):
                 ta_l = df['TA'].dropna()
                 if len(ta_l) > 0:
                     fy = fcf_v / float(ta_l.iloc[-1]) * 100
-    s3    = round(thr_high(peg, PEG_THR) * 0.50 + thr_high(fy, FCY_THR) * 0.50)
+    # PEG は低いほど割安（thr_low）。thr_high 誤用バグ修正（CLAUDE.md Bug C2と同等）
+    s3    = round(thr_low(peg, PEG_THR) * 0.50 + thr_high(fy, FCY_THR) * 0.50)
     total = round(s1 * 0.40 + s2 * 0.35 + s3 * 0.25, 1)
     rank  = ('S' if total >= 80 else 'A' if total >= 65 else
              'B' if total >= 50 else 'C' if total >= 35 else 'D')
@@ -167,37 +168,45 @@ def add_stock(code, target):
     print(f"  スコア: {total}点 ランク:{rank}")
     print(f"  変数1:{details['s1']} 変数2:{details['s2']} 変数3:{details['s3']}")
 
-    # シートに行追加
-    new_row = [
-        str(code),
-        name,
-        sector,
-        total,
-        rank,
-        details['s1'],
-        details['s2'],
-        details['s3'],
-        details['roe'] if details['roe'] is not None else '',
-        details['fcr'] if details['fcr'] is not None else '',
-        details['roe_slope'] if details['roe_slope'] is not None else '',
-        details['peg'] if details['peg'] is not None else '',
-        details['fcf_yield'] if details['fcf_yield'] is not None else '',
-        details['price'] if details['price'] is not None else '',
-    ]
+    # ヘッダー名→値のマップ（列順に依存しない書き込みのため）
+    value_map = {
+        'コード':       str(code),
+        '銘柄名':       name,
+        '業種':         sector,
+        '総合スコア':   total,
+        'ランク':       rank,
+        '変数1':        details['s1'],
+        '変数2':        details['s2'],
+        '変数3':        details['s3'],
+        'ROE平均':      details['roe']       if details['roe']       is not None else '',
+        'FCR平均':      details['fcr']       if details['fcr']       is not None else '',
+        'ROEトレンド':  details['roe_slope'] if details['roe_slope'] is not None else '',
+        'PEG':          details['peg']       if details['peg']       is not None else '',
+        'FCF利回り':    details['fcf_yield'] if details['fcf_yield'] is not None else '',
+        '株価':         details['price']     if details['price']     is not None else '',
+    }
+
+    def build_row_from_header(header):
+        """シート実ヘッダー順に値を並べる（未知ヘッダーは空欄）"""
+        return [value_map.get(h, '') for h in header]
 
     all_vals = ws.get_all_values()
+    header = all_vals[0] if all_vals else list(value_map.keys())
+    new_row = build_row_from_header(header)
     next_row = len(all_vals) + 1
     ws.update(f'A{next_row}', [new_row])
     print(f"  {sheet_name} の行{next_row}に追加完了")
 
-    # コアスキャン_v4.3にも追加
+    # コアスキャン_v4.3にも追加（シート固有のヘッダー順で書く）
     try:
         cs_ws = ss.worksheet('コアスキャン_v4.3')
         cs_row, _ = find_row_by_code(cs_ws, code)
         if not cs_row:
             cs_all = cs_ws.get_all_values()
+            cs_header = cs_all[0] if cs_all else header
+            cs_new_row = build_row_from_header(cs_header)
             cs_next = len(cs_all) + 1
-            cs_ws.update(f'A{cs_next}', [new_row])
+            cs_ws.update(f'A{cs_next}', [cs_new_row])
             print(f"  コアスキャン_v4.3 の行{cs_next}にも追加")
     except Exception as e:
         print(f"  WARNING: コアスキャン_v4.3への追加失敗: {e}")
