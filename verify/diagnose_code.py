@@ -25,6 +25,12 @@ for name in TARGET_SHEETS:
             print(f"[{name}] empty")
             continue
         hdr = vals[0]
+        # シートのフルヘッダーを表示
+        print(f"[{name}] ヘッダー({len(hdr)}列):")
+        for j, h in enumerate(hdr):
+            print(f"    col{j:2d} = '{h}'")
+        print()
+
         # 予測記録は行1がサブヘッダー・行2からデータ
         data_start = 2 if name == '予測記録' else 1
         found = False
@@ -38,16 +44,11 @@ for name in TARGET_SHEETS:
                 continue
             if len(row) > code_cell and str(row[code_cell]).strip() == code:
                 found = True
-                print(f"[{name}] 行{i}")
-                # 主要列だけ表示
-                for j, v in enumerate(row):
+                print(f"[{name}] 行{i} - 全列ダンプ")
+                for j in range(max(len(row), len(hdr))):
+                    v = row[j] if j < len(row) else ''
                     h = hdr[j] if j < len(hdr) else f'col{j}'
-                    if name == '予測記録' and j < len(vals[1]):
-                        sub = vals[1][j]
-                        if sub and sub != h:
-                            h = f"{h}:{sub}"
-                    if v and str(v).strip():
-                        print(f"    {j:3d} | {h:20s} = {v}")
+                    print(f"    {j:3d} | {h:22s} = '{v}'")
                 print()
         if not found:
             print(f"[{name}] {code} なし\n")
