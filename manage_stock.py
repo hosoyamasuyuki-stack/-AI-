@@ -55,8 +55,9 @@ def get_stock_name_jq(code):
             data = r.json().get('data', [])
             if data:
                 d = data[0]
-                name = d.get('CompanyNameFull', d.get('CompanyName', ''))
-                sector = d.get('Sector33CodeName', '')
+                # J-Quants V2スキーマ変更対応: CoName/S33Nm が新キー、旧キーはフォールバック
+                name = d.get('CoName') or d.get('CompanyNameFull') or d.get('CompanyName', '')
+                sector = d.get('S33Nm') or d.get('Sector33CodeName', '')
                 return name, sector
         return None, None
     except: return None, None
