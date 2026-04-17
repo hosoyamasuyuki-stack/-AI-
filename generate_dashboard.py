@@ -730,8 +730,16 @@ try:
                         _wins[ax] += 1
         print(f"  予測記録: 検証済み件数 = {_verified}")
         print(f"  予測記録: 勝ち件数 = {_wins}")
+        # グローバルに公開（ダッシュボード精度バッジ用）
+        VERIFIED_COUNT = _verified
+        WIN_COUNT = _wins
 except Exception as _e:
     print(f"  予測記録シート読み込み失敗（proxy式にフォールバック）: {_e}")
+
+# NameError防止（上記tryが最初から失敗した場合のデフォルト）
+if 'VERIFIED_COUNT' not in dir():
+    VERIFIED_COUNT = {'目先': 0, '短期': 0, '中期': 0, '長期': 0}
+    WIN_COUNT = {'目先': 0, '短期': 0, '中期': 0, '長期': 0}
 
 def direction_label(d):
     """方向文字列を強気/中立/弱気のラベル＋色に変換"""
@@ -1433,16 +1441,53 @@ elif vix_now >= 25:
 else:
     ALERT_HTML = ''
 
-# ALERT_STRIP置換
+# 予測精度バッジ追加（教訓17：検証結果を可視化）
+# verify_axis.py で更新された勝敗列を読み、ヘッダーに表示
+_acc_html = ''
+try:
+    # 目先軸の勝率
+    _vn = VERIFIED_COUNT.get('目先', 0)
+    _wn = WIN_COUNT.get('目先', 0)
+    if _vn > 0:
+        _rate = _wn * 100 / _vn
+        _verdict = ('OK' if _rate >= 80 else 'WATCH' if _rate >= 60 else 'REVIEW')
+        _ac = '#4ade80' if _rate >= 80 else '#fbbf24' if _rate >= 60 else '#f87171'
+        _ac_bg = '#064e3b' if _rate >= 80 else '#92400e' if _rate >= 60 else '#7f1d1d'
+        _acc_html = (
+            f'<span style="background:{_ac_bg};color:{_ac};padding:2px 8px;'
+            f'border-radius:4px;font-size:var(--fs-xs);font-weight:900;'
+            f'border:1px solid {_ac};" title="予測記録の目先(4週)軸 '
+            f'{_wn}/{_vn}銘柄の方向予測が日経比で勝利。verify_axis.pyで継続測定">'
+            f'目先精度 {_rate:.1f}% ({_wn}/{_vn}) {_verdict}</span>'
+        )
+        print(f"  予測精度バッジ: 目先 {_rate:.1f}% ({_wn}/{_vn}) {_verdict}")
+except Exception as _e:
+    print(f"  WARN: 精度バッジ生成失敗 {_e}")
+
+# ALERT_STRIP置換（精度バッジも含めて1つのstripに）
 alert_start = src.find('<!-- ALERT_STRIP_START -->')
 alert_end = src.find('<!-- ALERT_STRIP_END -->')
 if alert_start >= 0 and alert_end >= 0:
     alert_end_full = alert_end + len('<!-- ALERT_STRIP_END -->')
-    if ALERT_HTML:
-        src = src[:alert_start] + '<!-- ALERT_STRIP_START -->\n    ' + ALERT_HTML + '\n    <!-- ALERT_STRIP_END -->' + src[alert_end_full:]
+    # VIX アラート + 精度バッジ を同じstrip内に並べる
+    combined = ''
+    if ALERT_HTML and _acc_html:
+        # VIX アラートのdiv終了タグ直前に精度バッジを挿入
+        combined = ALERT_HTML.replace('</div>', f'<span style="color:#1e2d40;">|</span>{_acc_html}</div>')
+    elif _acc_html:
+        combined = (
+            '<div id="alert-strip" style="display:flex;align-items:center;gap:12px;'
+            'padding:2px 12px;background:#0d1117;border-bottom:1px solid #1e2d40;'
+            'flex-shrink:0;flex-wrap:wrap;">'
+            + _acc_html + '</div>'
+        )
+    elif ALERT_HTML:
+        combined = ALERT_HTML
+    if combined:
+        src = src[:alert_start] + '<!-- ALERT_STRIP_START -->\n    ' + combined + '\n    <!-- ALERT_STRIP_END -->' + src[alert_end_full:]
     else:
         src = src[:alert_start] + '<!-- ALERT_STRIP_START --><!-- ALERT_STRIP_END -->' + src[alert_end_full:]
-    print(f"OK: アラートストリップ動的生成 (VIX={vix_now})")
+    print(f"OK: アラートストリップ動的生成 (VIX={vix_now}, 精度バッジ={'有' if _acc_html else '無'})")
 else:
     print(f"WARN: アラートストリップ置換スキップ (start={alert_start} end={alert_end})")
 

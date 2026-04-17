@@ -1,0 +1,23 @@
+name: pytest
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - 'core/**.py'
+      - 'tests/**.py'
+      - '.github/workflows/pytest.yml'
+  workflow_dispatch:
+env:
+  TZ: Asia/Tokyo
+  PYTHONPATH: ${{ github.workspace }}
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install pytest pandas numpy
+      - run: pytest tests/ -v

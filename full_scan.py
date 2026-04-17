@@ -375,6 +375,68 @@ for r in top50:
 ws.update(f'A1:O{len(rows_to_write)}', rows_to_write)
 print(f"  {SHEET_NAME} に {len(top50)} 銘柄書き出し完了")
 
+# ============================================================
+# Phase 5b: 予測記録への自動登録（Top50 の S/A ランクのみ・協議合意#5）
+# ============================================================
+# スクリーニングで浮上した有望株（S/A ランク）を自動的に予測記録に登録し、
+# 後の verify_axis.py による精度トラッキング対象に加える。
+# 全銘柄でなく S/A のみにする理由: dashboard の「監視候補」として出すに値する銘柄に絞る。
+try:
+    from datetime import timedelta as _td
+    pred_ws = ss.worksheet('予測記録')
+    pred_all = pred_ws.get_all_values()
+    # 既存銘柄コード一覧（重複登録防止）
+    existing = set()
+    if len(pred_all) >= 3:
+        pred_hdr = pred_all[0]
+        ci = pred_hdr.index('銘柄コード') if '銘柄コード' in pred_hdr else 1
+        for r in pred_all[2:]:
+            if len(r) > ci and str(r[ci]).strip():
+                existing.add(str(r[ci]).strip())
+
+    dir_map = {'S': '強気↑↑', 'A': '強気↑', 'B': '中立→',
+               'C': '弱気↓',   'D': '弱気↓↓'}
+    target_pct = {'S': 15, 'A': 10, 'B': 5, 'C': -5, 'D': -10}
+    today_dt = datetime.now()
+    ver_4w = (today_dt + timedelta(days=28)).strftime('%Y/%m/%d')
+    ver_1y = (today_dt + timedelta(days=365)).strftime('%Y/%m/%d')
+    ver_3y = (today_dt + timedelta(days=365 * 3)).strftime('%Y/%m/%d')
+    ver_5y = (today_dt + timedelta(days=365 * 5)).strftime('%Y/%m/%d')
+
+    new_preds = []
+    for r in top50:
+        code = str(r['code'])
+        if code in existing:
+            continue
+        if r['rank'] not in ('S', 'A'):
+            continue  # B以下は登録しない（ノイズ削減）
+        d = dir_map[r['rank']]
+        pct = target_pct[r['rank']]
+        price = r.get('price') or 0
+        try:
+            target = round(float(price) * (1 + pct / 100)) if price else ''
+        except:
+            target = ''
+        basis = f"full_scan v4.3 スコア{r['total']}点({r['rank']})・スクリーニングTop50入り"
+        action = '買い検討' if r['rank'] in ('S', 'A') else '様子見'
+        row_data = [
+            today_dt.strftime('%Y/%m/%d'),
+            code, r['name'], r['sector'], price, r['total'], r['rank'], action,
+            d, target, basis, ver_4w, '', '', '', '',
+            d, target, basis, ver_1y, '', '', '', '',
+            d, target, basis, ver_3y, '', '', '', '',
+            d, target, basis, ver_5y, '', '', '', '',
+        ]
+        new_preds.append(row_data)
+    if new_preds:
+        start_row = len(pred_all) + 1
+        pred_ws.update(f'A{start_row}', new_preds)
+        print(f"  予測記録: {len(new_preds)}銘柄（S/A）を自動登録")
+    else:
+        print(f"  予測記録: 新規登録対象なし（S/Aランクで未登録なし）")
+except Exception as e:
+    print(f"  WARNING: 予測記録への登録失敗: {e}")
+
 # チェックポイント削除
 if os.path.exists(CHECKPOINT_FILE):
     os.remove(CHECKPOINT_FILE)

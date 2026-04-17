@@ -1,0 +1,40 @@
+name: Audit Core Scan
+on:
+  workflow_dispatch:
+    inputs:
+      fix:
+        description: '異常を修復する (true/false)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+env:
+  TZ: Asia/Tokyo
+  PYTHONPATH: ${{ github.workspace }}
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install gspread google-auth pandas
+      - name: 監査実行
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          if [ "${{ github.event.inputs.fix }}" = "true" ]; then
+            python verify/audit_corescan.py --fix
+          else
+            python verify/audit_corescan.py
+          fi
+      - name: 修復後にpush
+        if: github.event.inputs.fix == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions [Audit Bot]"
+          echo "audit修復はシート側のみ・リポジトリ変更なし"
