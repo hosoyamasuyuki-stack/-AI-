@@ -637,6 +637,89 @@ all_data = (load('保有銘柄_v4.3スコア', '保有') +
 screen_data = load('スクリーニング_Top50', 'スクリーニング')
 print(f"  合計: {len(all_data)}銘柄 + スクリーニング{len(screen_data)}銘柄")
 
+# ── 予測記録シートから各銘柄の4軸予測（目先/短期/中期/長期）を読む ──
+# CLAUDE.md 4軸予測システム: STEP0で記録された方向予測を
+# ダッシュボードに表示する。シートスキーマ自動検出で堅牢化。
+PREDICTIONS = {}  # code -> {'目先':{...}, '短期':{...}, '中期':{...}, '長期':{...}}
+try:
+    _pred_ws = ss.worksheet('予測記録')
+    _pred_rows = _pred_ws.get_all_values()
+    if len(_pred_rows) >= 3:
+        _hdr = _pred_rows[0]  # row 0 = header
+        _sub = _pred_rows[1] if len(_pred_rows) > 1 else []  # row 1 = subheader
+        _pred_data = _pred_rows[2:]  # row 2+ = data
+        print(f"  予測記録: ヘッダー={_hdr[:12]}")
+        print(f"  予測記録: {len(_pred_data)}行のデータ")
+
+        # 列名から インデックスを特定（柔軟に検出）
+        def _find_col(header, *names):
+            for i, h in enumerate(header):
+                h_norm = str(h).strip()
+                for n in names:
+                    if n in h_norm:
+                        return i
+            return None
+
+        _c_code   = _find_col(_hdr, 'コード', 'code')
+        _c_axis   = _find_col(_hdr, '時間軸', '軸', '期間', 'axis', 'horizon')
+        _c_dir    = _find_col(_hdr, '方向', 'direction', 'DIR')
+        _c_target = _find_col(_hdr, '目標', 'target')
+        _c_verify = _find_col(_hdr, '検証', '結果', 'result')
+        _c_date   = _find_col(_hdr, '日付', 'date')
+
+        print(f"  予測記録スキーマ: code={_c_code} axis={_c_axis} "
+              f"dir={_c_dir} target={_c_target} verify={_c_verify}")
+
+        if _c_code is not None and _c_dir is not None:
+            for r in _pred_data:
+                if len(r) <= max(_c_code, _c_dir):
+                    continue
+                code = str(r[_c_code]).strip()
+                if not code:
+                    continue
+                direction = str(r[_c_dir]).strip()
+                axis = str(r[_c_axis]).strip() if _c_axis is not None and len(r) > _c_axis else ''
+                target = str(r[_c_target]).strip() if _c_target is not None and len(r) > _c_target else ''
+                verify_res = str(r[_c_verify]).strip() if _c_verify is not None and len(r) > _c_verify else ''
+                # 時間軸キーを正規化（目先/短期/中期/長期）
+                key = None
+                for k in ['目先', '短期', '中期', '長期']:
+                    if k in axis:
+                        key = k
+                        break
+                if key is None and axis == '':
+                    # 時間軸列がない場合、COL_DIR単独 → 目先扱い（verify_0415と整合）
+                    key = '目先'
+                if key:
+                    PREDICTIONS.setdefault(code, {})[key] = {
+                        'direction': direction,
+                        'target': target,
+                        'verify': verify_res,
+                    }
+        print(f"  予測記録: {len(PREDICTIONS)}銘柄の予測を取得")
+except Exception as _e:
+    print(f"  予測記録シート読み込み失敗（proxy式にフォールバック）: {_e}")
+
+def direction_label(d):
+    """方向文字列を強気/中立/弱気のラベル＋色に変換"""
+    if not d or d == '':
+        return None, None
+    s = d.strip()
+    # 上昇系
+    if '↑↑' in s or '強気↑' in s or '大' in s and '上' in s:
+        return '強気↑↑', '#4ade80'
+    if '↑' in s or '上昇' in s or '強気' in s or '買' in s:
+        return '強気↑', '#86efac'
+    # 下降系
+    if '↓↓' in s or '弱気↓' in s or '大' in s and '下' in s:
+        return '弱気↓↓', '#f87171'
+    if '↓' in s or '下落' in s or '弱気' in s or '売' in s:
+        return '弱気↓', '#f59e0b'
+    # 中立
+    if '→' in s or '中立' in s or '横ばい' in s:
+        return '中立→', '#fbbf24'
+    return s[:6], '#94a3b8'  # 不明は生文字列
+
 def sf(v, d=0):
     try:
         return float(v) if str(v).strip() not in ('', 'None') else d
@@ -750,9 +833,22 @@ for row, stype in all_data:
     lb = e(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt = e(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
-    # 銘柄固有の短期・中期スコア（市場環境 × 当該銘柄の変数）
+    # 予測記録シートから各銘柄の短期/中期予測を取得。なければ proxy へフォールバック
+    _pred = PREDICTIONS.get(code, {})
+    # 短期（1年）: 予測記録があれば方向ラベル、なければ proxy 計算
+    _s_pred = _pred.get('短期', {}).get('direction', '')
+    _sl, _sc = direction_label(_s_pred) if _s_pred else (None, None)
+    if _sl is None:
+        _short_s = short_stock_score(s3)
+        _sl, _sc = short_label(_short_s), label_color(_short_s)
+    # 中期（3年）: 同様
+    _m_pred = _pred.get('中期', {}).get('direction', '')
+    _ml, _mc = direction_label(_m_pred) if _m_pred else (None, None)
+    if _ml is None:
+        _mid_s = mid_stock_score(s2)
+        _ml, _mc = short_label(_mid_s), label_color(_mid_s)
+    # showD用の短期スコア（数値）
     _short_s = short_stock_score(s3)
-    _mid_s   = mid_stock_score(s2)
 
     tr = (
         f'        <tr class="dr" onclick="sel(this);showD('
@@ -764,8 +860,8 @@ for row, stype in all_data:
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
-        f'          <td style="color:{label_color(_short_s)};">{short_label(_short_s)}</td>\n'
-        f'          <td style="color:{label_color(_mid_s)};">{short_label(_mid_s)}</td>\n'
+        f'          <td style="color:{_sc};">{_sl}</td>\n'
+        f'          <td style="color:{_mc};">{_ml}</td>\n'
         f'          <td><span style="background:{rb};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
         f'          <td>{DAYS_LABEL}</td>\n'
@@ -825,9 +921,19 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
     lb2 = e2(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt2 = e2(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
-    # 銘柄固有の短期・中期スコア（市場環境 × 当該銘柄の変数）
+    # 予測記録シートから取得（なければ proxy）
+    _pred2 = PREDICTIONS.get(code, {})
+    _s_pred2 = _pred2.get('短期', {}).get('direction', '')
+    _sl2, _sc2 = direction_label(_s_pred2) if _s_pred2 else (None, None)
+    if _sl2 is None:
+        _short_s2 = short_stock_score(s3)
+        _sl2, _sc2 = short_label(_short_s2), label_color(_short_s2)
+    _m_pred2 = _pred2.get('中期', {}).get('direction', '')
+    _ml2, _mc2 = direction_label(_m_pred2) if _m_pred2 else (None, None)
+    if _ml2 is None:
+        _mid_s2 = mid_stock_score(s2)
+        _ml2, _mc2 = short_label(_mid_s2), label_color(_mid_s2)
     _short_s2 = short_stock_score(s3)
-    _mid_s2   = mid_stock_score(s2)
 
     rb2 = rbg(rank)
     tr_s = (
@@ -840,8 +946,8 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
         f'          <td style="font-family:monospace;">{ps}</td>\n'
         f'          <td style="color:{rc};font-weight:900;font-family:monospace;">{vs}</td>\n'
-        f'          <td style="color:{label_color(_short_s2)};">{short_label(_short_s2)}</td>\n'
-        f'          <td style="color:{label_color(_mid_s2)};">{short_label(_mid_s2)}</td>\n'
+        f'          <td style="color:{_sc2};">{_sl2}</td>\n'
+        f'          <td style="color:{_mc2};">{_ml2}</td>\n'
         f'          <td><span style="background:{rb2};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
         f'          <td style="font-size:var(--fs-xs);color:#94a3b8;">{sect}</td>\n'
