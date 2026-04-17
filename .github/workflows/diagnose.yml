@@ -1,0 +1,22 @@
+name: Diagnose Code
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        required: true
+env:
+  TZ: Asia/Tokyo
+  PYTHONPATH: ${{ github.workspace }}
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install gspread google-auth pandas yfinance
+      - env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python verify/diagnose_code.py "${{ github.event.inputs.code }}"
