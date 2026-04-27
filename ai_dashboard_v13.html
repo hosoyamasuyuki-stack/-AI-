@@ -3161,7 +3161,7 @@ function renderKenjaResult(el,data,code,name){
   if(a.beginnerAdvice){html+='<div style="margin-top:10px;padding:10px;background:#1c1400;border:1px solid #f59e0b44;border-radius:8px;"><div style="color:#f59e0b;font-size:var(--fs-lg);font-weight:800;margin-bottom:4px;">\uD83D\uDCA1 \u521D\u5FC3\u8005\u5411\u3051\u30A2\u30C9\u30D0\u30A4\u30B9</div><div style="color:#fbbf24;font-size:var(--fs-md);line-height:1.7;">'+escH(a.beginnerAdvice)+'</div></div>';}
   // Part B (collapsible)
   var pB=a.partB||{};
-  var bKeys=[['overview','業績の全体像'],['growth','成長の中身を読み解く'],['sustainability','この成長は続くのか'],['future','会社が描く未来'],['defense','防御度：弱点と対策'],['cashflow','お金の流れから見る健全性'],['conclusion','結論：この会社をどう見るか']];
+  var bKeys=[['overview','業績の真犯人（隠された真の理由）'],['growth','同業比較で見える異常値'],['sustainability','経営者の二重言語（決算短信 vs 有報）'],['future','3年後シナリオ（Best / Realistic / Worst）'],['defense','空売りファンドの視点（経営者が答えたくない弱点）'],['cashflow','現金の血流から読む経営の本音'],['conclusion','AI vs v4.3スコア：最終審判']];
   var bHtml='';for(var j=0;j<bKeys.length;j++){var v=pB[bKeys[j][0]];if(v)bHtml+='<div style="margin-bottom:10px;"><div style="color:#5eead4;font-size:var(--fs-md);font-weight:800;margin-bottom:3px;">'+bKeys[j][1]+'</div><div style="color:#94a3b8;font-size:var(--fs-base);line-height:1.7;">'+escH(v)+'</div></div>';}
   if(bHtml){html+='<details style="margin-top:10px;"><summary style="color:#f59e0b;cursor:pointer;font-size:var(--fs-lg);font-weight:700;padding:6px 0;">\u25BC \u8A73\u7D30\u30EC\u30DD\u30FC\u30C8\uFF08\u3058\u3063\u304F\u308A\u8AAD\u3080\uFF09</summary><div style="padding:8px 0;">'+bHtml+'</div></details>';}
   el.innerHTML=html;
