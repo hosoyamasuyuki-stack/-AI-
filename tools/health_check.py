@@ -31,6 +31,7 @@ EXPECTATIONS = {
     'generate_handover.yml':    {'max_hours': 200,  'label': 'handover.txt'},
     'verify.yml':               {'max_hours': 200,  'label': 'verify検証'},
     'sheet_manager.yml':        {'max_hours': 800,  'label': 'シート管理（月次）'},
+    'fetch_tanshin.yml':        {'max_hours': 200,  'label': 'TDnet 決算短信取得'},
     # manage_stock.yml は workflow_dispatch ユーザー操作のみ・不正コード入力で失敗が正常 → 除外
 }
 
