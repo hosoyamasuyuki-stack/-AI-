@@ -208,7 +208,38 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
 .cD{background:rgba(248,113,113,.07);color:#f87171;font-weight:700}
 .cNow{outline:2px solid #fbbf24 !important;outline-offset:-2px;box-shadow:0 0 8px rgba(251,191,36,.4) inset}
 .cNow::after{content:'★';font-size:var(--fs-micro);color:#fbbf24;margin-left:2px}
+
+/* ── ロール別 UI 表示制御（NOVA 経由の顧客アクセス時に admin ボタンを物理的に非表示） ── */
+.role-customer #update-btn,
+.role-customer #mgmt-btn,
+.role-customer #mgmt-overlay { display: none !important; }
 </style>
+
+<script>
+/* === ロール判定（URL ?role= から取得） ===
+ * - default: 'admin'（CEO の直接ブックマークアクセス時）
+ * - 'customer': NOVA 経由で iframe 表示される顧客アクセス時
+ * - 'admin' 以外なら admin 系 UI（全更新・銘柄管理）を非表示
+ * セキュリティ第二層として、GAS 側の admin エンドポイントは
+ * URL 操作を防ぐため CEO シークレットを別途検証する想定（次フェーズで実装）
+ */
+(function(){
+  try {
+    var params = new URLSearchParams(location.search);
+    var role = (params.get('role') || 'admin').toLowerCase();
+    if (role !== 'admin') role = 'customer';
+    document.documentElement.classList.add('role-' + role);
+    document.addEventListener('DOMContentLoaded', function(){
+      document.body && document.body.classList.add('role-' + role);
+    });
+    window.__USER_ROLE = role;
+  } catch (e) {
+    // フォールバック: 何かエラーが起きたら admin 動作（CEO の通常運用が壊れないように）
+    document.documentElement.classList.add('role-admin');
+    window.__USER_ROLE = 'admin';
+  }
+})();
+</script>
 
 <div class="db">
 
