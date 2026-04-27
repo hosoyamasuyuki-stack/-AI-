@@ -255,7 +255,7 @@ J-Quants V2仕様：
 - 日付形式：YYYYMMDD / データ：AdjC（調整済み終値）
 - 認証：x-api-keyヘッダー（ダッシュボードから発行・期限なし）
 - V1のauth_user/auth_refresh方式は廃止
-- プラン：スタンダード（120リクエスト/分）
+- プラン：Premium（月額16,500円・分足データ対応・レート制限大幅緩和）
 - キー再発行時は .env + GitHub Secrets を同時更新必須
 - 検証コマンド：curl -s -H "x-api-key: {key}" "https://api.jquants.com/v2/fins/summary?code=72030"
 
