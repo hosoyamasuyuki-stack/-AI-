@@ -1,0 +1,27 @@
+name: Health Check
+
+on:
+  schedule:
+    # 毎朝 7:45 JST（22:45 UTC前日）
+    # 7:00 FRED, 7:30 株価 完了後にチェックする
+    - cron: '45 22 * * *'
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run health check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/health_check.py
