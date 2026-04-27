@@ -14,9 +14,25 @@
 
 import os
 import json
+import time
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
+
+
+def call_with_retry(fn, *args, max_attempts=5, **kwargs):
+    """Sheets API 429 (quota) に指数バックオフでリトライ"""
+    for attempt in range(max_attempts):
+        try:
+            return fn(*args, **kwargs)
+        except gspread.exceptions.APIError as e:
+            code = getattr(e.response, 'status_code', None)
+            if code == 429 and attempt < max_attempts - 1:
+                wait = min(70, 2 ** attempt * 5)
+                print(f"  [retry] 429 quota. wait {wait}s (attempt {attempt+1}/{max_attempts})")
+                time.sleep(wait)
+                continue
+            raise
 
 # ── 認証 ──────────────────────────────────────────────────
 from core.auth import get_spreadsheet
@@ -249,15 +265,19 @@ def generate_handover_auto(ss, results, now):
 
     SHEET = 'Handover_Auto'
     try:
-        ws = ss.worksheet(SHEET)
-        ws.clear()
+        ws = call_with_retry(ss.worksheet, SHEET)
+        call_with_retry(ws.clear)
         needed_rows = len(lines) + 10
         if ws.row_count < needed_rows:
-            ws.resize(rows=needed_rows, cols=2)
+            call_with_retry(ws.resize, rows=needed_rows, cols=2)
     except gspread.exceptions.WorksheetNotFound:
-        ws = ss.add_worksheet(title=SHEET, rows=len(lines)+10, cols=2)
-    ws.update('A1', [['No','Content']])
-    ws.update('A2', [[i+1, l] for i, l in enumerate(lines)])
+        ws = call_with_retry(ss.add_worksheet, title=SHEET, rows=len(lines)+10, cols=2)
+    call_with_retry(ws.update, 'A1', [['No','Content']])
+    call_with_retry(ws.update, 'A2', [[i+1, l] for i, l in enumerate(lines)])
     print(f'  OK: Handover_Auto 生成 ({len(lines)}行)')
 
+# Handover_Auto は78シート分析直後で 429 (Read quota/分) に当たりやすいため
+# 60秒待機してクォータ窓を回復させてから実行
+print("\n[wait 65s for Sheets API quota recovery before Handover_Auto]")
+time.sleep(65)
 generate_handover_auto(ss, results, NOW)
