@@ -161,15 +161,16 @@ for ws in all_worksheets:
     })
     print(f"  [{group[0]}] {name}")
 
-# ── シート管理台帳を更新 ──────────────────────────────────
+# ── シート管理台帳を更新（既存シートはクリアして再利用、なければ作成） ────────
 MGMT_SHEET = 'シート管理台帳'
 try:
     ws_mgmt = ss.worksheet(MGMT_SHEET)
-    ss.del_worksheet(ws_mgmt)
-except:
-    pass
-
-ws_mgmt = ss.add_worksheet(title=MGMT_SHEET, rows=len(results)+20, cols=6)
+    ws_mgmt.clear()
+    needed_rows = len(results) + 20
+    if ws_mgmt.row_count < needed_rows:
+        ws_mgmt.resize(rows=needed_rows, cols=6)
+except gspread.exceptions.WorksheetNotFound:
+    ws_mgmt = ss.add_worksheet(title=MGMT_SHEET, rows=len(results)+20, cols=6)
 
 header = ['シート名', 'グループ', '推奨アクション', '情報', '確認日']
 rows = [header]
@@ -248,10 +249,13 @@ def generate_handover_auto(ss, results, now):
 
     SHEET = 'Handover_Auto'
     try:
-        ss.del_worksheet(ss.worksheet(SHEET))
-    except:
-        pass
-    ws = ss.add_worksheet(title=SHEET, rows=len(lines)+10, cols=2)
+        ws = ss.worksheet(SHEET)
+        ws.clear()
+        needed_rows = len(lines) + 10
+        if ws.row_count < needed_rows:
+            ws.resize(rows=needed_rows, cols=2)
+    except gspread.exceptions.WorksheetNotFound:
+        ws = ss.add_worksheet(title=SHEET, rows=len(lines)+10, cols=2)
     ws.update('A1', [['No','Content']])
     ws.update('A2', [[i+1, l] for i, l in enumerate(lines)])
     print(f'  OK: Handover_Auto 生成 ({len(lines)}行)')
