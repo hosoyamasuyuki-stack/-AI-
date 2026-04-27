@@ -27,20 +27,10 @@ jobs:
         run: |
           pip install gspread google-auth requests
       
-      - name: Generate handover.txt
+      - name: Generate and commit handover.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
           python tools/generate_handover.py
-      
-      - name: Commit handover.txt
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add handover.txt
-          git diff --staged --quiet || git commit -m "Auto-update handover.txt [skip ci]"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
