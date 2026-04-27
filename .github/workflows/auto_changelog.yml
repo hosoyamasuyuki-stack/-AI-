@@ -33,4 +33,5 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           COMMIT_SHA: ${{ github.sha }}
           CHANGED_FILES: ${{ steps.changed.outputs.files }}
+          PYTHONPATH: ${{ github.workspace }}
         run: python tools/record_changelog.py
