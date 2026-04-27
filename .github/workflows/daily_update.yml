@@ -2,7 +2,7 @@ name: Daily Indicators Update
 
 on:
   schedule:
-    - cron: '0 22 * * 1-5'  # 平日22時UTC = 翌朝7時JST
+    - cron: '0 22 * * 0-5'  # 日-金22時UTC = 月-土朝7時JST（月曜朝の空白を解消）
   workflow_dispatch:  # 手動実行も可能
 
 env:
