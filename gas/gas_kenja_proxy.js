@@ -20,6 +20,11 @@ var SCRIPT_START = new Date().getTime();
 var TIMEOUT_FETCH = 240000;  // fetchDocText打ち切り: 4分
 var TIMEOUT_TOTAL = 330000;  // 全体打ち切り: 5.5分（6分制限にマージン）
 
+// ── 決算短信キャッシュ Sheets ────────────────────────────
+// fetch_tanshin.py が毎週月曜 11:30 JST に「決算短信_キャッシュ」シートに書き込む
+var SPREADSHEET_ID = '1GtlVhGcPjMU0pJWsijwnmTe1rFJXAGvkaJFjav9gGcE';
+var TANSHIN_CACHE_SHEET = '決算短信_キャッシュ';
+
 function elapsed() { return new Date().getTime() - SCRIPT_START; }
 function isTimeout(limit) { return elapsed() > limit; }
 
@@ -41,6 +46,10 @@ function doPost(e) {
     Logger.log('EDINET: ' + elapsed() + 'ms, found=' + edinetData.found +
                ', hasText=' + (edinetData.docText ? edinetData.docText.length + 'chars' : 'none'));
 
+    // 1b. 決算短信キャッシュ取得（経営者の生のトーン分析用）
+    var tanshinData = fetchTanshinFromCache(secCode);
+    Logger.log('TANSHIN: ' + elapsed() + 'ms, found=' + (tanshinData ? 'yes ' + (tanshinData.text || '').length + 'chars' : 'no'));
+
     // 2. データソース判定
     var dataSource = 'no_edinet';
     if (edinetData.found && edinetData.docText) {
@@ -48,10 +57,13 @@ function doPost(e) {
     } else if (edinetData.found) {
       dataSource = 'metadata_only';
     }
+    if (tanshinData && tanshinData.text) {
+      dataSource += '+tanshin';
+    }
 
     // 3. 2段階API呼び出し（TPM制限30K回避）
     // Step A: Part A（スコア+短要約）
-    var promptA = buildPrompt(secCode, name, scores, edinetData, dataSource, 'A');
+    var promptA = buildPrompt(secCode, name, scores, edinetData, dataSource, 'A', tanshinData);
     if (isTimeout(TIMEOUT_TOTAL)) {
       return jsonResponse({ ok: false, error: 'Timeout (' + elapsed() + 'ms)' });
     }
@@ -62,7 +74,7 @@ function doPost(e) {
     Utilities.sleep(61000);
 
     // Step B: Part B（詳細レポート）
-    var promptB = buildPrompt(secCode, name, scores, edinetData, dataSource, 'B');
+    var promptB = buildPrompt(secCode, name, scores, edinetData, dataSource, 'B', tanshinData);
     var partB = callAI(promptB, 8000);
     Logger.log('PART_B DONE: ' + elapsed() + 'ms');
 
@@ -81,6 +93,11 @@ function doPost(e) {
         submitDate: edinetData.submitDate || '',
         filerName: edinetData.filerName || ''
       },
+      tanshin: tanshinData ? {
+        submitDate: tanshinData.submitDate,
+        title: tanshinData.title,
+        chars: (tanshinData.text || '').length
+      } : null,
       analysis: analysis,
       dataSource: dataSource
     });
@@ -98,6 +115,47 @@ function doGet(e) {
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ══════════════════════════════════════════════════════════════
+// 決算短信キャッシュ取得（fetch_tanshin.py が定期更新）
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * 決算短信_キャッシュ シートから銘柄コードに対応する決算短信を取得
+ * 返却: { submitDate, title, text } または null
+ */
+function fetchTanshinFromCache(secCode) {
+  try {
+    var sec4 = String(secCode).substring(0, 4);
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var sh = ss.getSheetByName(TANSHIN_CACHE_SHEET);
+    if (!sh) {
+      Logger.log('TANSHIN: cache sheet not found (run fetch_tanshin.yml first)');
+      return null;
+    }
+    var data = sh.getDataRange().getValues();
+    if (data.length < 2) return null;
+    // ヘッダ: [銘柄コード, 提出日, 表題, 本文, 取得日]
+    var latest = null;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]).substring(0, 4) === sec4) {
+        var entry = {
+          submitDate: String(data[i][1] || ''),
+          title: String(data[i][2] || ''),
+          text: String(data[i][3] || ''),
+          fetchedAt: String(data[i][4] || ''),
+        };
+        if (!latest || entry.submitDate > latest.submitDate) {
+          latest = entry;
+        }
+      }
+    }
+    return latest;
+  } catch (e) {
+    Logger.log('fetchTanshinFromCache error: ' + e.message);
+    return null;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -290,9 +348,10 @@ function fetchDocText(docID, apiKey) {
     var text = allText.trim();
     Logger.log('fetchDocText: total text ' + text.length + ' chars from ' + htmlFiles.length + ' files');
 
-    // 20,000文字にトリム（OpenAI TPM制限30,000トークン対策）
-    if (text.length > 20000) {
-      text = text.substring(0, 20000) + '\n\n[... 以降省略 ...]';
+    // 30,000文字にトリム（OpenAI TPM 30K + 決算短信 5-15K の合算余裕を確保）
+    // 有報の MD&A・事業等のリスクは先頭側に多い構造のため、ここでは単純先頭優先で十分
+    if (text.length > 30000) {
+      text = text.substring(0, 30000) + '\n\n[... 以降省略 ...]';
     }
 
     Logger.log('fetchDocText: text extracted, ' + text.length + ' chars');
@@ -345,7 +404,7 @@ function htmlToText(html) {
 // プロンプト構築（Deep Insight v3）
 // ══════════════════════════════════════════════════════════════
 
-function buildPrompt(secCode, name, scores, edinetData, dataSource, part) {
+function buildPrompt(secCode, name, scores, edinetData, dataSource, part, tanshinData) {
   part = part || 'A';
   // ── スコア情報 ──
   var scoreInfo = '';
@@ -357,6 +416,23 @@ function buildPrompt(secCode, name, scores, edinetData, dataSource, part) {
       + '- Variable3 Price: ' + (scores.s3 || '?') + 'pt\n'
       + '- Short-term score: ' + (scores.shortScore || '?') + '\n'
       + '- Mid-term score: ' + (scores.midScore || '?') + '\n';
+  }
+
+  // ── 決算短信（経営者の生のトーン）──
+  var tanshinSection = '';
+  if (tanshinData && tanshinData.text) {
+    var tText = String(tanshinData.text);
+    if (tText.length > 15000) tText = tText.substring(0, 15000) + '\n\n[... 以降省略 ...]';
+    tanshinSection = '\n\n## 直近の決算短信（経営者の生の言葉・最重要トーン分析資料）\n'
+      + '提出日: ' + (tanshinData.submitDate || '') + '\n'
+      + '表題: ' + (tanshinData.title || '') + '\n\n'
+      + '--- 決算短信本文ここから ---\n'
+      + tText + '\n'
+      + '--- 決算短信本文ここまで ---\n'
+      + '【決算短信の使い方】業績概要・業績予想の文言から「経営者の強気度」を判定せよ。'
+      + '「順調に推移」「力強く拡大」=強気、「慎重に見守る」「不透明感」=弱気。'
+      + '通期予想の据え置き/上方修正/下方修正は決定的シグナル。'
+      + '有報のリスク開示は形式的に網羅的だが、決算短信はその時点の生のトーン。両者を比較せよ。\n';
   }
 
   // ── EDINET情報 ──
@@ -401,6 +477,7 @@ function buildPrompt(secCode, name, scores, edinetData, dataSource, part) {
     + name + '（証券コード: ' + secCode + '）を分析してください。\n'
     + '対象: 日本の個人投資家（50代以上の投資初心者）\n'
     + scoreInfo
+    + tanshinSection
     + edinetSection
     + '\n' + dataInstruction
     + '\n## 【賢者の審判：ディープ・インサイト】決算・超速分析\n'

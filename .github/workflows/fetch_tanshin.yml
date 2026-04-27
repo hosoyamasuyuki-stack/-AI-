@@ -1,0 +1,32 @@
+name: TDnet 決算短信取得
+
+on:
+  schedule:
+    # 毎週月曜 11:30 JST（02:30 UTC）= weekly_update 完了後
+    - cron: '30 2 * * 1'
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 lxml pdfplumber gspread google-auth
+
+      - name: Run fetch_tanshin
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          PYTHONPATH: ${{ github.workspace }}
+        run: python tools/fetch_tanshin.py
