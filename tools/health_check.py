@@ -23,13 +23,15 @@ JST = timezone(timedelta(hours=9))
 # 各ワークフローの「最終成功からの許容経過時間（時間）」
 # 余裕を持たせて schedule 遅延 + 連休を吸収
 EXPECTATIONS = {
-    'daily_price_update.yml':   {'max_hours': 30,  'label': '株価更新'},
-    'daily_update.yml':         {'max_hours': 80,  'label': 'FRED指標'},
-    'weekly_update.yml':        {'max_hours': 200, 'label': '週次フル再計算'},
-    'dashboard_update.yml':     {'max_hours': 200, 'label': 'ダッシュボード生成'},
-    'full_scan.yml':            {'max_hours': 200, 'label': '全市場スキャン'},
-    'generate_handover.yml':    {'max_hours': 200, 'label': 'handover.txt'},
-    'verify.yml':               {'max_hours': 200, 'label': 'verify検証'},
+    'daily_price_update.yml':   {'max_hours': 30,   'label': '株価更新'},
+    'daily_update.yml':         {'max_hours': 80,   'label': 'FRED指標'},
+    'weekly_update.yml':        {'max_hours': 200,  'label': '週次フル再計算'},
+    'dashboard_update.yml':     {'max_hours': 200,  'label': 'ダッシュボード生成'},
+    'full_scan.yml':            {'max_hours': 200,  'label': '全市場スキャン'},
+    'generate_handover.yml':    {'max_hours': 200,  'label': 'handover.txt'},
+    'verify.yml':               {'max_hours': 200,  'label': 'verify検証'},
+    'sheet_manager.yml':        {'max_hours': 800,  'label': 'シート管理（月次）'},
+    # manage_stock.yml は workflow_dispatch ユーザー操作のみ・不正コード入力で失敗が正常 → 除外
 }
 
 
