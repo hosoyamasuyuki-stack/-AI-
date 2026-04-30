@@ -80,12 +80,13 @@ jobs:
           fi
 
       - name: バックアップを artifact としてアップロード
-        if: ${{ github.event.inputs.dry_run == 'false' }}
+        if: ${{ always() && github.event.inputs.dry_run == 'false' }}
         uses: actions/upload-artifact@v4
         with:
           name: holdings-backup-${{ github.run_id }}
           path: /tmp/holdings_backup/
           retention-days: 90
+          if-no-files-found: warn
 
       - name: 完了通知
         if: always()
