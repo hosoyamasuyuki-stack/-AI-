@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       csv_path:
-        description: 'リポジトリ内 CSV パス（例: portfolio.csv）'
+        description: 'リポジトリ内 CSV パス（既定: _input/portfolio.csv）'
         required: false
-        default: 'portfolio.csv'
+        default: '_input/portfolio.csv'
       csv_text:
         description: 'CSV 本文を直接渡す（csv_path より優先）'
         required: false
@@ -81,7 +81,7 @@ jobs:
 
       - name: バックアップを artifact としてアップロード
         if: ${{ github.event.inputs.dry_run == 'false' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: holdings-backup-${{ github.run_id }}
           path: /tmp/holdings_backup/
