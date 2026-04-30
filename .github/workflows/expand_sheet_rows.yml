@@ -1,0 +1,55 @@
+name: Expand Sheet Rows
+
+# Google Sheets の指定シートに行を追加（行数上限拡張）
+# 一時的な保守作業用 workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      sheets:
+        description: 'カンマ区切りシート名'
+        required: true
+        default: '保有銘柄_v4.3スコア,予測記録'
+      n_rows:
+        description: '追加する行数'
+        required: true
+        default: '50'
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  expand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install gspread google-auth
+      - name: シート拡張実行
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SHEETS_INPUT: ${{ github.event.inputs.sheets }}
+          N_ROWS: ${{ github.event.inputs.n_rows }}
+        run: |
+          python <<'PY'
+          import os
+          from core.auth import get_spreadsheet
+
+          ss = get_spreadsheet()
+          n = int(os.environ['N_ROWS'])
+          for name in os.environ['SHEETS_INPUT'].split(','):
+              name = name.strip()
+              if not name:
+                  continue
+              try:
+                  ws = ss.worksheet(name)
+                  before = ws.row_count
+                  ws.add_rows(n)
+                  print(f'  {name}: {before} -> {before + n} rows')
+              except Exception as e:
+                  print(f'  {name}: ERROR {e}')
+          PY
