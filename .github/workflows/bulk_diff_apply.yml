@@ -1,0 +1,96 @@
+name: Bulk Diff Apply (Holdings)
+
+# 統合 CSV と既存 Sheets の差分を計算し、manage_stock.py を一括ループで適用
+# CEO 承認手順書: 金融投資/保有銘柄/PROCEDURE_2026-04-30.md
+# 既存 manage_stock.py / weekly_update.py / generate_dashboard.py には干渉しない
+on:
+  workflow_dispatch:
+    inputs:
+      csv_path:
+        description: 'リポジトリ内 CSV パス（例: portfolio.csv）'
+        required: false
+        default: 'portfolio.csv'
+      csv_text:
+        description: 'CSV 本文を直接渡す（csv_path より優先）'
+        required: false
+        default: ''
+      dry_run:
+        description: 'dry-run モード（true で Sheets 書込なし）'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  bulk-diff-apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: bulk-diff-apply
+      cancel-in-progress: false
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 依存パッケージをインストール
+        run: |
+          pip install requests gspread google-auth pandas numpy
+
+      - name: CSV 本文を一時ファイルへ書き出し（csv_text 指定時）
+        if: ${{ github.event.inputs.csv_text != '' }}
+        run: |
+          cat > /tmp/portfolio_input.csv <<'EOF'
+          ${{ github.event.inputs.csv_text }}
+          EOF
+          echo "CSV 本文を /tmp/portfolio_input.csv に保存"
+
+      - name: bulk_diff_apply.py 実行
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          set -e
+          if [ -n "${{ github.event.inputs.csv_text }}" ]; then
+            CSV_PATH="/tmp/portfolio_input.csv"
+          else
+            CSV_PATH="${{ github.event.inputs.csv_path }}"
+          fi
+          echo "=== bulk_diff_apply 実行 ==="
+          echo "CSV     : $CSV_PATH"
+          echo "DRY_RUN : ${{ github.event.inputs.dry_run }}"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python bulk_diff_apply.py --csv "$CSV_PATH" --dry-run
+          else
+            python bulk_diff_apply.py --csv "$CSV_PATH"
+          fi
+
+      - name: バックアップを artifact としてアップロード
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: holdings-backup-${{ github.run_id }}
+          path: /tmp/holdings_backup/
+          retention-days: 90
+
+      - name: 完了通知
+        if: always()
+        run: |
+          echo "=== 完了 ==="
+          echo "結果: ${{ job.status }}"
+          echo "バックアップ: GitHub Actions の Artifacts セクションから 90 日間ダウンロード可能"
+          echo "次のステップ: 結果ログを確認 → CEO 報告 → 必要なら full_update.yml で HTML 再生成"
