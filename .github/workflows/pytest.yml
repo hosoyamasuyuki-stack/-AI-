@@ -7,6 +7,13 @@ on:
       - 'core/**.py'
       - 'tests/**.py'
       - '.github/workflows/pytest.yml'
+      # 2026-05-07 追加: ダッシュボード関連変更でも自動実行（再発防止メカニズム §7-1）
+      - 'generate_dashboard.py'
+      - 'ai_dashboard_v13.html'
+      - 'weekly_update.py'
+      - 'daily_price_update.py'
+      - 'manage_stock.py'
+      - 'full_scan.py'
   workflow_dispatch:
 env:
   TZ: Asia/Tokyo
