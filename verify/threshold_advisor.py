@@ -259,7 +259,8 @@ def write_to_sheet(candidates, total_samples):
                 '',  # 補正実施日（手動入力）
             ])
 
-    ws.update('A1', rows)
+    # gspread 新版 API（deprecation 警告回避・2026-05-07 部長指摘 M2）
+    ws.update(values=rows, range_name='A1')
     print(f"  ✅ {SHEET_NAME} 書込完了: 提案 {len(candidates)} 件 + メタ 4 行")
 
 
