@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>取引履歴 | LISA</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=IBM+Plex+Mono:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070c18; --bg2: #0d1526; --bg3: #111d35;
+    --border: #1e2f52; --gold: #c9a84c; --gold-lt: #e8c97a;
+    --text: #d8e0f0; --text-dim: #7888aa;
+    --green: #3dd68c; --red: #f26b6b; --blue: #5b9ef7;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Noto Serif JP', serif;
+    --sans: 'Noto Sans JP', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.8; }
+
+  .site-header {
+    padding: 24px 40px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .site-header h1 { font-family: var(--serif); font-size: 24px; font-weight: 600; color: var(--gold); }
+  .site-header .meta { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+
+  .container { max-width: 1100px; margin: 40px auto; padding: 0 24px; }
+
+  .intro {
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 24px; margin-bottom: 32px; border-radius: 4px;
+  }
+  .intro h2 { font-family: var(--serif); color: var(--gold-lt); margin-bottom: 12px; }
+  .intro p { color: var(--text-dim); line-height: 1.8; }
+
+  .month-block {
+    background: var(--bg2); border: 1px solid var(--border);
+    margin-bottom: 24px; border-radius: 4px; overflow: hidden;
+  }
+  .month-head {
+    padding: 14px 24px; background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .month-head .month {
+    font-family: var(--serif); font-size: 18px; font-weight: 600;
+    color: var(--gold-lt);
+  }
+  .month-head .stats {
+    font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+  }
+
+  table.diff-table {
+    width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 13px;
+  }
+  table.diff-table th, table.diff-table td {
+    padding: 10px 16px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  table.diff-table th {
+    background: var(--bg3); color: var(--text-dim);
+    font-weight: 400; font-size: 11px; letter-spacing: 0.05em;
+  }
+  span.change-type {
+    font-weight: 600; padding: 4px 10px; border-radius: 3px; display: inline-block; min-width: 70px; text-align: center;
+  }
+  span.change-type.new      { background: rgba(61,214,140,0.12); color: var(--green); }
+  span.change-type.exit     { background: rgba(242,107,107,0.12); color: var(--red); }
+  span.change-type.add      { background: rgba(91,158,247,0.12); color: var(--blue); }
+  span.change-type.partial  { background: rgba(201,168,76,0.12); color: var(--gold); }
+
+  .empty-state {
+    text-align: center; color: var(--text-dim); padding: 60px;
+    font-family: var(--mono); font-size: 13px;
+  }
+
+  .footer {
+    margin-top: 60px; padding: 24px 40px;
+    border-top: 1px solid var(--border);
+    text-align: center; font-family: var(--mono);
+    font-size: 11px; color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>📊 取引履歴</h1>
+  <div class="meta">最終更新 <span id="last-updated"><!--LAST_UPDATED--></span> JST</div>
+</header>
+
+<div class="container">
+
+  <section class="intro">
+    <h2>透明性のある月次レポート</h2>
+    <p>
+      本システムが管理する保有銘柄について、毎月の「新規購入・売却・増し玉・一部売却」の<br>
+      動きを銘柄コード単位で公開しています。先月からの保有銘柄の変動経緯をご覧いただけます。
+    </p>
+    <p style="margin-top: 12px; font-size: 13px;">
+      <span style="color: var(--green);">●</span> 新規&nbsp;&nbsp;
+      <span style="color: var(--red);">●</span> 全売却&nbsp;&nbsp;
+      <span style="color: var(--blue);">●</span> 増し玉&nbsp;&nbsp;
+      <span style="color: var(--gold);">●</span> 一部売却
+    </p>
+  </section>
+
+  <!--HISTORY_BLOCKS_START-->
+  <div class="empty-state">取引履歴データがまだありません。</div>
+  <!--HISTORY_BLOCKS_END-->
+
+</div>
+
+<footer class="footer">
+  にこにこ本舗株式会社 | LISA<br>
+  本ページは「保有差分_履歴」シートを基に毎日自動更新されています
+</footer>
+
+</body>
+</html>
