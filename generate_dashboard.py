@@ -1309,6 +1309,28 @@ if cards_start >= 0 and cards_end >= 0:
 else:
     print(f"WARN: 4\u5C64\u30DE\u30AF\u30ED\u30AB\u30FC\u30C9\u7F6E\u63DB\u30B9\u30AD\u30C3\u30D7 (start={cards_start} end={cards_end})")
 
+# ── 4層マクロダッシュボード タイムスタンプ動的更新 (2026-05-07 追加) ──
+# CEO 指示: タイムスタンプが 2026/03/25 に固定されていた問題を修正
+# MacroPhase シートの最新行から取得 → 毎日更新される
+try:
+    _ws_macro = ss.worksheet('MacroPhase')
+    _macro_rows = _ws_macro.get_all_values()
+    if len(_macro_rows) >= 2 and _macro_rows[-1] and _macro_rows[-1][0]:
+        _latest_macro_dt = str(_macro_rows[-1][0]).strip()
+    else:
+        _latest_macro_dt = datetime.now().strftime('%Y/%m/%d %H:%M')
+except Exception as _macro_e:
+    _latest_macro_dt = datetime.now().strftime('%Y/%m/%d %H:%M')
+    print(f"WARN: MacroPhase 取得失敗、現在時刻を使用: {_macro_e}")
+
+# HTML 内 4層マクロダッシュボードのタイムスタンプ span 内を置換
+src = re.sub(
+    r'(<div class="sl">4層マクロダッシュボード<span[^>]*>)[^<]+(</span>)',
+    lambda m: m.group(1) + f'{_latest_macro_dt} 更新' + m.group(2),
+    src
+)
+print(f"OK: 4層マクロダッシュボードタイムスタンプ更新: {_latest_macro_dt}")
+
 # STOCK_SCORES埋め込み
 scores_js = ('const STOCK_SCORES=' +
              json.dumps(SCORES, ensure_ascii=False) + ';')
