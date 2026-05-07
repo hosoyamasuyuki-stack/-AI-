@@ -1520,6 +1520,39 @@ print(f"OK: 学習状況セクション動的更新（"
       f"的中率={_acc_rate_str} / 予測回数={_pred_count_str} / "
       f"次回検証={_next_verify_str} / Phase1 蓄積={_ls_vn}/50件）")
 
+# ── M-5 weekly タイムスタンプ動的更新 (2026-05-07 v1.2 追加) ──
+# CEO 指摘: line 2523「weekly: 2026/3/23 月曜10:00 JST」が 6 週間前から固定
+# データソース: 週次シグナルシート最新行（weekly_update.py line 367 で記録）
+# 形式: '2026/05/04 13:35' → '2026/05/04 13:35 JST'（曜日表記は消失）
+try:
+    _ws_sig = ss.worksheet('週次シグナル')
+    _sig_data = _ws_sig.get_all_values()
+    if len(_sig_data) >= 2 and _sig_data[-1] and _sig_data[-1][0]:
+        _weekly_last = str(_sig_data[-1][0]).strip()
+        _weekly_str = f"{_weekly_last} JST"
+    else:
+        _weekly_str = "未取得"
+except Exception as _wk_e:
+    _weekly_str = "未取得"
+    print(f"  WARN: weekly タイムスタンプ取得失敗 {_wk_e}")
+
+src = re.sub(
+    r'(<span class="sb">weekly: <span>)[^<]+(</span></span>)',
+    lambda m: m.group(1) + _weekly_str + m.group(2),
+    src
+)
+print(f"OK: weekly タイムスタンプ動的更新: {_weekly_str}")
+
+# ── M-6 解説文中「次回評価」日付動的更新 (2026-05-07 v1.2 追加) ──
+# 追加発見: line 2948「次回評価：2026/3/23（月次更新後）」も静的
+# データソース: M-1 で計算済の _next_verify_str（来月1日）を流用
+src = re.sub(
+    r'次回評価：\d{4}/\d{1,2}/\d{1,2}（月次更新後）',
+    f'次回評価：{_next_verify_str}（月次更新後）',
+    src
+)
+print(f"OK: 次回評価動的更新: {_next_verify_str}")
+
 # ALERT_STRIP置換（精度バッジも含めて1つのstripに）
 alert_start = src.find('<!-- ALERT_STRIP_START -->')
 alert_end = src.find('<!-- ALERT_STRIP_END -->')
