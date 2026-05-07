@@ -1407,27 +1407,30 @@ def _check_sheet_freshness_b(label, sheet_name, col_idx):
 _fresh_macro_b = _check_sheet_freshness_b('macro', 'MacroPhase', 0)
 _fresh_weekly_b = _check_sheet_freshness_b('weekly', '週次シグナル', 0)
 
-# 保有銘柄は header の「算出日時」列を確認（部長指摘 (B) 初期化保証）
-_fresh_holding_b = False
+# コアスキャン_日次 の「更新日時」列を確認（v1.3 修正: daily_price_update.py が毎朝 7:30 全行同時書込）
+# v1.2 では「保有銘柄_v4.3スコア」の「算出日時」を見ていたが、これは manage_stock 銘柄追加時の値で
+# 以降更新されないため、システム稼働初日の日時（2026-03-19）が常に出てしまう問題があった。
+# コアスキャン_日次 は daily_price_update.py line 345-348 で毎朝 sheet 全置換 → 当日更新が確実。
+_fresh_coredaily_b = False  # 部長指摘 (B) 初期化保証
 try:
-    _ws_h_b = ss.worksheet('保有銘柄_v4.3スコア')
+    _ws_h_b = ss.worksheet('コアスキャン_日次')
     _h_rows_b = _ws_h_b.get_all_values()
     if len(_h_rows_b) >= 2:
         _h_hdr_b = _h_rows_b[0]
-        if '算出日時' in _h_hdr_b:
-            _h_idx_b = _h_hdr_b.index('算出日時')
+        if '更新日時' in _h_hdr_b:
+            _h_idx_b = _h_hdr_b.index('更新日時')
             _h_dt_str_b = str(_h_rows_b[1][_h_idx_b]).strip() if len(_h_rows_b[1]) > _h_idx_b else ''
             _h_dt_b = _parse_dt_b(_h_dt_str_b)
-            _fresh_holding_b = bool(_h_dt_b and _h_dt_b.date() == _today_date_b)
-            if not _fresh_holding_b and _h_dt_str_b:
-                _stale_sources_b.append(f'holding={_h_dt_str_b}')
+            _fresh_coredaily_b = bool(_h_dt_b and _h_dt_b.date() == _today_date_b)
+            if not _fresh_coredaily_b and _h_dt_str_b:
+                _stale_sources_b.append(f'coreDaily={_h_dt_str_b}')
                 if _h_dt_b and (_oldest_dt_b is None or _h_dt_b < _oldest_dt_b):
                     _oldest_dt_b = _h_dt_b
 except Exception as _he_b:
-    print(f"  WARN: 保有銘柄_v4.3スコア 鮮度チェック失敗: {_he_b}")
+    print(f"  WARN: コアスキャン_日次 鮮度チェック失敗: {_he_b}")
 
-# weekly は月次（月曜のみ更新）なので必須から外し、macro + holding を必須条件とする
-_all_fresh_b = _fresh_macro_b and _fresh_holding_b
+# weekly は月次（月曜のみ更新）なので必須から外し、macro + coreDaily を必須条件とする
+_all_fresh_b = _fresh_macro_b and _fresh_coredaily_b
 _now_b = datetime.now()
 
 if _all_fresh_b:
@@ -1444,7 +1447,7 @@ src = re.sub(
     f'<span class="badge">{_badge_label_full}</span>',
     src,
 )
-print(f"OK: ヘッダーバッジ更新 → {_badge_label_full}（macro={_fresh_macro_b} weekly={_fresh_weekly_b} holding={_fresh_holding_b}）")
+print(f"OK: ヘッダーバッジ更新 → {_badge_label_full}（macro={_fresh_macro_b} weekly={_fresh_weekly_b} coreDaily={_fresh_coredaily_b}）")
 
 # 保有テーブル置換
 hold_open = """      <table id="tH">
