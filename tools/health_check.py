@@ -32,6 +32,9 @@ EXPECTATIONS = {
     'verify.yml':               {'max_hours': 200,  'label': 'verify検証'},
     'sheet_manager.yml':        {'max_hours': 800,  'label': 'シート管理（月次）'},
     'fetch_tanshin.yml':        {'max_hours': 200,  'label': 'TDnet 決算短信取得'},
+    'monthly_learning.yml':     {'max_hours': 800,  'label': '月次学習バッチ'},
+    # 800h = 33 日（月次実行 cron `0 3 1 * *` の余裕値・連休時 schedule 遅延を吸収）
+    # 追加日: 2026-05-07（PROCEDURE_SELF_LEARNING_IMPROVEMENT_2026-05-07.md A-1）
     # manage_stock.yml は workflow_dispatch ユーザー操作のみ・不正コード入力で失敗が正常 → 除外
 }
 
