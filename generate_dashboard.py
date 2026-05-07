@@ -1468,6 +1468,62 @@ src = re.sub(r'<table id="tH">.*?</table>',
              hold_open, src, count=1, flags=re.DOTALL)
 print("OK: 保有テーブル置換")
 
+# ── 2026-05-07 M-7/M-7-2/M-8/M-8-2/M-12/M-14 修正：パネルヘッダ + 次回日付動的化 ──
+# 既存 _n_hold (line 1102) / _n_watch (line 1103) を再利用
+# A 以上ランクと購入候補数を rows_h / rows_w から正規表現で集計
+
+# 保有銘柄: A 以上ランク数集計（rows_h の onclick 引数 5 番目 = ランク）
+_a_or_above_h = 0
+for _tr in rows_h:
+    _m = re.search(r"showD\('[^']*','[^']*','[^']*',[\d.]+,'([SAB])\+?'", _tr)
+    if _m and _m.group(1) in ('S', 'A'):
+        _a_or_above_h += 1
+
+# 保有パネルヘッダ「43銘柄 / A以上 3」を動的化
+_before_h = src
+src = re.sub(
+    r'<span style="background:#f59e0b22;color:#f59e0b;padding:1px 6px;border-radius:6px;font-weight:800;">\d+銘柄</span><span style="color:#34d399;font-weight:800;">A以上\s*\d+</span>',
+    f'<span style="background:#f59e0b22;color:#f59e0b;padding:1px 6px;border-radius:6px;font-weight:800;">{_n_hold}銘柄</span><span style="color:#34d399;font-weight:800;">A以上 {_a_or_above_h}</span>',
+    src, count=1
+)
+if _before_h == src:
+    print(f"WARN: 保有パネルヘッダ M-7/M-7-2 マッチなし")
+else:
+    print(f"OK: 保有パネルヘッダ動的化 → {_n_hold}銘柄 / A以上 {_a_or_above_h}")
+
+# 監視銘柄: 購入候補シグナル数集計（rows_w の s-buy セル文字列から「買」を含む銘柄をカウント）
+_buy_candidates_w = 0
+for _tr in rows_w:
+    if 's-buy' in _tr and '買' in _tr:
+        _buy_candidates_w += 1
+
+# 監視パネルヘッダ「14銘柄 / 購入候補 1」を動的化
+_before_w = src
+src = re.sub(
+    r'<span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">\d+銘柄</span><span style="color:#34d399;font-weight:800;">購入候補\s*\d+</span>',
+    f'<span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">{_n_watch}銘柄</span><span style="color:#34d399;font-weight:800;">購入候補 {_buy_candidates_w}</span>',
+    src, count=1
+)
+if _before_w == src:
+    print(f"WARN: 監視パネルヘッダ M-8/M-8-2 マッチなし")
+else:
+    print(f"OK: 監視パネルヘッダ動的化 → {_n_watch}銘柄 / 購入候補 {_buy_candidates_w}")
+
+# M-12 / M-14: 翌月 1 日を動的計算
+_now_m12 = datetime.now()
+if _now_m12.month == 12:
+    _next_month_str = datetime(_now_m12.year + 1, 1, 1).strftime('%Y/%m/01')
+else:
+    _next_month_str = datetime(_now_m12.year, _now_m12.month + 1, 1).strftime('%Y/%m/01')
+
+_before_m12 = src
+src = re.sub(r'次回検証：\d{4}/\d{1,2}/\d{1,2}（来月1日）', f'次回検証：{_next_month_str}（来月1日）', src)
+src = re.sub(r'次回評価：\d{4}/\d{1,2}/\d{1,2}（月次更新後）', f'次回評価：{_next_month_str}（月次更新後）', src)
+if _before_m12 != src:
+    print(f"OK: 次回検証/評価日動的化 → {_next_month_str}")
+else:
+    print(f"WARN: 次回検証/評価日 マッチなし")
+
 # 監視テーブル置換
 watch_open = """      <table id="tW">
         <tr>
@@ -1676,8 +1732,21 @@ GBAR_HTML = (
     '<div class="gbar"><span class="gl">\u73FE\u5728\u306E\u74B0\u5883</span>'
     f'<span class="gi">\u77ED\u671F{SHORT_SCORE}\u70B9({s_lbl})\u30FB\u4E2D\u671F{MID_SCORE}\u70B9({m_lbl})</span>'
     '</div>')
+# 2026-05-07 M-9 修正: HTML から <!-- GBAR_DYNAMIC --> マーカー消失時のフォールバック
+_before_gbar = src
 src = src.replace('<!-- GBAR_DYNAMIC -->', GBAR_HTML, 1)
-print(f"OK: gbar動的生成（短期{SHORT_SCORE}/中期{MID_SCORE}）")
+if _before_gbar == src:
+    src = re.sub(
+        r'<div class="gbar"><span class="gl">[^<]+</span><span class="gi">[^<]+</span></div>',
+        GBAR_HTML,
+        src, count=1
+    )
+    if _before_gbar != src:
+        print(f"OK: gbar動的生成 fallback (短期{SHORT_SCORE}/中期{MID_SCORE})")
+    else:
+        print(f"WARN: gbar match none")
+else:
+    print(f"OK: gbar動的生成（短期{SHORT_SCORE}/中期{MID_SCORE}）")
 # 四半期レビューリマインダー（sbar）
 import calendar
 now_month = datetime.now().month
