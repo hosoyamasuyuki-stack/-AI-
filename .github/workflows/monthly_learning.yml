@@ -35,3 +35,20 @@ jobs:
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: |
           python learning_batch_monthly.py
+
+      # ============================================================
+      # Step 4 (B-1-2 / 2026-05-07 追加):
+      #   閾値補正提案を生成（読込のみ・既存閾値変更なし）
+      # ・if: success() = 学習バッチ成功時のみ実行
+      # ・continue-on-error: true = 提案生成失敗が学習バッチに影響しない独立化
+      # ・参考: PROCEDURE_SELF_LEARNING_IMPROVEMENT_2026-05-07.md v2.0 §6 B-1-2
+      # ============================================================
+      - name: 閾値補正提案を生成（読込のみ・CEO レビュー用）
+        if: success()
+        continue-on-error: true
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+        run: |
+          python verify/threshold_advisor.py

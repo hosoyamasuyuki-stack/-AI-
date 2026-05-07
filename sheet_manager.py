@@ -65,6 +65,9 @@ A_GROUP = {
     '保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア', '予測記録',
     # verify系
     'STEP0_目先検証_0415',
+    # B-1 (2026-05-07 追加・PROCEDURE_SELF_LEARNING_IMPROVEMENT_2026-05-07.md v2.0)
+    # threshold_advisor.py が毎月1日 12:00 JST に書込（読込のみ・既存閾値変更なし）
+    '閾値補正提案',
 }
 
 # Bグループ: 永久保存（削除禁止）
