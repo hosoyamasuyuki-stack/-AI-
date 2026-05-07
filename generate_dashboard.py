@@ -2110,6 +2110,162 @@ if _errors:
 else:
     print("\n\u2705 \u30B5\u30CB\u30C6\u30A3\u30C1\u30A7\u30C3\u30AF\u5168\u30D1\u30B9")
 
+# ── 取引履歴ボタン挿入（v1.2: PROCEDURE_BULK_HOLDINGS_DIFF_PERFECTION §9-4） ──
+# evidence ボタンの </span> 直後に「📊 取引履歴」ボタンを追加
+# framework_page.html ボタンとの誤マッチを防ぐため evidence 専用 regex + flags=re.DOTALL（部長指摘 MUST-1）
+_history_btn = '''<span onclick="window.open('holdings_history_page.html','_blank')" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#1e293b;border:1px solid #34d399;border-radius:6px;cursor:pointer;font-size:var(--fs-xs);font-weight:900;color:#34d399;transition:all .2s;" onmouseover="this.style.background='#34d399';this.style.color='#000'" onmouseout="this.style.background='#1e293b';this.style.color='#34d399'">&#x1F4CA; 取引履歴</span>'''
+
+if 'holdings_history_page.html' not in src:
+    src, _n_btn = re.subn(
+        r"(window\.open\('evidence_page\.html','_blank'\)[^<]*?</span>)",
+        r"\1\n    " + _history_btn,
+        src,
+        count=1,
+        flags=re.DOTALL,
+    )
+    if _n_btn == 1:
+        print("OK: ヘッダに 📊 取引履歴 ボタン追加")
+    else:
+        print("  WARN: evidence ボタンが見つからず取引履歴ボタンを挿入できませんでした")
+else:
+    print("OK: 取引履歴ボタンは既に存在")
+
+# ── 取引履歴ページ生成（顧客向け公開・v1.2 ネット集約版・§9-3） ──
+print("\n=== 取引履歴ページ生成 ===")
+try:
+    _ws_hist = ss.worksheet('保有差分_履歴')
+    _hist_rows = _ws_hist.get_all_values()
+except Exception as _eh:
+    print(f"  WARN: 保有差分_履歴 シート未作成 → 取引履歴ページ生成スキップ: {_eh}")
+    _hist_rows = []
+
+if len(_hist_rows) >= 2:
+    _hist_body = _hist_rows[1:]
+
+    # ── ネット集約: (month, 証券コード) 単位で株数合算（CEO 確定 5: 一銘柄表示） ──
+    from collections import defaultdict as _dd
+    _agg = _dd(lambda: {'prev': 0.0, 'curr': 0.0, 'name': '', 'kind': ''})
+    for _r in _hist_body:
+        if not _r or len(_r) < 12:
+            continue
+        # DIFF_COLS = [month, change_type, 個人/法人, 証券会社, 口座区分, 市場, 種別,
+        #              証券コード, 銘柄名, 株数_前月, 株数_当月, 差分]
+        _month = _r[0]
+        _code = _r[7]
+        _name = _r[8]
+        _kind = _r[6]
+        try:
+            _prev_sh = float(_r[9] or 0)
+            _curr_sh = float(_r[10] or 0)
+        except ValueError:
+            continue
+        _key = (_month, _code)
+        _agg[_key]['prev'] += _prev_sh
+        _agg[_key]['curr'] += _curr_sh
+        # 銘柄名・種別は最後勝ち（同銘柄なら全行で同じはず）
+        if _name:
+            _agg[_key]['name'] = _name
+        if _kind:
+            _agg[_key]['kind'] = _kind
+
+    # ── ネット delta から change_type 再判定 ──
+    def _determine_ct(_prev, _curr):
+        _delta = _curr - _prev
+        if _prev == 0 and _curr > 0:
+            return '新規'
+        elif _prev > 0 and _curr == 0:
+            return '全売却'
+        elif _delta > 0:
+            return '増し玉'
+        elif _delta < 0:
+            return '一部売却'
+        else:
+            return None  # ネット 0 は表示しない
+
+    # month でグループ化（集約結果から）
+    _by_month = _dd(list)
+    for (_month, _code), _v in _agg.items():
+        _ct = _determine_ct(_v['prev'], _v['curr'])
+        if _ct is None:
+            continue
+        _by_month[_month].append({
+            'code': _code,
+            'name': _v['name'],
+            'kind': _v['kind'],
+            'change_type': _ct,
+        })
+
+    # 月別ブロック HTML 生成（時系列降順）
+    _blocks = []
+    _ct_class_map = {'新規': 'new', '全売却': 'exit', '増し玉': 'add', '一部売却': 'partial'}
+    _ct_order = {'新規': 0, '増し玉': 1, '一部売却': 2, '全売却': 3}
+
+    for _m in sorted(_by_month.keys(), reverse=True):
+        _entries = _by_month[_m]
+        _stats = {'新規': 0, '全売却': 0, '増し玉': 0, '一部売却': 0}
+        for _e in _entries:
+            _stats[_e['change_type']] += 1
+        _stat_str = ' / '.join([f'{k} {v}件' for k, v in _stats.items() if v > 0])
+        _m_label = _m[:7]  # YYYY-MM
+
+        _entries_sorted = sorted(
+            _entries,
+            key=lambda e: (_ct_order.get(e['change_type'], 9), e['code'])
+        )
+
+        _trs = []
+        for _e in _entries_sorted:
+            _ct_class = _ct_class_map.get(_e['change_type'], '')
+            _trs.append(
+                f'<tr>'
+                f'<td><span class="change-type {_ct_class}">{_e["change_type"]}</span></td>'
+                f'<td>{_e["code"]}</td>'
+                f'<td>{_e["name"]}</td>'
+                f'<td>{_e["kind"]}</td>'
+                f'</tr>'
+            )
+
+        _block = (
+            '\n<div class="month-block">'
+            '\n  <div class="month-head">'
+            f'\n    <div class="month">{_m_label}</div>'
+            f'\n    <div class="stats">{_stat_str}</div>'
+            '\n  </div>'
+            '\n  <table class="diff-table">'
+            '\n    <tr><th>変化</th><th>コード</th><th>銘柄名</th><th>種別</th></tr>'
+            f'\n    {"".join(_trs)}'
+            '\n  </table>'
+            '\n</div>'
+        )
+        _blocks.append(_block)
+
+    _history_blocks_html = '\n'.join(_blocks)
+    _n_months = len(_by_month)
+else:
+    _history_blocks_html = '<div class="empty-state">取引履歴データがまだありません。</div>'
+    _n_months = 0
+
+# holdings_history_page.html 読込 → 置換 → 書き出し
+_history_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'holdings_history_page.html')
+if os.path.exists(_history_path):
+    with open(_history_path, 'r', encoding='utf-8') as _hf:
+        _history_src = _hf.read()
+    _history_src = _history_src.replace(
+        '<!--LAST_UPDATED-->',
+        datetime.now().strftime('%Y-%m-%d %H:%M')
+    )
+    _history_src = re.sub(
+        r'<!--HISTORY_BLOCKS_START-->.*?<!--HISTORY_BLOCKS_END-->',
+        f'<!--HISTORY_BLOCKS_START-->\n{_history_blocks_html}\n<!--HISTORY_BLOCKS_END-->',
+        _history_src,
+        flags=re.DOTALL,
+    )
+    with open(_history_path, 'w', encoding='utf-8') as _hf:
+        _hf.write(_history_src)
+    print(f"OK: holdings_history_page.html 生成（{_n_months} 月分）")
+else:
+    print(f"  WARN: テンプレート {_history_path} が見つかりません")
+
 # HTMLの終了タグを保証（テンプレートに</body></html>がない場合に追加）
 if '</body>' not in src:
     src += '\n</body>'
