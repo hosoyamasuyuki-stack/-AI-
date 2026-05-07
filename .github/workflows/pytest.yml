@@ -14,6 +14,9 @@ on:
       - 'daily_price_update.py'
       - 'manage_stock.py'
       - 'full_scan.py'
+      # 2026-05-08 追加: 取引履歴プログラム v1.2（PROCEDURE_BULK_HOLDINGS_DIFF_PERFECTION）
+      - 'bulk_update_holdings.py'
+      - 'holdings_history_page.html'
   workflow_dispatch:
 env:
   TZ: Asia/Tokyo
