@@ -1443,7 +1443,9 @@ else:
     print(f"  ⚠️ データ鮮度警告: {' / '.join(_stale_sources_b)}")
 
 src = re.sub(
-    r'<span class="badge">\d{4}-\d{2}-\d{2}\s*(?:&nbsp;)?\s*\d{2}:\d{2}\s*JST</span>',
+    # v1.4 修正: 既書換済バッジ（「最終更新 ... ⚠️ 一部データ古い」形式）も
+    # 再マッチできるよう [^<]*? に変更。HH:MM JST を必須として誤マッチ防止。
+    r'<span class="badge">[^<]*?\d{2}:\d{2}\s*JST[^<]*?</span>',
     f'<span class="badge">{_badge_label_full}</span>',
     src,
 )
