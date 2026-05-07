@@ -1353,14 +1353,98 @@ src = src.replace(
 print("OK: マトリックス配列修正")
 src = re.sub(r'最終更新：[^<"\']+', f'最終更新：{NOW}', src)
 
-# ヘッダー日時バッジを現在日時に更新
-BADGE_NOW = datetime.now().strftime('%Y-%m-%d %H:%M')
+# ── ヘッダー日時バッジ + データ鮮度チェック (2026-05-07 v1.1 追加・B 案) ──
+# CEO 指示: バッジは「データの新鮮度が確認されてから」更新する
+# 全データソース（MacroPhase / 週次シグナル / 保有銘柄_v4.3スコア）が当日内なら通常表示、
+# 古いデータがあれば「⚠️ 一部データ古い」警告を付加。
+# 部長判定 v1.1 全 7 観点 5/5 承認済（_parse_dt 安全実装 + _fresh_holding 初期化保証）。
+# 参考: PROCEDURE_DATA_FRESHNESS_CHECK_2026-05-07.md v1.1
+
+_today_date_b = datetime.now().date()
+_oldest_dt_b = None
+_stale_sources_b = []
+
+def _parse_dt_b(s):
+    """多形式の日時文字列を parse（部長指摘 (A) 安全実装・スライス計算誤りを排除）"""
+    if not s:
+        return None
+    s = str(s).strip()
+    for fmt in ('%Y/%m/%d %H:%M', '%Y-%m-%d %H:%M', '%Y/%m/%d', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(s, fmt)
+        except Exception:
+            continue
+    # フォーマット末尾余剰（秒・タイムゾーン等）対応：日付部のみで再試行
+    for fmt in ('%Y/%m/%d', '%Y-%m-%d'):
+        try:
+            return datetime.strptime(s[:10], fmt)
+        except Exception:
+            continue
+    return None
+
+def _check_sheet_freshness_b(label, sheet_name, col_idx):
+    """シート最新行の日時が当日内か判定。古ければ _oldest_dt_b / _stale_sources_b を更新。"""
+    global _oldest_dt_b, _stale_sources_b
+    try:
+        _ws_chk = ss.worksheet(sheet_name)
+        _rows_chk = _ws_chk.get_all_values()
+        if len(_rows_chk) < 2:
+            return False
+        _dt_str = str(_rows_chk[-1][col_idx]).strip() if len(_rows_chk[-1]) > col_idx else ''
+        _dt_obj = _parse_dt_b(_dt_str)
+        if _dt_obj is None:
+            return False
+        _is_fresh = _dt_obj.date() == _today_date_b
+        if not _is_fresh:
+            _stale_sources_b.append(f'{label}={_dt_str}')
+            if _oldest_dt_b is None or _dt_obj < _oldest_dt_b:
+                _oldest_dt_b = _dt_obj
+        return _is_fresh
+    except Exception as _ce:
+        print(f"  WARN: {label}({sheet_name}) 鮮度チェック失敗: {_ce}")
+        return False
+
+_fresh_macro_b = _check_sheet_freshness_b('macro', 'MacroPhase', 0)
+_fresh_weekly_b = _check_sheet_freshness_b('weekly', '週次シグナル', 0)
+
+# 保有銘柄は header の「算出日時」列を確認（部長指摘 (B) 初期化保証）
+_fresh_holding_b = False
+try:
+    _ws_h_b = ss.worksheet('保有銘柄_v4.3スコア')
+    _h_rows_b = _ws_h_b.get_all_values()
+    if len(_h_rows_b) >= 2:
+        _h_hdr_b = _h_rows_b[0]
+        if '算出日時' in _h_hdr_b:
+            _h_idx_b = _h_hdr_b.index('算出日時')
+            _h_dt_str_b = str(_h_rows_b[1][_h_idx_b]).strip() if len(_h_rows_b[1]) > _h_idx_b else ''
+            _h_dt_b = _parse_dt_b(_h_dt_str_b)
+            _fresh_holding_b = bool(_h_dt_b and _h_dt_b.date() == _today_date_b)
+            if not _fresh_holding_b and _h_dt_str_b:
+                _stale_sources_b.append(f'holding={_h_dt_str_b}')
+                if _h_dt_b and (_oldest_dt_b is None or _h_dt_b < _oldest_dt_b):
+                    _oldest_dt_b = _h_dt_b
+except Exception as _he_b:
+    print(f"  WARN: 保有銘柄_v4.3スコア 鮮度チェック失敗: {_he_b}")
+
+# weekly は月次（月曜のみ更新）なので必須から外し、macro + holding を必須条件とする
+_all_fresh_b = _fresh_macro_b and _fresh_holding_b
+_now_b = datetime.now()
+
+if _all_fresh_b:
+    BADGE_NOW = _now_b.strftime('%Y-%m-%d %H:%M')
+    _badge_label_full = f'最終更新 {BADGE_NOW} JST'
+else:
+    _badge_dt_b = _oldest_dt_b if _oldest_dt_b else _now_b
+    BADGE_NOW = _badge_dt_b.strftime('%Y-%m-%d %H:%M')
+    _badge_label_full = f'最終更新 {BADGE_NOW} JST ⚠️ 一部データ古い'
+    print(f"  ⚠️ データ鮮度警告: {' / '.join(_stale_sources_b)}")
+
 src = re.sub(
     r'<span class="badge">\d{4}-\d{2}-\d{2}\s*(?:&nbsp;)?\s*\d{2}:\d{2}\s*JST</span>',
-    f'<span class="badge">{BADGE_NOW} JST</span>',
-    src
+    f'<span class="badge">{_badge_label_full}</span>',
+    src,
 )
-print(f"OK: ヘッダー日時バッジ更新 → {BADGE_NOW} JST")
+print(f"OK: ヘッダーバッジ更新 → {_badge_label_full}（macro={_fresh_macro_b} weekly={_fresh_weekly_b} holding={_fresh_holding_b}）")
 
 # 保有テーブル置換
 hold_open = """      <table id="tH">
