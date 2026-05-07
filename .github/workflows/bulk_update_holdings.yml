@@ -1,0 +1,64 @@
+name: Bulk Update Holdings
+
+# 保有ポートフォリオ一括更新
+# 起動経路: GAS（CEO のダッシュボード「一括更新」ボタン）から workflow_dispatch
+# 既存「Stock Management」(manage_stock.yml) とは独立・干渉しない
+on:
+  workflow_dispatch:
+    inputs:
+      csv:
+        description: 'CSV 本文（market,code,shares 形式・改行区切り）'
+        required: true
+        type: string
+      dry_run:
+        description: 'dry-run（true で Sheets 書き込みをスキップ・検証のみ）'
+        required: false
+        default: 'false'
+        type: string
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  bulk-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: bulk-update-holdings
+      cancel-in-progress: false
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 依存パッケージをインストール
+        run: |
+          pip install requests gspread google-auth pandas numpy
+
+      - name: 保有ポートフォリオ一括更新
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          HOLDINGS_CSV: ${{ github.event.inputs.csv }}
+        run: |
+          echo "=== 保有ポートフォリオ一括更新 ==="
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python bulk_update_holdings.py --dry-run
+          else
+            python bulk_update_holdings.py
+          fi
+
+      - name: 完了通知
+        if: always()
+        run: |
+          echo "=== 完了 ==="
+          echo "結果: ${{ job.status }}"
+          echo "対象: 保有ポートフォリオ_master / 保有スナップショット / 保有差分"

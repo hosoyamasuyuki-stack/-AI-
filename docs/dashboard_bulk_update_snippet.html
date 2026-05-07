@@ -1,0 +1,174 @@
+<!--
+================================================================
+ダッシュボード「一括更新」UI 追加スニペット
+================================================================
+
+目的: ai_dashboard_v13.html に保有ポートフォリオの CSV 一括更新 UI を追加する。
+
+統合方法:
+  1. ai_dashboard_v13.html の「銘柄管理モーダル」セクション直後（</div>...<script> の間・約 L3260 付近）に
+     下記の <!-- ── 一括更新モーダル ── --> 〜 </script> を追加挿入する。
+  2. 「銘柄管理」モーダルを開くボタン（既存）の隣に「一括更新」ボタン（下記のサンプル）を追加する。
+  3. 既存のモーダル（manage_stock）には一切手を入れない。
+
+既存システムへの干渉: ゼロ
+  - 既存の「銘柄管理」モーダル/JS/GAS_URL/admin secret 取得関数（getAdminSecret）はそのまま使う
+  - 新規で別モーダル + 別ハンドラ execBulkUpdate() を追加するだけ
+
+CEO 操作:
+  1. ダッシュボード上の「一括更新」ボタンをクリック
+  2. CSV を textarea に貼付（または「ファイル選択」でアップロード）
+  3. 「投入」ボタン → 確認ダイアログ → GAS 経由で workflow 起動
+  4. 2-3 分後にスナップショット・差分シートに反映
+
+================================================================
+-->
+
+<!-- ── ① 既存「銘柄管理」ボタンの隣に追加するボタン（example） ── -->
+<!-- 配置例（既存の openStockMgmt ボタンと並べる）：
+<button onclick="openBulkUpdate()"
+        style="padding:6px 12px;background:#1e3a5f;border:1px solid #60a5fa;border-radius:6px;color:#60a5fa;font-weight:800;font-size:var(--fs-sm);cursor:pointer;">
+  📋 一括更新
+</button>
+-->
+
+
+<!-- ── ② 一括更新モーダル本体（ここをHTMLに追加） ── -->
+<div id="bulk-overlay" onclick="closeBulkUpdate(event)"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;">
+  <div onclick="event.stopPropagation()"
+       style="background:#111827;border:1px solid #60a5fa;border-radius:10px;width:560px;max-width:92vw;padding:0;box-shadow:0 0 40px rgba(0,0,0,.8);animation:fadeIn .2s ease;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1e3a5f;">
+      <div style="color:#60a5fa;font-weight:900;font-size:var(--fs-md);">📋 保有ポートフォリオ 一括更新</div>
+      <button onclick="closeBulkUpdate()" style="background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;">&#x2715;</button>
+    </div>
+    <div style="padding:16px;">
+      <div style="margin-bottom:10px;font-size:var(--fs-xs);color:#94a3b8;line-height:1.6;">
+        CSV 形式で投入 → 保有ポートフォリオ_master が全置換 + スナップショット記録 + 先月差分自動生成。<br>
+        フォーマット: <code style="color:#fbbf24;">market,code,shares</code>（ヘッダ必須・カンマ区切り）
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label style="color:#94a3b8;font-size:var(--fs-xs);font-weight:700;display:block;margin-bottom:4px;">CSV 本文（ファイル or 貼付）</label>
+        <input type="file" id="bulk-file" accept=".csv,.txt" onchange="loadBulkFile(this)"
+               style="margin-bottom:6px;color:#e2e8f0;font-size:var(--fs-xs);">
+        <textarea id="bulk-csv" rows="10"
+                  placeholder="market,code,shares&#10;JP,7203,200&#10;JP,9432,100&#10;US,AAPL,10"
+                  style="width:100%;padding:8px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e2e8f0;font-size:var(--fs-sm);font-family:monospace;box-sizing:border-box;resize:vertical;"></textarea>
+      </div>
+
+      <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">
+        <label style="color:#e2e8f0;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:4px;">
+          <input type="checkbox" id="bulk-dryrun" style="accent-color:#fbbf24;">
+          dry-run（書き込みせず検証のみ）
+        </label>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button onclick="execBulkUpdate()" style="flex:1;padding:10px;background:#1e3a5f;border:1px solid #60a5fa;border-radius:6px;color:#60a5fa;font-weight:800;font-size:var(--fs-sm);cursor:pointer;">
+          📋 投入
+        </button>
+        <button onclick="closeBulkUpdate()" style="flex:1;padding:10px;background:#1f2937;border:1px solid #4b5563;border-radius:6px;color:#9ca3af;font-weight:800;font-size:var(--fs-sm);cursor:pointer;">
+          キャンセル
+        </button>
+      </div>
+
+      <div id="bulk-status" style="min-height:24px;padding:6px 8px;background:#0d1117;border-radius:4px;font-size:var(--fs-xs);color:#94a3b8;font-family:monospace;white-space:pre-wrap;"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── ③ JavaScript（ここを <script> として追加） ── -->
+<script>
+function openBulkUpdate(){
+  document.getElementById('bulk-overlay').style.display='flex';
+  document.getElementById('bulk-csv').value='';
+  document.getElementById('bulk-file').value='';
+  document.getElementById('bulk-dryrun').checked=false;
+  document.getElementById('bulk-status').textContent='';
+  document.getElementById('bulk-csv').focus();
+}
+
+function closeBulkUpdate(e){
+  if(!e || e.target === document.getElementById('bulk-overlay')){
+    document.getElementById('bulk-overlay').style.display='none';
+  }
+}
+
+function loadBulkFile(input){
+  if(!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    document.getElementById('bulk-csv').value = ev.target.result;
+  };
+  reader.readAsText(input.files[0], 'UTF-8');
+}
+
+function execBulkUpdate(){
+  /* admin 権限と secret を必須検証（既存 manage_stock と同等） */
+  if(window.__USER_ROLE !== 'admin'){
+    document.getElementById('bulk-status').innerHTML='<span style="color:#f87171;">❌ この操作は管理者のみ実行できます</span>';
+    return;
+  }
+  var secret = (typeof getAdminSecret === 'function') ? getAdminSecret() : '';
+  if(!secret){
+    document.getElementById('bulk-status').innerHTML='<span style="color:#f87171;">❌ 管理者シークレットが見つかりません。LISA 経由でアクセスしてください</span>';
+    return;
+  }
+
+  var csv = document.getElementById('bulk-csv').value.trim();
+  if(!csv){
+    document.getElementById('bulk-status').innerHTML='<span style="color:#f87171;">❌ CSV を入力してください</span>';
+    return;
+  }
+  // 簡易バリデーション
+  var lines = csv.split('\n').filter(function(l){ return l.trim(); });
+  if(lines.length < 2){
+    document.getElementById('bulk-status').innerHTML='<span style="color:#f87171;">❌ ヘッダ + 最低 1 行のデータが必要です</span>';
+    return;
+  }
+  if(!/market.*code.*shares/i.test(lines[0])){
+    if(!confirm('ヘッダに market / code / shares が見当たりません。このまま投入しますか？')) return;
+  }
+
+  var dryRun = document.getElementById('bulk-dryrun').checked ? 'true' : 'false';
+
+  if(dryRun !== 'true'){
+    if(!confirm('保有ポートフォリオを ' + (lines.length - 1) + ' 行で全置換します。よろしいですか？')) return;
+  }
+
+  var st = document.getElementById('bulk-status');
+  st.innerHTML='<span style="color:#fbbf24;">⏳ GAS に送信中...</span>';
+
+  var btns = document.querySelectorAll('#bulk-overlay button');
+  btns.forEach(function(b){ b.style.pointerEvents='none'; b.style.opacity='0.5'; });
+
+  /* GAS_URL は既存 manage_stock と同じ */
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbzS5b6XPlrkI_toQssXQQ3ivBeWXD-uL_4aXFZnZW-wWO4TgRbNOObpf3XRVJu_M8vF/exec';
+
+  var payload = {
+    action: 'bulk_update_holdings',
+    admin_secret: secret,
+    csv: csv,
+    dry_run: dryRun
+  };
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  }).then(function(){
+    if(dryRun === 'true'){
+      st.innerHTML='<span style="color:#fbbf24;">✅ dry-run 起動 (' + (lines.length - 1) + ' 行)。GitHub Actions ログで結果を確認してください</span>';
+    } else {
+      st.innerHTML='<span style="color:#34d399;">✅ GitHub Actions 起動! ' + (lines.length - 1) + ' 行を投入中（2-3 分で反映）</span>';
+    }
+    btns.forEach(function(b){ b.style.pointerEvents=''; b.style.opacity=''; });
+  }).catch(function(err){
+    st.innerHTML='<span style="color:#f87171;">❌ エラー: ' + err.message + '</span>';
+    btns.forEach(function(b){ b.style.pointerEvents=''; b.style.opacity=''; });
+  });
+}
+</script>
