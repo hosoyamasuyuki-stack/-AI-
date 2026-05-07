@@ -1,20 +1,37 @@
 name: Bulk Update Holdings
 
-# 保有ポートフォリオ一括更新
-# 起動経路: GAS（CEO のダッシュボード「一括更新」ボタン）から workflow_dispatch
-# 既存「Stock Management」(manage_stock.yml) とは独立・干渉しない
+# 保有ポートフォリオ一括更新（v1.2 拡張：過去月投入対応）
+# 起動経路:
+#   - GAS（CEO のダッシュボード「一括更新」ボタン）から workflow_dispatch（通常運用・当月）
+#   - GitHub Actions UI から手動 dispatch（過去月投入時・STEP 0 など）
 on:
   workflow_dispatch:
     inputs:
       csv:
-        description: 'CSV 本文（market,code,shares 形式・改行区切り）'
+        description: 'CSV 本文（14 列日本語ヘッダ・改行区切り）'
         required: true
         type: string
+      snapshot_month:
+        description: 'snapshot_month を上書き（例: 2026-04-01・空欄なら実行時の当月）'
+        required: false
+        default: ''
+        type: string
+      snapshot_only:
+        description: 'snapshot/diff/history のみ更新（master/extended 保護・過去月投入時は true）'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
       dry_run:
         description: 'dry-run（true で Sheets 書き込みをスキップ・検証のみ）'
         required: false
         default: 'false'
-        type: string
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 env:
   TZ: Asia/Tokyo
@@ -50,15 +67,24 @@ jobs:
           HOLDINGS_CSV: ${{ github.event.inputs.csv }}
         run: |
           echo "=== 保有ポートフォリオ一括更新 ==="
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            python bulk_update_holdings.py --dry-run
-          else
-            python bulk_update_holdings.py
+          ARGS=""
+          if [ -n "${{ github.event.inputs.snapshot_month }}" ]; then
+            ARGS="$ARGS --snapshot-month=${{ github.event.inputs.snapshot_month }}"
+            echo "snapshot_month: ${{ github.event.inputs.snapshot_month }}"
           fi
+          if [ "${{ github.event.inputs.snapshot_only }}" = "true" ]; then
+            ARGS="$ARGS --snapshot-only"
+            echo "snapshot_only: true（master/extended 保護）"
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+            echo "dry_run: true（Sheets 書き込みなし）"
+          fi
+          python bulk_update_holdings.py $ARGS
 
       - name: 完了通知
         if: always()
         run: |
           echo "=== 完了 ==="
           echo "結果: ${{ job.status }}"
-          echo "対象: 保有ポートフォリオ_master / 保有スナップショット / 保有差分"
+          echo "対象: 保有ポートフォリオ_master / 保有スナップショット / 保有差分 / 保有差分_履歴"
