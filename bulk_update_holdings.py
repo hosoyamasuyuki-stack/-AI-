@@ -211,7 +211,10 @@ def compute_diff(snapshot_ws, current_month):
         delta = curr_shares - prev_shares
 
         if prev_shares == 0 and curr_shares > 0:
-            ct = '新規'
+            # 過去月スナップショットなし → 初期保有として記録（運用開始時の保有銘柄リスト）
+            # past_months が空のときは「初期保有」（CEO 指示 2026-05-08）
+            # past_months ありで前月 0 株なら通常の「新規」購入
+            ct = '初期保有' if not past_months else '新規'
         elif prev_shares > 0 and curr_shares == 0:
             ct = '全売却'
         elif delta > 0:

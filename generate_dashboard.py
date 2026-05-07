@@ -2143,14 +2143,16 @@ if len(_hist_rows) >= 2:
     _hist_body = _hist_rows[1:]
 
     # ── ネット集約: (month, 証券コード) 単位で株数合算（CEO 確定 5: 一銘柄表示） ──
+    # ct_override: シート上の change_type が「初期保有」の行があれば、集約後も「初期保有」を維持
     from collections import defaultdict as _dd
-    _agg = _dd(lambda: {'prev': 0.0, 'curr': 0.0, 'name': '', 'kind': ''})
+    _agg = _dd(lambda: {'prev': 0.0, 'curr': 0.0, 'name': '', 'kind': '', 'ct_override': None})
     for _r in _hist_body:
         if not _r or len(_r) < 12:
             continue
         # DIFF_COLS = [month, change_type, 個人/法人, 証券会社, 口座区分, 市場, 種別,
         #              証券コード, 銘柄名, 株数_前月, 株数_当月, 差分]
         _month = _r[0]
+        _ct_orig = _r[1]
         _code = _r[7]
         _name = _r[8]
         _kind = _r[6]
@@ -2167,8 +2169,11 @@ if len(_hist_rows) >= 2:
             _agg[_key]['name'] = _name
         if _kind:
             _agg[_key]['kind'] = _kind
+        # 初期保有は強制保持（CEO 指示「全部保有状態からスタート」）
+        if _ct_orig == '初期保有':
+            _agg[_key]['ct_override'] = '初期保有'
 
-    # ── ネット delta から change_type 再判定 ──
+    # ── ネット delta から change_type 再判定（初期保有は override で維持） ──
     def _determine_ct(_prev, _curr):
         _delta = _curr - _prev
         if _prev == 0 and _curr > 0:
@@ -2185,7 +2190,7 @@ if len(_hist_rows) >= 2:
     # month でグループ化（集約結果から）
     _by_month = _dd(list)
     for (_month, _code), _v in _agg.items():
-        _ct = _determine_ct(_v['prev'], _v['curr'])
+        _ct = _v['ct_override'] if _v['ct_override'] else _determine_ct(_v['prev'], _v['curr'])
         if _ct is None:
             continue
         _by_month[_month].append({
@@ -2196,15 +2201,16 @@ if len(_hist_rows) >= 2:
         })
 
     # 月別ブロック HTML 生成（時系列降順）
+    # 初期保有は最古月固定なので CSS class init・凡例にも反映
     _blocks = []
-    _ct_class_map = {'新規': 'new', '全売却': 'exit', '増し玉': 'add', '一部売却': 'partial'}
-    _ct_order = {'新規': 0, '増し玉': 1, '一部売却': 2, '全売却': 3}
+    _ct_class_map = {'初期保有': 'init', '新規': 'new', '全売却': 'exit', '増し玉': 'add', '一部売却': 'partial'}
+    _ct_order = {'初期保有': 0, '新規': 1, '増し玉': 2, '一部売却': 3, '全売却': 4}
 
     for _m in sorted(_by_month.keys(), reverse=True):
         _entries = _by_month[_m]
-        _stats = {'新規': 0, '全売却': 0, '増し玉': 0, '一部売却': 0}
+        _stats = {'初期保有': 0, '新規': 0, '全売却': 0, '増し玉': 0, '一部売却': 0}
         for _e in _entries:
-            _stats[_e['change_type']] += 1
+            _stats[_e['change_type']] = _stats.get(_e['change_type'], 0) + 1
         _stat_str = ' / '.join([f'{k} {v}件' for k, v in _stats.items() if v > 0])
         _m_label = _m[:7]  # YYYY-MM
 
