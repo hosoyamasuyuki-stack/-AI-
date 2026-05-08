@@ -73,7 +73,11 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Actions [Full Update]"
+          # 全 HTML 生成物を明示列挙（段 E：将来の出力ファイル追加時は本行を更新する）
+          # 整合性は tests/test_workflow_integrity.py で CI 検証（段 F）
           git add ai_dashboard_v13.html holdings_history_page.html
+          [ -f evidence_page.html ] && git add evidence_page.html || true
+          [ -f framework_page.html ] && git add framework_page.html || true
           git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
           git commit -m "full update $(date +'%Y/%m/%d %H:%M') JST"
           git pull --rebase origin main || true
