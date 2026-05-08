@@ -2110,23 +2110,34 @@ if _errors:
 else:
     print("\n\u2705 \u30B5\u30CB\u30C6\u30A3\u30C1\u30A7\u30C3\u30AF\u5168\u30D1\u30B9")
 
-# ── 取引履歴ボタン挿入（v1.2: PROCEDURE_BULK_HOLDINGS_DIFF_PERFECTION §9-4） ──
-# evidence ボタンの </span> 直後に「📊 取引履歴」ボタンを追加
-# framework_page.html ボタンとの誤マッチを防ぐため evidence 専用 regex + flags=re.DOTALL（部長指摘 MUST-1）
+# ── 「科学的根拠」evidence ボタン削除（CEO 指示 2026-05-08：規約抵触リスク回避） ──
+# evidence ボタン全体を span ごと削除。直後の改行も併せて除去して空行を残さない
+src, _n_ev = re.subn(
+    r"\s*<span\s+onclick=\"window\.open\('evidence_page\.html','_blank'\)[^\"]*\"[^>]*?>[^<]*</span>",
+    '',
+    src,
+    count=1,
+)
+if _n_ev == 1:
+    print("OK: ヘッダから 📊 科学的根拠 evidence ボタン削除")
+else:
+    print("OK: evidence ボタンは既に削除済（再生成では追加されない）")
+
+# ── 取引履歴ボタン挿入（v1.2 + 2026-05-08 改訂） ──
+# 挿入位置を「framework_page.html ボタンの直前」に変更（evidence 削除後も安定動作）
 _history_btn = '''<span onclick="window.open('holdings_history_page.html','_blank')" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#1e293b;border:1px solid #34d399;border-radius:6px;cursor:pointer;font-size:var(--fs-xs);font-weight:900;color:#34d399;transition:all .2s;" onmouseover="this.style.background='#34d399';this.style.color='#000'" onmouseout="this.style.background='#1e293b';this.style.color='#34d399'">&#x1F4CA; 取引履歴</span>'''
 
 if 'holdings_history_page.html' not in src:
     src, _n_btn = re.subn(
-        r"(window\.open\('evidence_page\.html','_blank'\)[^<]*?</span>)",
-        r"\1\n    " + _history_btn,
+        r"(<span\s+onclick=\"window\.open\('framework_page\.html','_blank'\))",
+        _history_btn + "\n    \\1",
         src,
         count=1,
-        flags=re.DOTALL,
     )
     if _n_btn == 1:
-        print("OK: ヘッダに 📊 取引履歴 ボタン追加")
+        print("OK: ヘッダに 📊 取引履歴 ボタン追加（framework 前）")
     else:
-        print("  WARN: evidence ボタンが見つからず取引履歴ボタンを挿入できませんでした")
+        print("  WARN: framework ボタンが見つからず取引履歴ボタンを挿入できませんでした")
 else:
     print("OK: 取引履歴ボタンは既に存在")
 

@@ -198,17 +198,18 @@ class TestDashboardHistoryButton:
         src = (REPO_ROOT / 'generate_dashboard.py').read_text(encoding='utf-8')
         assert "holdings_history_page.html" in src, "取引履歴ボタン挿入ロジック未実装"
 
-    def test_button_uses_dotall_flag_for_must1_fix(self):
-        """部長指摘 MUST-1：__FRAMEWORK_PLACEHOLDER__ 退避ロジックは廃止・専用 regex で挿入。"""
+    def test_button_inserted_before_framework(self):
+        """2026-05-08 改訂：evidence 削除後・取引履歴ボタンは framework ボタンの直前に挿入。"""
         src = (REPO_ROOT / 'generate_dashboard.py').read_text(encoding='utf-8')
-        # MUST-1 修正の証拠：取引履歴ボタン挿入で flags=re.DOTALL を使う
-        # ファイル内の regex literal は escape 込みで書かれるため、escape 緩めにマッチ
+        # evidence ボタンを削除しているか
+        assert "evidence_page" in src and "削除" in src, "evidence ボタン削除ロジックが未実装"
+        # framework ボタンの前に取引履歴ボタンを挿入しているか
         m = re.search(
-            r"holdings_history_page.*?evidence_page.*?flags\s*=\s*re\.DOTALL",
+            r"holdings_history_page.*?framework_page",
             src,
             re.DOTALL,
         )
-        assert m, "MUST-1 修正（flags=re.DOTALL での evidence ボタン後挿入）が確認できない"
+        assert m, "framework ボタン前への取引履歴ボタン挿入ロジックが確認できない"
 
     def test_no_framework_placeholder_workaround(self):
         """旧案の __FRAMEWORK_PLACEHOLDER__ 退避ロジックが残存していないこと。"""
@@ -217,18 +218,29 @@ class TestDashboardHistoryButton:
             "撤回された旧案のプレースホルダー退避ロジックが残存している"
         )
 
-    def test_button_inserted_after_evidence_in_html(self):
-        """生成済 ai_dashboard_v13.html で取引履歴ボタンが evidence の後に配置されていること（生成後のみ検証）。"""
+    def test_evidence_button_removed_from_html(self):
+        """2026-05-08：evidence_page.html ボタンが HTML から削除されていること（CEO 規約抵触ガード）。"""
+        html_path = REPO_ROOT / 'ai_dashboard_v13.html'
+        if not html_path.exists():
+            pytest.skip("ai_dashboard_v13.html 未生成")
+        src = html_path.read_text(encoding='utf-8')
+        assert "window.open('evidence_page.html'" not in src, (
+            "evidence_page.html ボタンが残存している（CEO 指示で削除すべき）"
+        )
+
+    def test_button_inserted_before_framework_in_html(self):
+        """生成済 ai_dashboard_v13.html で取引履歴ボタンが framework の前に配置されていること。"""
         html_path = REPO_ROOT / 'ai_dashboard_v13.html'
         if not html_path.exists():
             pytest.skip("ai_dashboard_v13.html 未生成")
         src = html_path.read_text(encoding='utf-8')
         if 'holdings_history_page.html' not in src:
             pytest.skip("取引履歴ボタンは未挿入（generate_dashboard.py 未実行）")
-        ev_idx = src.find("window.open('evidence_page.html','_blank')")
         hi_idx = src.find("window.open('holdings_history_page.html','_blank')")
-        assert ev_idx >= 0, "evidence_page.html ボタンが HTML に存在しない"
-        assert hi_idx > ev_idx, "取引履歴ボタンが evidence の後に配置されていない"
+        fw_idx = src.find("window.open('framework_page.html','_blank')")
+        assert hi_idx >= 0, "取引履歴ボタンが HTML に存在しない"
+        assert fw_idx >= 0, "framework_page.html ボタンが HTML に存在しない"
+        assert hi_idx < fw_idx, "取引履歴ボタンが framework の前に配置されていない"
 
 
 # ── bulk_update_holdings.py 機能テスト ──
