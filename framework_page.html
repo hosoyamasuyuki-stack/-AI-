@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>判断フレームワーク | AI投資判断システム</title>
+<title>判断フレームワーク | LISA</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;600;700&family=IBM+Plex+Mono:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -11,11 +11,11 @@
     --bg2:       #0d1526;
     --bg3:       #111d35;
     --border:    #1e2f52;
-    --gold:      #c9a84c;
-    --gold-lt:   #e8c97a;
-    --gold-dim:  #7a6230;
-    --text:      #d8e0f0;
-    --text-dim:  #7888aa;
+    --gold:      #d4b85c;
+    --gold-lt:   #f0d480;
+    --gold-dim:  #c0954e;
+    --text:      #e8eef8;
+    --text-dim:  #b4c4dd;
     --green:     #3dd68c;
     --red:       #f26b6b;
     --blue:      #5b9ef7;
@@ -32,9 +32,19 @@
     background: var(--bg);
     color: var(--text);
     font-family: var(--sans);
-    font-size: 15px;
-    line-height: 1.8;
+    font-size: 16px;
+    line-height: 1.85;
     overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (max-width: 720px) {
+    body { font-size: 17px; line-height: 1.9; }
+    .section h2 { font-size: 24px !important; }
+    .section .lead { font-size: 16px !important; }
+    .card .card-body, .rebuttal-a, .finding p, .step-content p { font-size: 15px !important; }
+    .section-label, .hero-label { font-size: 12px !important; }
+    .conclusion h2 { font-size: 24px !important; }
+    .conclusion p { font-size: 15px !important; }
   }
 
   /* ── NOISE OVERLAY ── */
@@ -308,7 +318,7 @@
 
 <!-- HEADER -->
 <header class="site-header">
-  <span class="logo">AI投資判断システム // 判断フレームワーク</span>
+  <span class="logo">LISA // 判断フレームワーク</span>
   <span class="badge">INTERNAL RESEARCH RECORD · 2026</span>
 </header>
 
@@ -319,7 +329,7 @@
     時間軸で変わる、<span>判断の本質</span>
   </h1>
   <p class="fade-up delay-2">
-    科学的根拠に基づく定量分析で、投資研究の効率化を支援します。目先から長期まで、4つの時間軸で分析の視点を整理します。※本システムは投資助言を行うものではありません。
+    客観的な定量データに基づき、市場環境と保有銘柄の月次変動を可視化する月次レポートです。目先から長期まで、4つの時間軸で分析の視点を整理します。
   </p>
   <div class="hero-stats fade-up delay-3">
     <div class="hero-stat">
@@ -613,7 +623,7 @@
         <div class="step-num">1</div>
         <div class="step-content">
           <h4>仮説を事前登録する</h4>
-          <p>「この変数は投資判断に有効だ」という仮説を、検証前に登録します。後から都合の良い結果だけを拾う「チェリーピッキング」を防ぐためです。現在、6つの仮説（H001〜H006）が登録されています。</p>
+          <p>「この変数は銘柄評価に有効だ」という仮説を、検証前に登録します。後から都合の良い結果だけを拾う「チェリーピッキング」を防ぐためです。現在、6つの仮説（H001〜H006）が登録されています。</p>
         </div>
       </div>
       <div class="step">
@@ -669,7 +679,8 @@
 
 <!-- FOOTER -->
 <footer class="site-footer">
-  ※本ページの内容は個人的な投資研究の記録であり、投資助言・推奨を目的としたものではありません。投資に関する最終決定は、ご自身の判断と責任において行ってください。
+  にこにこ本舗株式会社 | LISA<br>
+  本ページは客観的な定量データに基づく月次レポートです。
   <p>検証手法: 仮説事前登録 / Bonferroni補正 / ウォークフォワード検証 / 因子劣化監視 · 検証銘柄: 保有46 + 監視73 + 学習用100 = 219銘柄</p>
 </footer>
 
