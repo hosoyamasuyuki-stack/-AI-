@@ -172,7 +172,9 @@ class TestHistoryPageTemplate:
         assert 'id="last-updated"' in src
 
     def test_template_no_account_or_share_columns(self):
-        """顧客財産情報非開示：株数列・口座列・前月/当月列が含まれないこと。"""
+        """顧客財産情報非開示：株数列・口座列・前月/当月列が含まれないこと。
+        加えて、LISA 国内個別銘柄限定下では「種別」列も全件同値で冗長なため除外する
+        （CEO 指示 2026-05-08）。"""
         src = self.template_path.read_text(encoding='utf-8')
         assert '<th>口座</th>' not in src
         assert '<th>口座区分</th>' not in src
@@ -180,6 +182,19 @@ class TestHistoryPageTemplate:
         assert '<th>当月</th>' not in src
         assert '<th>株数</th>' not in src
         assert '<th>差分</th>' not in src
+        assert '<th>種別</th>' not in src
+
+    def test_dashboard_history_table_has_no_kind_column(self):
+        """generate_dashboard.py の取引履歴ページ生成テーブルヘッダに「種別」が含まれないこと。"""
+        src = (REPO_ROOT / 'generate_dashboard.py').read_text(encoding='utf-8')
+        # 取引履歴ページ生成セクション内の table header
+        m = re.search(r"取引履歴ページ生成.*?<th>変化</th>[^<]*?<th>コード</th>[^<]*?<th>銘柄名</th>([^<]*?<th>[^<]+</th>)?", src, re.DOTALL)
+        assert m, "取引履歴ページのテーブルヘッダが見つからない"
+        # 4 番目の <th>種別</th> 等が無いこと
+        if m.group(1):
+            assert '種別' not in m.group(1), (
+                f"取引履歴テーブルヘッダに不要な列が含まれている: {m.group(1)}"
+            )
 
     def test_template_legend_has_4_states(self):
         src = self.template_path.read_text(encoding='utf-8')

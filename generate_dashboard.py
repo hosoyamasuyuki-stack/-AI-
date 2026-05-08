@@ -2239,12 +2239,12 @@ if len(_hist_rows) >= 2:
         _trs = []
         for _e in _entries_sorted:
             _ct_class = _ct_class_map.get(_e['change_type'], '')
+            # CEO 指示 2026-05-08：LISA は国内個別銘柄限定なので「種別」列は冗長（全件「個別株」固定）→ 削除
             _trs.append(
                 f'<tr>'
                 f'<td><span class="change-type {_ct_class}">{_e["change_type"]}</span></td>'
                 f'<td>{_e["code"]}</td>'
                 f'<td>{_e["name"]}</td>'
-                f'<td>{_e["kind"]}</td>'
                 f'</tr>'
             )
 
@@ -2255,7 +2255,7 @@ if len(_hist_rows) >= 2:
             f'\n    <div class="stats">{_stat_str}</div>'
             '\n  </div>'
             '\n  <table class="diff-table">'
-            '\n    <tr><th>変化</th><th>コード</th><th>銘柄名</th><th>種別</th></tr>'
+            '\n    <tr><th>変化</th><th>コード</th><th>銘柄名</th></tr>'
             f'\n    {"".join(_trs)}'
             '\n  </table>'
             '\n</div>'
