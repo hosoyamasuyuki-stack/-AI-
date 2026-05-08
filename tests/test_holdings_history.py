@@ -182,6 +182,21 @@ class TestHistoryPageTemplate:
         for label in ['新規', '全売却', '増し玉', '一部売却']:
             assert label in src, f"凡例に '{label}' がない"
 
+    def test_history_generation_filters_to_jp_stocks_only(self):
+        """CEO 指示 2026-05-08：LISA は国内個別銘柄のみ。
+        generate_dashboard.py で米国株・ETF・REIT・投信・外貨を除外しているか検証。"""
+        gen_src = (REPO_ROOT / 'generate_dashboard.py').read_text(encoding='utf-8')
+        # 取引履歴ページ生成セクションに market/kind フィルタが入っているか
+        m = re.search(
+            r"取引履歴ページ生成.*?_market\s*!=\s*['\"]JP['\"].*?_kind\s*!=\s*['\"]個別株['\"]",
+            gen_src,
+            re.DOTALL,
+        )
+        assert m, (
+            "取引履歴ページ生成で 市場=JP and 種別=個別株 のフィルタが見当たりません。"
+            "海外株・ETF・REIT・投信・外貨が顧客向け取引履歴に出る可能性。"
+        )
+
     def test_template_has_back_to_dashboard_link(self):
         """ヘッダに「ダッシュボードに戻る」リンクがあること（CEO 指示 2026-05-08）。"""
         src = self.template_path.read_text(encoding='utf-8')

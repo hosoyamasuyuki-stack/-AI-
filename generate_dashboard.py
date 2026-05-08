@@ -2164,9 +2164,15 @@ if len(_hist_rows) >= 2:
         #              証券コード, 銘柄名, 株数_前月, 株数_当月, 差分]
         _month = _r[0]
         _ct_orig = _r[1]
+        _market = _r[5]
+        _kind = _r[6]
         _code = _r[7]
         _name = _r[8]
-        _kind = _r[6]
+        # CEO 指示 2026-05-08：LISA は国内個別銘柄のみ表示。
+        # 米国株・ETF・REIT・投信・外貨預り金・香港株・ベトナム株は除外。
+        # portfolio-extractor SKILL.md の LISA 表示判定（market='JP' AND asset_class='stock'）と整合。
+        if _market != 'JP' or _kind != '個別株':
+            continue
         try:
             _prev_sh = float(_r[9] or 0)
             _curr_sh = float(_r[10] or 0)
