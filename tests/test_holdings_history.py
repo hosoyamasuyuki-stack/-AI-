@@ -162,10 +162,14 @@ class TestHistoryPageTemplate:
         assert self.template_path.exists(), f"テンプレート不在: {self.template_path}"
 
     def test_template_has_required_markers(self):
+        """generate_dashboard.py が再生成後も保持されるマーカーを検証。
+        - HISTORY_BLOCKS マーカーは self-replace で残る
+        - LAST_UPDATED は datetime に置換されて消えるため、id='last-updated' span 自体を検証
+        """
         src = self.template_path.read_text(encoding='utf-8')
         assert '<!--HISTORY_BLOCKS_START-->' in src
         assert '<!--HISTORY_BLOCKS_END-->' in src
-        assert '<!--LAST_UPDATED-->' in src
+        assert 'id="last-updated"' in src
 
     def test_template_no_account_or_share_columns(self):
         """顧客財産情報非開示：株数列・口座列・前月/当月列が含まれないこと。"""
