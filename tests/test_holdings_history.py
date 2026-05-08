@@ -182,6 +182,12 @@ class TestHistoryPageTemplate:
         for label in ['新規', '全売却', '増し玉', '一部売却']:
             assert label in src, f"凡例に '{label}' がない"
 
+    def test_template_has_back_to_dashboard_link(self):
+        """ヘッダに「ダッシュボードに戻る」リンクがあること（CEO 指示 2026-05-08）。"""
+        src = self.template_path.read_text(encoding='utf-8')
+        assert 'ai_dashboard_v13.html' in src, "ダッシュボードへの戻りリンク先が含まれていない"
+        assert 'ダッシュボードに戻る' in src, "「ダッシュボードに戻る」文言がない"
+
 
 # ── ヘッダボタン挿入の冪等性（部長指摘 MUST-1 対応） ──
 
