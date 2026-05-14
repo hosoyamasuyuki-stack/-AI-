@@ -2073,8 +2073,13 @@ print("OK: モーダル挿入")
 # GAS URL注入（core/config.pyから一元管理）
 src = src.replace('%%GAS_URL_FULL_UPDATE%%', GAS_URL_FULL_UPDATE)
 src = src.replace('%%GAS_URL_KENJA%%', GAS_URL_KENJA)
+# 既存 dashboard fetch で hardcoded された URL を強制置換（増分更新フロー対策・2026-05-14）
+# core/config.py 修正が dashboard に確実に反映されるよう、placeholder 不在時も既存 URL を上書きする
+src = re.sub(r"KENJA_GAS_URL='[^']+'", f"KENJA_GAS_URL='{GAS_URL_KENJA}'", src)
+src = re.sub(r"FULL_UPDATE_GAS_URL='[^']+'", f"FULL_UPDATE_GAS_URL='{GAS_URL_FULL_UPDATE}'", src)
 print(f"OK: GAS URL注入（FULL_UPDATE={GAS_URL_FULL_UPDATE[:60]}...）")
 print(f"OK: GAS URL注入（KENJA={GAS_URL_KENJA[:60]}...）")
+print(f"OK: GAS URL 強制置換完了（drift 対策）")
 
 # charset宣言を保証（文字化け防止）
 if '<!DOCTYPE html>' not in src:
