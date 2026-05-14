@@ -50,7 +50,10 @@ ROE_THR = [(25,100),(20,85),(15,70),(12,58),(10,46),(8,35),(5,20),(0,8)]
 FCR_THR = [(120,100),(100,90),(80,78),(60,62),(40,44),(20,26),(0,10)]
 
 # Variable 2: Trend
-RS_THR  = [(4.0,100),(2.0,82),(0.5,64),(-0.5,46),(-2.0,28),(-999,12)]
+# 2026-05-15: CEO judgement item 4 (option A) confirmed
+# Added (0,64) layer so that 0%/year trend maps to 64pt per the spec
+# (without this, 0%/year fell through to the -0.5 layer = 46pt = 18pt gap)
+RS_THR  = [(4.0,100),(2.0,82),(0.5,64),(0,64),(-0.5,46),(-2.0,28),(-999,12)]
 FS_THR  = [(8.0,100),(4.0,80),(0.0,60),(-4.0,40),(-8.0,20),(-999,8)]
 
 # Variable 3: Price
