@@ -48,8 +48,10 @@ def calc_v43_score(df, price_info):
     fcr_mean  = safe(fcr_clean.mean()) if len(fcr_clean) > 0 else None
     s1 = round(thr_high(roe_mean, ROE_THR) * 0.60 +
                (thr_high(fcr_mean, FCR_THR) if fcr_mean is not None else 30) * 0.40)
-    roe_trend = slope_fn(roe_s.tail(8))    if len(roe_s)    >= 3 else 0
-    fcr_trend = slope_fn(fcr_clean.tail(8)) if len(fcr_clean) >= 3 else 0
+    # 2026-05-15: CEO judgement item 1 (option A) confirmed
+    # Spec says "ROE 3-4 year slope", so use the last 4 periods (was 8)
+    roe_trend = slope_fn(roe_s.tail(4))    if len(roe_s)    >= 3 else 0
+    fcr_trend = slope_fn(fcr_clean.tail(4)) if len(fcr_clean) >= 3 else 0
     s2 = round(thr_high(roe_trend, RS_THR) * 0.60 +
                thr_high(fcr_trend, FS_THR) * 0.40)
     peg = None
