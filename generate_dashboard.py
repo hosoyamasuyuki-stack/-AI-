@@ -1631,39 +1631,10 @@ try:
 except Exception as _e:
     print(f"  WARN: 精度バッジ生成失敗 {_e}")
 
-# ── 学習状況セクション動的更新 (2026-05-07 追加・v1.1・スコープ安全化) ──
-# CEO 指示「ゼロから調査」結果で発見した静的ハードコード値 4 件を動的化:
-#   M-1 line 2503 次回検証：2026/04/15  → 来月1日（verify.yml cron `0 1 1 * *` 整合）
-#   M-2 line 2501 的中率 未計測         → 実勝率 X.X%（line 274 と整合）
-#   M-3 line 2500 予測回数 1回          → 実数 X回
-#   M-4 line 2524 Phase1 15/50件 蓄積中 → Phase1 X/50件 蓄積中
-# データソース: VERIFIED_COUNT / WIN_COUNT (line 734-742 で確実に定義)
-# 独立 try で _ls_vn / _ls_wn / _ls_rate を新設（既存 try との変数競合回避・NameError 完全排除）
-# 参考: PROCEDURE_LEARNING_STATUS_DYNAMIC_2026-05-07.md v1.1
-try:
-    _ls_vn = VERIFIED_COUNT.get('目先', 0)
-    _ls_wn = WIN_COUNT.get('目先', 0)
-    _ls_rate = (_ls_wn * 100 / _ls_vn) if _ls_vn > 0 else 0.0
-except Exception as _ls_e:
-    _ls_vn, _ls_wn, _ls_rate = 0, 0, 0.0
-    print(f"  WARN: 学習状況セクション変数取得失敗 {_ls_e}")
-
-_acc_rate_str   = f"{_ls_rate:.1f}%" if _ls_vn > 0 else "未計測"
-_pred_count_str = f"{_ls_vn}回"      if _ls_vn > 0 else "1回"
-_next_verify    = (datetime.now().replace(day=1) + timedelta(days=32)).replace(day=1)
-_next_verify_str = _next_verify.strftime('%Y/%m/%d')
-
-src = src.replace('<div class="lbs-v">1回</div>',
-                  f'<div class="lbs-v">{_pred_count_str}</div>')
-src = src.replace('<div class="lbs-v ca">未計測</div>',
-                  f'<div class="lbs-v ca">{_acc_rate_str}</div>')
-src = re.sub(r'次回検証：\d{4}/\d{1,2}/\d{1,2}（目先4週）',
-             f'次回検証：{_next_verify_str}（来月1日）', src)
-if _ls_vn > 0:
-    src = src.replace('15/50件 蓄積中', f'{_ls_vn}/50件 蓄積中')
-print(f"OK: 学習状況セクション動的更新（"
-      f"的中率={_acc_rate_str} / 予測回数={_pred_count_str} / "
-      f"次回検証={_next_verify_str} / Phase1 蓄積={_ls_vn}/50件）")
+# ── 学習状況セクション 削除済 (2026-05-14 CEO 通達: 顧客向け非表示) ──
+# CEO 通達「ダッシュボードに学習状況の表示。こんなものを入れる指示は出していない。削除せよ」
+# HTML 側で学習状況 div ブロック (lines 2494-2504) を削除済のため、動的更新も不要化。
+# 旧コード（VERIFIED_COUNT / WIN_COUNT から的中率・予測回数・次回検証日を埋める処理）は git 履歴参照。
 
 # ── M-5 weekly タイムスタンプ動的更新 (2026-05-07 v1.2 追加) ──
 # CEO 指摘: line 2523「weekly: 2026/3/23 月曜10:00 JST」が 6 週間前から固定
