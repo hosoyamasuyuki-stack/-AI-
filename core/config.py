@@ -41,7 +41,9 @@ GAS_URL_FULL_UPDATE = os.environ.get(
 )
 GAS_URL_KENJA = os.environ.get(
     'GAS_URL_KENJA',
-    'https://script.google.com/macros/s/AKfycbxDEN69psev29NQUJ3qhiPzA-mgT3uYpFXITW4bRRoc49VHxDhBW24Io4HbEizeuLo_/exec'
+    # 2026-05-14: v3 単独版 (AKfycbxDEN69psev) → v3.1 兼用版 (AKfycbwVDZ9 バージョン 41) に変更
+    # 旧 URL は max_tokens を gpt-5-mini に送って 400 エラー / 新 URL は max_completion_tokens 修正済 LIVE
+    'https://script.google.com/macros/s/AKfycbwVDZ9IhuGEz7onU9uCvhSFd7N84cGQouIcnBMQO5iIlFwbNbVP4J8_tPtOj8X7yxAw/exec'
 )
 
 # ── v4.3 Scoring Thresholds ─────────────────────────────────
