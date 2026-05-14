@@ -2492,6 +2492,8 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
       </div>
 
       <!-- 学習状況セクション 削除済 (2026-05-14 CEO 通達: 顧客向け非表示) -->
+      <!-- 注: d-days 要素は JS 互換維持のため hidden で残置（line 2685 document.getElementById('d-days').textContent=days への null 参照防止）-->
+      <div id="d-days" style="display:none"></div>
   </div>
 
 </div>
