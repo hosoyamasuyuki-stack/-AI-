@@ -2528,6 +2528,12 @@ function getAdminSecret(){
   catch(e){ return ''; }
 }
 
+/* v3.1.1: ユーザー ID を URL から取得（NOVA server-side で全ユーザーに注入・賢者の利用回数カウント用） */
+function getKenjaUserId(){
+  try { return new URLSearchParams(location.search).get('uid') || ''; }
+  catch(e){ return ''; }
+}
+
 function triggerFullUpdate(){
   if(window.__USER_ROLE !== 'admin'){
     alert('この操作は管理者のみ実行できます');
@@ -3124,10 +3130,30 @@ function runKenja(){
     +'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
   var sc=STOCK_SCORES[code]||[0,0,0];
   var payload={secCode:code,name:name,scores:{v42:window._curV42||'',rank:window._curRank||'',s1:sc[0],s2:sc[1],s3:sc[2],shortScore:window._curShort||'',midScore:window._curMid||''}};
+  /* v3.1.1: ユーザー ID を payload に追加（GAS の DB 連携用・uid なしなら GAS は従来通り動作） */
+  var __uid = (typeof getKenjaUserId === 'function') ? getKenjaUserId() : '';
+  if(__uid) payload.uid = __uid;
   fetch(KENJA_GAS_URL,{method:'POST',body:JSON.stringify(payload),redirect:'follow'})
   .then(function(r){return r.json();})
   .then(function(data){
     if(!data.ok){
+      /* v3.1.1: 月間利用上限到達のハンドリング（ご高齢者向け配慮文面） */
+      if(data.error === 'limit_exceeded'){
+        var tierLabel = data.tier === 'plan_30' ? 'ベーシックプラン' : data.tier === 'plan_100' ? 'プレミアムプラン' : (data.tier || '');
+        res.innerHTML='<div style="padding:14px;background:#1c0a0a;border:1px solid #f87171;border-radius:8px;">'
+          +'<div style="color:#f87171;font-weight:800;font-size:var(--fs-lg);margin-bottom:8px;">今月のご利用上限に達しました</div>'
+          +'<div style="color:#cbd5e1;font-size:var(--fs-base);line-height:1.7;">'
+            +'ご契約プラン：'+escH(tierLabel)+'（月'+(data.limit||'?')+'回）<br>'
+            +'今月のご利用：'+(data.used||0)+'回 / '+(data.limit||'?')+'回'
+          +'</div>'
+          +'<div style="color:#94a3b8;font-size:var(--fs-sm);margin-top:10px;line-height:1.6;">'
+            +'来月 1 日に自動でリセットされます。<br>'
+            +'プラン変更をご希望の方は <a href="https://lisa-jp.com/settings" style="color:#60a5fa;">設定ページ</a> からお手続きください。'
+          +'</div>'
+        +'</div>';
+        if(btn){btn.disabled=true; btn.textContent='上限到達'; btn.style.opacity='0.5';}
+        return;
+      }
       if(data.error&&(data.error.indexOf('kenja-rich-api')>=0||data.error.indexOf('OPENAI_API_KEY')>=0||data.error.indexOf('CLAUDE_API_KEY')>=0)){
         res.innerHTML='<div style="color:#f59e0b;padding:10px;font-size:var(--fs-sm);line-height:1.6;">'
           +'<div style="font-weight:800;margin-bottom:6px;">API KEY</div>'
@@ -3140,6 +3166,13 @@ function runKenja(){
       throw new Error(data.error||'GAS proxy error');
     }
     renderKenjaResult(res,data,code,name);
+    /* v3.1.1: 残利用回数表示（GAS 側で返却された場合のみ） */
+    if(typeof data.scans_remaining === 'number'){
+      var remNote = document.createElement('div');
+      remNote.style.cssText='margin-top:8px;padding:6px 10px;background:#0a1428;border:1px solid #1e2d40;border-radius:6px;color:#94a3b8;font-size:var(--fs-sm);';
+      remNote.textContent='今月の残り利用回数: '+data.scans_remaining+'回';
+      res.appendChild(remNote);
+    }
     if(btn){btn.disabled=false;btn.textContent='Re-analyze';}
   }).catch(function(e){
     res.innerHTML='<div style="color:#f87171;padding:10px;font-size:var(--fs-sm);">Error: '+escH(e.message)+'</div>'
