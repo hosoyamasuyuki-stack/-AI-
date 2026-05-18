@@ -32,8 +32,14 @@ jobs:
       - run: pip install pytest pandas numpy pyflakes
       # 再発防止: generate_dashboard.py の構文/未定義名(NameError級)を merge 前に機械検知
       # （2026-05-19 _next_verify_str 未定義で日次更新が4日停止した事案の構造的対策）
-      - name: static guard - generate_dashboard.py (py_compile + pyflakes)
+      # NameError級(undefined name / referenced before assignment)のみで fail。
+      # 既存の良性 lint(未使用import・f-string placeholder無)では落とさない。
+      - name: static guard - generate_dashboard.py (py_compile + undefined-name)
         run: |
           python -m py_compile generate_dashboard.py
-          python -m pyflakes generate_dashboard.py
+          if python -m pyflakes generate_dashboard.py 2>&1 | grep -iE "undefined name|referenced before assignment"; then
+            echo "::error::generate_dashboard.py に未定義名/参照前変数 (NameError級) を検出"
+            exit 1
+          fi
+          echo "static guard OK: NameError級ゼロ"
       - run: pytest tests/ -v
