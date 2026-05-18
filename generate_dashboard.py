@@ -1659,15 +1659,7 @@ src = re.sub(
 )
 print(f"OK: weekly タイムスタンプ動的更新: {_weekly_str}")
 
-# ── M-6 解説文中「次回評価」日付動的更新 (2026-05-07 v1.2 追加) ──
-# 追加発見: line 2948「次回評価：2026/3/23（月次更新後）」も静的
-# データソース: M-1 で計算済の _next_verify_str（来月1日）を流用
-src = re.sub(
-    r'次回評価：\d{4}/\d{1,2}/\d{1,2}（月次更新後）',
-    f'次回評価：{_next_verify_str}（月次更新後）',
-    src
-)
-print(f"OK: 次回評価動的更新: {_next_verify_str}")
+# 「次回評価」日付は上部 M-12/M-14 セクションで _next_month_str により置換済（重複処理は撤去）
 
 # ALERT_STRIP置換（精度バッジも含めて1つのstripに）
 alert_start = src.find('<!-- ALERT_STRIP_START -->')
