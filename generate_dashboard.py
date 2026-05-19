@@ -935,7 +935,7 @@ for row, stype in all_data:
     tr = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
-        f"{tot},'{rank}',{_short_s},'down','down','{rank}',"
+        f"{tot},'{rank}',{_short_s},'','','{rank}',"
         f"'{sb}','{mb}','{lb}','{nt}','{DAYS_LABEL}'"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
@@ -1025,7 +1025,7 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
     tr_s = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
-        f"{tot},'{rank}',{_short_s2},'down','down','{rank}',"
+        f"{tot},'{rank}',{_short_s2},'','','{rank}',"
         f"'{sb2}','{mb2}','{lb2}','{nt2}','{DAYS_LABEL}'"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'

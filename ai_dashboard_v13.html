@@ -2708,72 +2708,110 @@ function showD(code,name,sector,v42,rk,sScore,sArr,mArr,lRk,sBody,mBody,lBody,no
 }
 
 function buildSummary(code,name,sector,v42,rk,sArr,mArr,lRk,s1,s2,s3){
-  const rkC={S:'#34d399',A:'#5eead4',B:'#fbbf24',C:'#fb923c',D:'#f87171'};
-  const tag=(txt,col)=>`<span style="background:${col}22;color:${col};border:1px solid ${col}44;font-size:var(--fs-xs);font-weight:900;padding:1px 5px;border-radius:2px;">${txt}</span>`;
+  // 2026-05-19 診断型2層 全面再設計: 市場全体の断定(旧 shortCmt/medCmt/advice)を
+  // 全廃。層B=指標の組合せ診断(先頭・顧客が独力で気づけない視点)+層A=初心者翻訳
+  // (実数値・全銘柄相違)。売買指示はしない(規約D-3)。市場は上部マクロが唯一(§12)。
+  // どんな入力でも例外で showD/賢者 を止めないよう全体を try/catch。
+  var nm;
+  try{ nm=(typeof escH==='function')?escH(name):String(name==null?'':name); }
+  catch(_e){ nm=String(name==null?'':name); }
+  var safe={ verdict:`<span style="color:#cbd5e1;font-weight:800;">${nm}</span>`,
+             body:`この銘柄の評価情報を準備しています。` };
+  try{
+    const rkC={S:'#34d399',A:'#5eead4',B:'#fbbf24',C:'#fb923c',D:'#f87171'};
+    const tag=(t,c)=>`<span style="background:${c}22;color:${c};border:1px solid ${c}44;font-size:var(--fs-xs);font-weight:900;padding:1px 5px;border-radius:2px;">${t}</span>`;
 
-  // 総合判定
-  let verdictText;
-  if(!v42||v42==='—'){
-    verdictText=`<span style="color:#64748b;">${name}：詳細スコア計算中です</span>`;
-  } else if(rk==='S'||rk==='A'){
-    verdictText=`${tag(rk+'ランク',rkC[rk])} <span style="color:${rkC[rk]};font-size:var(--fs-lg);font-weight:900;">${name}は長期投資に適した優良企業です。</span>`;
-  } else if(rk==='B'){
-    verdictText=`${tag('Bランク','#fbbf24')} <span style="color:#fbbf24;font-size:var(--fs-lg);font-weight:900;">${name}はまずまずの企業です。タイミングを見て検討しましょう。</span>`;
-  } else if(rk==='C'){
-    verdictText=`${tag('Cランク','#fb923c')} <span style="color:#fb923c;font-size:var(--fs-lg);font-weight:900;">${name}は現時点では様子見が無難です。</span>`;
-  } else {
-    verdictText=`${tag('Dランク','#f87171')} <span style="color:#f87171;font-size:var(--fs-lg);font-weight:900;">${name}は現時点では投資に向きません。保有中なら売却を検討しましょう。</span>`;
-  }
-
-  // 短期コメント
-  const shortCmt=
-    sArr==='↑↑'||sArr==='↑'?'今の株式市場全体は上昇しやすい局面にあります。':
-    sArr==='→'?'今の市場は中立で、大きな動きは起きにくい状況です。':
-    sArr==='↓'?'今は株式市場全体が下落しており、この銘柄の株価も短期的には下がりやすい状況です。ただし、それは会社自体の問題ではありません。':
-    '今の株式市場は急落中です。短期的には株価が下がる可能性があります。焦って売らないことが重要です。';
-
-  // 中期コメント
-  const medCmt=
-    mArr==='↑↑'||mArr==='↑'?'1〜2年後の日本経済の流れは、この銘柄にとって追い風になる見込みです。':
-    mArr==='→'?'1〜2年後の経済環境は中立で、大きな変化は予想されていません。':
-    mArr==='↓'?'1〜2年後の経済環境は、この業種にはやや向かい風になる可能性があります。':
-    '1〜2年後の経済環境は、この業種には逆風になる見込みです。追加投資は慎重に検討してください。';
-
-  // 長期コメント
-  let longCmt='';
-  if(!v42||v42==='—'){
-    longCmt='詳細スコアがまだ計算されていません。短期・中期スコアが改善してから購入を検討しましょう。';
-  } else if((rk==='S'||rk==='A')&&s1>0){
-    const r1=s1>=80?'非常に高く':s1>=60?'良好で':'まずまずで';
-    const r2=s2>=70?'その力は年々強くなっており':s2>=50?'その力は安定しており':'その力は横ばいですが';
-    const r3=s3>=70?'株価も割安な水準です。今が買い時と言える局面です。':s3>=50?'株価は適正な水準です。':  '株価はやや高めですが、長期保有によって吸収できる水準です。';
-    longCmt=`この会社の稼ぐ力は<b>${r1}</b>、<b>${r2}</b>、${r3} 5年以上保有すれば日経平均を上回る可能性が高い銘柄です。`;
-  } else if(rk==='B'){
-    longCmt='この会社の実力はまずまずです。短期・中期の市場環境が改善してから購入を検討するのが賢明です。';
-  } else {
-    longCmt='現在この会社の収益力・成長性に課題があります。数字の改善が確認できるまで慎重な対応をお勧めします。';
-  }
-
-  // アドバイス
-  let advice='';
-  if(rk==='S'||rk==='A'){
-    if(sArr==='↓'||sArr==='↓↓'){
-      advice=`<br><b style="color:#f59e0b;">📌 初心者向けアドバイス：</b>今は市場全体が下落していますが、<b>この会社の本質的な強さは変わっていません。</b>むしろ「優良企業を安く買えるチャンス」かもしれません。一度に全額を投入せず、少額ずつ積み立てる方法が初心者には安心です。5年以上の長期保有を前提に検討してみてください。`;
-    } else {
-      advice=`<br><b style="color:#f59e0b;">📌 初心者向けアドバイス：</b>この銘柄は長期保有に適した優良企業です。<b>市場環境が落ち着いたタイミングで少額から始め</b>、5年以上保有することを前提に検討してみてください。短期的な株価の上下に惑わされないことが大切です。`;
+    if(!v42||v42==='—'){
+      return { verdict:`<span style="color:#64748b;font-weight:800;">${nm}：詳細スコアを計算中です。</span>`,
+               body:`計算が完了しましたら、この銘柄の数字を初心者向けにやさしく解説します。` };
     }
-  } else if(rk==='D'){
-    advice=`<br><b style="color:#f87171;">📌 初心者向けアドバイス：</b>この銘柄は現時点では投資初心者にはお勧めしません。<b>保有中であれば、含み益があるうちに売却を検討することも一つの選択肢です。</b>`;
-  } else if(!v42||v42==='—'){
-    advice=`<br><b style="color:#94a3b8;">📌 初心者向けアドバイス：</b>詳細スコアがまだ計算されていない銘柄です。短期・中期スコアが改善されてから改めて検討しましょう。`;
-  } else {
-    advice=`<br><b style="color:#fbbf24;">📌 初心者向けアドバイス：</b>今すぐ買うより、<b>短期・中期の市場環境が改善するタイミングを待つ</b>方が安心です。`;
-  }
 
-  return {
-    verdict: verdictText,
-    body: `${shortCmt}　${medCmt}<br>${longCmt}${advice}`
-  };
+    // [s1,s2,s3,tot,roe,fcr,roeT,0,peg,fy]（generate_dashboard.py SCORES と一致）
+    const sc=(typeof STOCK_SCORES!=='undefined'&&STOCK_SCORES[code])||[];
+    const roe=+sc[4]||0, fcr=+sc[5]||0, rt=+sc[6]||0, peg=+sc[8], fy=+sc[9]||0;
+    const S1=+s1||0, S2=+s2||0, S3=+s3||0;
+    const fin=/銀行|保険|証券|金融/.test(String(sector==null?'':sector));
+    const f1=v=>(Math.round((+v||0)*10)/10).toFixed(1);
+    const sgn=v=>((+v||0)>=0?'+':'')+f1(v);
+
+    // 総合判定（ランク要約・売買指示なし）
+    let vTxt;
+    if(rk==='S'||rk==='A') vTxt=`${tag(rk+'ランク',rkC[rk])} <span style="color:${rkC[rk]};font-size:var(--fs-lg);font-weight:900;">${nm}は アルティメットコアスキャン ${v42}点（${rk}ランク）。総合的に評価の高い銘柄です。</span>`;
+    else if(rk==='B') vTxt=`${tag('Bランク','#fbbf24')} <span style="color:#fbbf24;font-size:var(--fs-lg);font-weight:900;">${nm}は ${v42}点（Bランク）。総合評価は中庸です。</span>`;
+    else if(rk==='C') vTxt=`${tag('Cランク','#fb923c')} <span style="color:#fb923c;font-size:var(--fs-lg);font-weight:900;">${nm}は ${v42}点（Cランク）。総合評価は平均を下回ります。</span>`;
+    else vTxt=`${tag('Dランク','#f87171')} <span style="color:#f87171;font-size:var(--fs-lg);font-weight:900;">${nm}は ${v42}点（Dランク）。総合評価は低く、数字に課題が見られます。</span>`;
+
+    // ── 層B：指標の組合せ診断 見出し（先勝ち・実データ192銘柄で分布検証済）──
+    let hC,hL,hT;
+    if(roe>=15&&S3>=55&&rt>=0){ hC='#34d399';hL='稀な好条件';
+      hT='稼ぐ力（ROE）が高いうえ、株価にも割安余地があります。アルティメットコアスキャンが最も高く評価する組合せです。'; }
+    else if(!fin&&roe>=15&&fcr>0&&fcr<60){ hC='#fb923c';hL='利益の質に注意';
+      hT='ROE（稼ぐ力）は高いのに、その利益が現金として残りにくい状態です（現金化率が低い）。会計上の利益と実際の現金にズレがある点に注意します。'; }
+    else if(roe>=15&&rt<=-1){ hC='#fb923c';hL='勢いの鈍化に注意';
+      hT='稼ぐ力（ROE）は高い水準ですが、その力が年々弱まっています。かつての勢いが鈍っている点に注意します。'; }
+    else if((roe>=15||S1>=65)&&S3<45){ hC='#fbbf24';hL='質は高いが株価は割高';
+      hT='質の高い会社ですが、その評価はすでに株価に織り込まれています（割安度が低い）。コアスキャンは「安く買える質の高さ」を重視するため総合は中庸寄りです。株価が下がるか、利益がさらに伸びると総合点・ランクは上がります。'; }
+    else if(roe<10&&rt>=1.5){ hC='#5eead4';hL='改善途上';
+      hT='現状の稼ぐ力は弱めですが、年々改善しています。この勢いが続くかどうかが今後の評価の鍵です。'; }
+    else if(roe<8&&rt<=0){ hC='#f87171';hL='構造的に低迷';
+      hT='稼ぐ力が低く、改善の勢いも見られません。数字の改善が確認できるかが注目点です。'; }
+    else { hC='#94a3b8';
+      const bR=roe>=15?'高め':roe>=8?'標準的':'低め';
+      const bP=S3>=60?'割安余地あり':S3>=40?'標準':'割高寄り';
+      const bT=rt>=1?'上昇':rt>-1?'横ばい':'低下';
+      const cR=roe>=15?'高収益':roe>=8?'標準収益':'低収益';
+      const cP=S3>=60?'割安':S3>=40?'中庸':'割高';
+      hL=`${cR}・${cP}・勢い${bT}`;
+      hT=`収益力は${bR}、株価の割安度は${bP}、稼ぐ力の勢いは${bT}、という組合せです。突出した強み・弱みは少なく、各指標の改善が総合評価を左右します。`; }
+    const headBox=`<div style="background:${hC}1a;border:1px solid ${hC}55;border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.7;"><span style="background:${hC}22;color:${hC};border:1px solid ${hC}55;font-weight:900;font-size:var(--fs-sm);padding:2px 7px;border-radius:3px;">${hL}</span><div style="color:#cbd5e1;margin-top:5px;">${hT}</div></div>`;
+
+    // ── 層A：むずかしい指標を初心者向けにやさしく翻訳（実数値・全銘柄相違）──
+    const li=(ic,lb,vl,tx)=>`<div style="padding:6px 0;border-bottom:1px solid #1e2d4033;line-height:1.7;"><span style="font-size:var(--fs-lg);">${ic}</span> <b style="color:#cbd5e1;">${lb}</b> <span style="color:#94a3b8;">（${vl}）</span><br><span style="color:#94a3b8;">${tx}</span></div>`;
+    const roeT = roe>=20?'優良企業の目安15%・銀行預金の数百倍を大きく上回る、非常に高い水準です。'
+              : roe>=15?'優良企業の目安とされる15%を超える良い水準です。'
+              : roe>=10?'日本企業の平均（約8%）は上回りますが、突出はしていません。'
+              : roe>0  ?'日本企業の平均並み〜やや低めの水準です。'
+              :          'マイナス圏（赤字体質）で、注意が必要です。';
+    const rtT  = rt>=2   ?'年々はっきり強くなっており、成長の途上です。'
+              : rt>=0.5 ?'ゆるやかに改善しています。'
+              : rt>-0.5 ?'ほぼ横ばいです。'
+              :           '低下傾向で、かつての勢いが鈍っています。';
+    let lines =
+      li('💰','稼ぐ力（ROE）','年 '+f1(roe)+'%','株主が出したお金を1年で何%増やせるかです。'+roeT)
+     +li('📈','稼ぐ力の変化（ROEトレンド）','年 '+sgn(rt)+'pt','その稼ぐ力が年々どう変化しているかです。'+rtT);
+    if(fin){
+      lines+=`<div style="padding:6px 0;border-bottom:1px solid #1e2d4033;line-height:1.7;"><span style="font-size:var(--fs-lg);">🏦</span> <b style="color:#cbd5e1;">金融業のため一部指標は非表示</b><br><span style="color:#94a3b8;">銀行・保険などは現金の出入りが事業構造上 特殊なため「利益の現金化率・現金の利回り」は表示していません。ROE・成長性・割安度で評価します。</span></div>`;
+    } else {
+      const fcrT = fcr>=100?'100%超＝利益が「絵に描いた餅」でなく、しっかり現金で残る非常に良質な会社です。'
+                : fcr>=70 ?'7割以上が現金として残り、健全です。'
+                : fcr>=40 ?'現金化は半分前後で、設備投資などにより手元へ残りにくい点に留意します。'
+                : fcr>0   ?'会計上の利益のわりに現金が残りにくい点に注意します。'
+                :           '現金をうまく生み出せていません。';
+      const fyT  = fy>=8   ?'非常に高い水準です。'
+                : fy>=5   ?'良好な水準です。'
+                : fy>=3   ?'標準的な水準です。'
+                : fy>=0   ?'低めで、株価のわりに生み出す現金は多くありません。'
+                :           'マイナスで、現金を生み出せておらず注意が必要です。';
+      lines+=li('🏦','利益の現金化率（FCR）',f1(fcr)+'%','会計上の利益のうち、実際に手元へ残る現金の割合です。'+fcrT)
+            +li('💴','現金の利回り（FCF利回り）',f1(fy)+'%','今の株価に対して会社が1年で生む現金の割合（預金の利息に相当）です。'+fyT);
+    }
+    if(peg>0&&peg!==1.0){
+      const pT = peg<=1.0?'1.0以下＝利益の成長スピードのわりに株価は割安な圏です。'
+               : peg<=1.5?'おおむね妥当な水準です。'
+               : peg<=2.0?'やや割高です。'
+               :           '2.0超＝利益の成長スピードに対して株価は割高です。';
+      lines+=li('⚖️','成長と株価のバランス','PEG '+f1(peg),'利益がどれだけ速く伸びているかに対して株価が割高かを見ます（1.0前後が目安）。'+pT);
+    }
+
+    const body= headBox
+      +`<div style="margin-bottom:4px;color:#64748b;font-size:var(--fs-sm);">むずかしい指標を、初心者向けにやさしく翻訳します（この銘柄の実数値）。</div>`
+      +lines
+      +`<div style="margin-top:6px;color:#64748b;font-size:var(--fs-sm);">※ 株式市場全体の状況は画面上部の「マクロ総合」をご覧ください（個別銘柄の評価とは別です）。</div>`;
+    return { verdict:vTxt, body:body };
+  }catch(e){
+    try{ if(typeof console!=='undefined') console.warn('buildSummary fallback:',e&&e.message); }catch(_x){}
+    return safe;
+  }
 }
 
 // ── ヘルプモーダル ──
