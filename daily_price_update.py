@@ -50,7 +50,10 @@ print('='*60)
 # 保有+監視の全銘柄を自動取得（ハードコード廃止）
 STOCKS = []
 _seen = set()
-for _sheet_name in ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']:
+# 保有+監視+スクリーニングTop(週次選定の150社)。スクリーニングは full_scan が
+# 週次で銘柄選定・変数1/2を確定し、本スクリプトは株価/変数3/総合スコアのみ日次再計算
+# （週次選定は組み替えない＝一貫性。3,800社の日次更新は不要・選定済のみ日次評価）。
+for _sheet_name in ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア', 'スクリーニング_Top50']:
     try:
         _ws = ss.worksheet(_sheet_name)
         _rows = _ws.get_all_values()
@@ -220,7 +223,10 @@ has_existing = False
 df_v43 = None
 try:
     dfs = []
-    for sh in ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']:
+    # スクリーニングTop も含める（screening専用銘柄の変数1・2は full_scan 週次値を
+    # 再利用＝デフォルト50で総合スコアを汚染しない。保有/監視と重複する銘柄は
+    # drop_duplicates keep='first' で保有/監視側の変数1・2を優先）。
+    for sh in ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア', 'スクリーニング_Top50']:
         try:
             ws_p = ss.worksheet(sh)
             d = pd.DataFrame(ws_p.get_all_records())
@@ -409,7 +415,9 @@ daily_map = {}
 for _, r in df_daily.iterrows():
     daily_map[str(r['コード'])] = r
 
-SYNC_SHEETS = ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア']
+# スクリーニング_Top50 も日次反映先に追加 → generate_dashboard.py L637 が読む
+# ボード Top75 の株価/変数3/総合スコア/ランクが当日化（銘柄選定=週次のまま）。
+SYNC_SHEETS = ['保有銘柄_v4.3スコア', '監視銘柄_v4.3スコア', 'スクリーニング_Top50']
 SYNC_COLS   = ['株価', '変数3', '総合スコア', 'ランク', 'PEG', 'FCF利回り']
 
 for sheet_name in SYNC_SHEETS:
