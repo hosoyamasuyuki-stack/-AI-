@@ -520,8 +520,9 @@ hyg_bc    = 'bg'     if MKT['hyg_chg'] >= 0 else 'br'
 
 # ── MacroPhaseからスコア取得 ──────────────────────────────
 # 列: 0=日時, 1=総合スコア, 2=フェーズ, 3=LayerA, 4=LayerB, 5=LayerC, 6=LayerD
-# SHORT_SCORE（短期1年）= LayerA(リスク) + LayerB(金融) を0-100に正規化
-# MID_SCORE（中期3年）= LayerC(経済) + LayerD(バリュエーション) を0-100に正規化
+# SHORT_SCORE（短期1年）= LayerA(リスク) + LayerB(金融) を0-100に正規化（満点70）
+# MID_SCORE（中期3年）= LayerC(経済) を0-100に正規化（満点20）。Layer D(バリュ) は
+#   STEP5 C で総合から除外済のため中期からも除外（2026-05-19 副作用是正・案A）
 try:
     _mp_ws = ss.worksheet('MacroPhase'); _mp_rows = _mp_ws.get_all_values()
     _mp_row = _mp_rows[-1]
@@ -529,11 +530,11 @@ try:
     _la = float(_mp_row[3]) if len(_mp_row) > 3 and _mp_row[3] else 0  # max 40
     _lb = float(_mp_row[4]) if len(_mp_row) > 4 and _mp_row[4] else 0  # max 30
     _lc = float(_mp_row[5]) if len(_mp_row) > 5 and _mp_row[5] else 0  # max 20
-    _ld = float(_mp_row[6]) if len(_mp_row) > 6 and _mp_row[6] else 0  # max 10
     # 短期 = (LayerA + LayerB) / 70 * 100
     SHORT_SCORE = int(round((_la + _lb) / 70 * 100))
-    # 中期 = (LayerC + LayerD) / 30 * 100
-    MID_SCORE   = int(round((_lc + _ld) / 30 * 100))
+    # 中期 = LayerC のみ / 20 * 100。Layer D は STEP5 C で総合除外済のため中期からも
+    #   除外し、分母を実満点20に是正（短期の /70 正規化と同一設計・2026-05-19 案A）
+    MID_SCORE   = int(round(_lc / 20 * 100))
 except:
     _mp_score = 45; _mp_lbl = 'YELLOW'; SHORT_SCORE = 19; MID_SCORE = 50
 
