@@ -1714,12 +1714,7 @@ else:
     print(f"WARN: アラートストリップ置換スキップ (start={alert_start} end={alert_end})")
 
 # GBAR_DYNAMIC置換（監視銘柄パネル内のプレースホルダー）
-s_lbl = '\u5F37\u6C17' if SHORT_SCORE >= 55 else '\u4E2D\u7ACB' if SHORT_SCORE >= 45 else '\u5F31\u6C17'
-m_lbl = '\u5F37\u6C17' if MID_SCORE >= 55 else '\u4E2D\u7ACB' if MID_SCORE >= 45 else '\u5F31\u6C17'
-GBAR_HTML = (
-    '<div class="gbar"><span class="gl">\u73FE\u5728\u306E\u74B0\u5883</span>'
-    f'<span class="gi">\u77ED\u671F{SHORT_SCORE}\u70B9({s_lbl})\u30FB\u4E2D\u671F{MID_SCORE}\u70B9({m_lbl})</span>'
-    '</div>')
+GBAR_HTML = ''  # \u76E3\u8996\u9298\u67C4\u76F4\u4E0B\u306E\u300C\u73FE\u5728\u306E\u74B0\u5883\u300Dgbar \u306F\u4E0A\u90E8\u30DE\u30AF\u30ED\u7DCF\u5408\u306E\u77ED\u671F/\u4E2D\u671F\u3068\u91CD\u8907\u306E\u305F\u3081\u975E\u8868\u793A\u3002\u7A7A\u7F6E\u63DB\u3067 fetch template \u5185\u306E\u65E2\u5B58 gbar \u3092\u8981\u7D20\u3054\u3068\u9664\u53BB\uFF08\u7A7A styled div \u3092\u6B8B\u3055\u306A\u3044\uFF1D\u80CC\u666F/\u30DC\u30FC\u30C0\u30FC\u6B8B\u7559\u306A\u3057\u30FB\u51AA\u7B49\uFF09\u30022026-05-19 CEO\u6307\u793A\u30FB3\u8005\u627F\u8A8D
 # 2026-05-07 M-9 修正: HTML から <!-- GBAR_DYNAMIC --> マーカー消失時のフォールバック
 _before_gbar = src
 src = src.replace('<!-- GBAR_DYNAMIC -->', GBAR_HTML, 1)
@@ -1730,11 +1725,11 @@ if _before_gbar == src:
         src, count=1
     )
     if _before_gbar != src:
-        print(f"OK: gbar動的生成 fallback (短期{SHORT_SCORE}/中期{MID_SCORE})")
+        print("OK: 重複gbar 非表示（要素除去）")
     else:
-        print(f"WARN: gbar match none")
+        print("OK: 重複gbar 既に除去済（冪等・変更なし）")
 else:
-    print(f"OK: gbar動的生成（短期{SHORT_SCORE}/中期{MID_SCORE}）")
+    print("OK: 重複gbar 非表示（マーカー除去）")
 # 四半期レビューリマインダー（sbar）
 import calendar
 now_month = datetime.now().month
