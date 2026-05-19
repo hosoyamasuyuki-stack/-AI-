@@ -79,7 +79,26 @@ jobs:
           [ -f evidence_page.html ] && git add evidence_page.html || true
           [ -f framework_page.html ] && git add framework_page.html || true
           git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
-          git commit -m "full update $(date +'%Y/%m/%d %H:%M') JST"
-          git pull --rebase origin main || true
-          git push
-          echo "Step 4 GitHubプッシュ完了"
+          MSG="full update $(date +'%Y/%m/%d %H:%M') JST"
+          git commit -m "$MSG"
+          # 生成物は最新生成が常に正。旧 `git pull --rebase origin main || true`+`git push` は
+          # 競合 rebase を握り潰し detached HEAD で push fatal(exit128) を招く構造欠陥。
+          # 最新 origin/main に生成物のみ載せ替え＋fast-forward リトライで根治（失敗は明示 exit1）。
+          FILES="ai_dashboard_v13.html holdings_history_page.html evidence_page.html framework_page.html"
+          SRC=$(git rev-parse HEAD)
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            PRESENT=""
+            for fn in $FILES; do git cat-file -e "$SRC:$fn" 2>/dev/null && PRESENT="$PRESENT $fn"; done
+            git checkout "$SRC" -- $PRESENT
+            git add $PRESENT
+            if git diff --staged --quiet; then echo "他更新で差分消滅（スキップ）"; exit 0; fi
+            git commit -m "$MSG" --quiet
+            SRC=$(git rev-parse HEAD)
+            if git push origin HEAD:main; then echo "Step 4 GitHubプッシュ完了"; exit 0; fi
+            echo "push 競合・リトライ $i/5"
+            sleep $((RANDOM % 5 + 3))
+          done
+          echo "::error::push failed after 5 retries"
+          exit 1
