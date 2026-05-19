@@ -450,20 +450,26 @@ def calc_macro_phase(ss):
     detail['LayerC'] = {'score': layer_c, 'max': 20, 'name': '経済活動'}
     print(f"  Layer C (経済活動): {layer_c}/20点")
 
-    # Layer D: バリュエーション (10点)
-    layer_d = 0
-    cape = get_latest_val(ss, 'シラーPER')
+    # Layer D: バリュエーション — v0.3-C（販売前 安全決着）
+    # 入力『シラーPER』シートは daily_update が書く「SP500÷10年移動平均×20」の
+    # 代用値で真のCAPEではなく、Layer D 閾値(cape<20/28)が実CAPEスケール前提の
+    # ため総合点を歪める。実US CAPE化は本番Sheetでの dry-run 検証が前提のため、
+    # 販売前は代用値の影響を断つ目的で Layer D を総合から除外し、A+B+C(満点90)を
+    # 100換算する（v0.3 §1-C が認容するフォールバック。実CAPE化＋閾値再キャリブ
+    # レは販売後 D-5 台帳）。判定閾値(60/30)は正規化後スコアに適用＝基準は不変。
+    cape = get_latest_val(ss, 'シラーPER')   # 参考取得は継続（総合点には未算入）
     if cape is not None:
-        pts = 10 if cape < 20 else 5 if cape < 28 else 0
-        layer_d += pts
-        detail['CAPE'] = {'value': cape, 'pts': pts, 'max': 10}
+        detail['CAPE'] = {'value': cape, 'pts': 0, 'max': 0,
+                          'note': '参考値・総合点に未算入(v0.3-C)'}
+    detail['LayerD'] = {'score': 0, 'max': 0, 'name': 'バリュエーション',
+                        'excluded': True, 'note': 'Layer D除外90正規化(v0.3-C)'}
+    print("  Layer D (バリュエーション): 除外（代用値の歪み回避・90→100正規化）")
 
-    total += layer_d
-    detail['LayerD'] = {'score': layer_d, 'max': 10, 'name': 'バリュエーション'}
-    print(f"  Layer D (バリュエーション): {layer_d}/10点")
-
+    total_raw = total                     # = layer_a + layer_b + layer_c（満点90）
+    total = round(total_raw * 100 / 90)
+    detail['normalized'] = {'raw': total_raw, 'max_raw': 90, 'scaled': total}
     label = 'GREEN' if total >= 60 else 'YELLOW' if total >= 30 else 'RED'
-    print(f"  総合: {total}/100 -> {label}")
+    print(f"  総合(LayerD除外90正規化): {total_raw}/90 -> {total}/100 -> {label}")
     return total, label, detail
 
 
