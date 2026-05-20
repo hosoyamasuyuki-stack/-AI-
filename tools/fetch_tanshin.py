@@ -25,6 +25,8 @@ from datetime import datetime, timedelta, timezone
 import gspread
 import pdfplumber
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 
 from core.config import SPREADSHEET_ID
@@ -37,6 +39,28 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (compatible; RICH-KAIZEN/1.0; '
                   '+https://github.com/hosoyamasuyuki-stack/-AI-)'
 }
+
+
+def _make_session():
+    """3者協議採用（SPEC v1.0 §3.2/§7/§13）: 指数バックオフ付きリトライ Session。
+
+    TDnet の一時的 5xx/429/接続断でページ走査が中断し被覆率が落ちるのを防ぐ。
+    全ページ走査（被覆率根治）と一体で入れるべき対策（HTTP リクエスト数が増えるため）。
+    リトライ全敗時は通常レスポンス/例外を返すので、最悪でも従来挙動と同等。
+    """
+    s = requests.Session()
+    retry = Retry(
+        total=3, connect=3, read=3,
+        backoff_factor=1.5,  # 待機 0 / 1.5 / 3.0 ... 秒
+        status_forcelist=(429, 500, 502, 503, 504),
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    s.mount('https://', adapter)
+    s.mount('http://', adapter)
+    return s
+
+
+SESSION = _make_session()
 
 CACHE_SHEET = '決算短信_キャッシュ'
 HOLDINGS_SHEET = '保有銘柄_v4.3スコア'
@@ -123,7 +147,7 @@ def fetch_tdnet_index(date):
     for page in range(1, 40):
         url = f'{TDNET_BASE}/I_list_{page:03d}_{date_str}.html'
         try:
-            r = requests.get(url, headers=HEADERS, timeout=30)
+            r = SESSION.get(url, headers=HEADERS, timeout=30)
         except Exception as e:
             print(f'  [ERR] {url}: {e}', file=sys.stderr)
             break
@@ -180,12 +204,18 @@ def extract_pdf_text(pdf_url, code=None, submit_date=None, sb=None):
           pdf_path: Storage 保存パス or None
     """
     try:
-        r = requests.get(pdf_url, headers=HEADERS, timeout=60)
+        r = SESSION.get(pdf_url, headers=HEADERS, timeout=60)
     except Exception as e:
         print(f'    [ERR] PDF DL失敗 {pdf_url}: {e}', file=sys.stderr)
         return None, None
     if r.status_code != 200:
         print(f'    [ERR] PDF HTTP {r.status_code}: {pdf_url}', file=sys.stderr)
+        return None, None
+    # 3者協議採用（SPEC v1.0 §13 No.3）: PDF ヘッダ検証。HTML エラーページ等を
+    # pdfplumber に渡して空テキスト化＝静かな取りこぼしになるのを防ぐ。
+    if not r.content.startswith(b'%PDF'):
+        ct = (r.headers.get('Content-Type') or '?').lower()
+        print(f'    [ERR] PDF ヘッダ欠如 (Content-Type={ct}): {pdf_url}', file=sys.stderr)
         return None, None
     # P-1: Supabase Storage に put（テキスト抽出と並行）
     pdf_path = None
@@ -257,6 +287,7 @@ def main():
         print(f'  Supabase Storage 連携: 無効（PDF は Sheet キャッシュのみ）')
 
     target_codes = get_target_codes(ss)
+    all_targets = frozenset(target_codes)  # 被覆率算出用に元集合を保持
     print(f'対象銘柄: {len(target_codes)}社')
     if not target_codes:
         print('対象なし。終了')
@@ -284,6 +315,12 @@ def main():
                     and is_target_tanshin(r['title']) and r['pdf_url']]
         if relevant:
             print(f'  {date}: {len(relevant)}件の対象決算短信')
+        # 3者協議採用: 訂正/修正短信を検知したら警告（賢者は通常版を参照・
+        # 訂正版の本格対応は販売後 E-1）。顧客に古い数値が出るリスクの可視化。
+        for r in rows:
+            if (r['code'] in target_codes and '決算短信' in r['title']
+                    and not is_target_tanshin(r['title'])):
+                print(f'  [訂正注意] {r["code"]} {date} {r["title"][:46]}', file=sys.stderr)
 
         for row in relevant:
             code = row['code']
@@ -310,11 +347,26 @@ def main():
             time.sleep(2)  # OpenAI/Sheets rate limiting + TDnet マナー
         time.sleep(1)
 
+    # 3者協議採用（SPEC v1.0 §9/§10）: 被覆率の可視化＋下限ゲート。
+    # 「取りこぼしに誰も気づかない」を防ぐ。TDnet ページ分割バグが
+    # 長期放置された（被覆率 9.4%）再発防止の本丸。
+    cached_targets = all_targets & set(existing.keys())
+    uncovered = sorted(all_targets - set(existing.keys()))
+    coverage = (len(cached_targets) / len(all_targets) * 100.0) if all_targets else 0.0
     print(f'\n=== 結果 ===')
     print(f'  新規/更新   : {found_new}件')
     print(f'  PDF Storage : {pdf_uploaded}件（P-1）')
     print(f'  エラー      : {err_count}件')
     print(f'  キャッシュ計: {len(existing)}件')
+    print(f'  対象銘柄    : {len(all_targets)}社')
+    print(f'  決算短信被覆: {len(cached_targets)}社 / 被覆率 {coverage:.1f}%')
+    if uncovered:
+        print(f'  未取得 {len(uncovered)}社: {", ".join(uncovered)}')
+    # 被覆率下限ゲート: 閾値未満は GitHub Actions に ::warning:: を伝播
+    if coverage < 40.0:
+        print(f'::warning::決算短信 被覆率 {coverage:.1f}% '
+              f'(対象{len(all_targets)}社中{len(cached_targets)}社) '
+              f'— 閾値40%未満。TDnet 取得経路を点検のこと')
     return 0
 
 
