@@ -35,8 +35,11 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           python tools/fetch_tanshin.py 2>&1 | tee fetch_tanshin.log
-          # C-6: 死活監視。エラー件数が結果より多い場合は fail を伝播
-          # ただし新規 0 件は閑散期の正常挙動なので fail にしない
+          # C-6: 死活監視。全件エラー or 被覆率40%未満なら job を「失敗」させる。
+          # 独立レビュー指摘: 旧実装は ::warning:: 止まりで job が緑のまま
+          # ＝管理者に通知が届かず死活監視の体をなさなかった。::error:: +
+          # 非ゼロ終了に昇格する。新規0件のみ（エラーなし）は閑散期の正常挙動。
+          MONITOR_FAIL=0
           if grep -q "エラー" fetch_tanshin.log; then
             ERR=$(grep -oE 'エラー\s*: [0-9]+件' fetch_tanshin.log | grep -oE '[0-9]+' | head -1)
             NEW=$(grep -oE '新規/更新\s*: [0-9]+件' fetch_tanshin.log | grep -oE '[0-9]+' | head -1)
@@ -45,6 +48,16 @@ jobs:
             echo "ERR=$ERR NEW=$NEW"
             # 致命的：処理対象があるのに全件エラー（NEW=0 かつ ERR>0）
             if [ "$ERR" -gt 0 ] && [ "$NEW" -eq 0 ]; then
-              echo "::warning::fetch_tanshin: 全件エラー（NEW=$NEW / ERR=$ERR）"
+              echo "::error::fetch_tanshin: 全件エラー（NEW=$NEW / ERR=$ERR）"
+              MONITOR_FAIL=1
             fi
+          fi
+          # 被覆率40%未満（fetch_tanshin.py が ::warning:: を出力）も job 失敗に昇格
+          if grep -qF '::warning::決算短信 被覆率' fetch_tanshin.log; then
+            echo "::error::fetch_tanshin: 決算短信 被覆率が閾値(40%)未満"
+            MONITOR_FAIL=1
+          fi
+          if [ "$MONITOR_FAIL" -ne 0 ]; then
+            echo "fetch_tanshin 死活監視: 異常を検知したため job を失敗させます"
+            exit 1
           fi
