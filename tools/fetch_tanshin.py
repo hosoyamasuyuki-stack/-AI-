@@ -108,42 +108,54 @@ def get_target_codes(ss):
 
 
 def fetch_tdnet_index(date):
-    """TDnet 日次インデックス → 行リスト"""
-    url = f'{TDNET_BASE}/I_list_001_{date.strftime("%Y%m%d")}.html'
-    try:
-        r = requests.get(url, headers=HEADERS, timeout=30)
-    except Exception as e:
-        print(f'  [ERR] {url}: {e}', file=sys.stderr)
-        return []
-    if r.status_code != 200:
-        return []
-    r.encoding = r.apparent_encoding or 'shift_jis'
-    soup = BeautifulSoup(r.text, 'html.parser')
+    """TDnet 日次インデックス → 行リスト（全ページ走査）
+
+    被覆率根治（2026-05-20）: 決算短信ピーク日は TDnet が開示一覧を
+    I_list_001 / I_list_002 / ... と複数ページに分割する（2026-05-14 は
+    23 ページ・744 社開示）。旧実装は I_list_001（1 ページ目・約 106 件）
+    しか読まず、保有/監視銘柄を大量に取りこぼしていた（2026-05 実測：
+    5/12-19 に決算短信を出した顧客対象 60 社が全て page2 以降 →
+    1 ページ走査では 0 社取得＝被覆率 9.4% の真因）。
+    HTTP 200 が返る限り次ページを走査する。
+    """
+    date_str = date.strftime('%Y%m%d')
     rows = []
-    for tr in soup.find_all('tr'):
-        cells = tr.find_all('td')
-        if len(cells) < 5:
-            continue
-        time_str = cells[0].get_text(strip=True)
-        code_raw = cells[1].get_text(strip=True).strip().upper()
-        # C-5: 4桁数字 OR 末尾アルファベット銘柄（130A/212A 等）に対応
-        m = re.match(r'([0-9]{3}[0-9A-Z])', code_raw)
-        if not m:
-            continue
-        code = m.group(1)
-        name = cells[2].get_text(strip=True)
-        title_cell = cells[3]
-        title = title_cell.get_text(strip=True)
-        link = title_cell.find('a')
-        pdf_url = None
-        if link and link.get('href'):
-            href = link['href']
-            if href.lower().endswith('.pdf'):
-                pdf_url = f'{TDNET_BASE}/{href}'
-        rows.append({
-            'time': time_str, 'code': code, 'name': name,
-            'title': title, 'pdf_url': pdf_url,
-        })
+    for page in range(1, 40):
+        url = f'{TDNET_BASE}/I_list_{page:03d}_{date_str}.html'
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=30)
+        except Exception as e:
+            print(f'  [ERR] {url}: {e}', file=sys.stderr)
+            break
+        if r.status_code != 200:
+            break  # 存在しないページ番号 → その日の走査終了
+        r.encoding = r.apparent_encoding or 'shift_jis'
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for tr in soup.find_all('tr'):
+            cells = tr.find_all('td')
+            if len(cells) < 5:
+                continue
+            time_str = cells[0].get_text(strip=True)
+            code_raw = cells[1].get_text(strip=True).strip().upper()
+            # C-5: 4桁数字 OR 末尾アルファベット銘柄（130A/212A 等）に対応
+            m = re.match(r'([0-9]{3}[0-9A-Z])', code_raw)
+            if not m:
+                continue
+            code = m.group(1)
+            name = cells[2].get_text(strip=True)
+            title_cell = cells[3]
+            title = title_cell.get_text(strip=True)
+            link = title_cell.find('a')
+            pdf_url = None
+            if link and link.get('href'):
+                href = link['href']
+                if href.lower().endswith('.pdf'):
+                    pdf_url = f'{TDNET_BASE}/{href}'
+            rows.append({
+                'time': time_str, 'code': code, 'name': name,
+                'title': title, 'pdf_url': pdf_url,
+            })
+        time.sleep(0.2)  # TDnet マナー（ページ間）
     return rows
 
 
