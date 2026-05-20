@@ -23,11 +23,28 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests beautifulsoup4 lxml pdfplumber gspread google-auth
+          pip install requests beautifulsoup4 lxml pdfplumber gspread google-auth supabase
 
       - name: Run fetch_tanshin
+        id: fetch_tanshin_run
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           PYTHONPATH: ${{ github.workspace }}
-        run: python tools/fetch_tanshin.py
+        run: |
+          python tools/fetch_tanshin.py 2>&1 | tee fetch_tanshin.log
+          # C-6: 死活監視。エラー件数が結果より多い場合は fail を伝播
+          # ただし新規 0 件は閑散期の正常挙動なので fail にしない
+          if grep -q "エラー" fetch_tanshin.log; then
+            ERR=$(grep -oE 'エラー\s*: [0-9]+件' fetch_tanshin.log | grep -oE '[0-9]+' | head -1)
+            NEW=$(grep -oE '新規/更新\s*: [0-9]+件' fetch_tanshin.log | grep -oE '[0-9]+' | head -1)
+            ERR=${ERR:-0}
+            NEW=${NEW:-0}
+            echo "ERR=$ERR NEW=$NEW"
+            # 致命的：処理対象があるのに全件エラー（NEW=0 かつ ERR>0）
+            if [ "$ERR" -gt 0 ] && [ "$NEW" -eq 0 ]; then
+              echo "::warning::fetch_tanshin: 全件エラー（NEW=$NEW / ERR=$ERR）"
+            fi
+          fi
