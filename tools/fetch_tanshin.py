@@ -144,13 +144,29 @@ def fetch_tdnet_index(date):
     """
     date_str = date.strftime('%Y%m%d')
     rows = []
+    consecutive_errors = 0
+    MAX_CONSECUTIVE_ERRORS = 3
     for page in range(1, 40):
         url = f'{TDNET_BASE}/I_list_{page:03d}_{date_str}.html'
         try:
             r = SESSION.get(url, headers=HEADERS, timeout=30)
         except Exception as e:
-            print(f'  [ERR] {url}: {e}', file=sys.stderr)
-            break
+            # 被覆率根治の補強（2026-05-20 エンジニア独立レビュー指摘 重要①）:
+            # 旧実装は例外時に break し、5xx が _make_session の 3 回リトライ後も
+            # 失敗すると例外（RetryError 等）で「その日の残ページを丸ごと放棄」
+            # していた（全ページ走査で被覆率を根治した直後の取りこぼし経路）。
+            # 次ページを continue で試みて単一ページの一過性障害から復旧する。
+            # ただし TDnet 全体障害で全ページが例外になり 31 日分ループが
+            # 暴走するのを防ぐため、連続例外が閾値に達したらその日を打ち切る
+            # （存在しないページは 404 を返すので、連続「例外」は障害の指標）。
+            consecutive_errors += 1
+            print(f'  [ERR] {url}: {e} (consecutive={consecutive_errors})', file=sys.stderr)
+            if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                print(f'  [ERR] {date_str}: 連続 {consecutive_errors} ページ取得失敗 '
+                      f'— その日の走査を打ち切り（被覆率ゲートで検知）', file=sys.stderr)
+                break
+            continue
+        consecutive_errors = 0
         if r.status_code != 200:
             break  # 存在しないページ番号 → その日の走査終了
         r.encoding = r.apparent_encoding or 'shift_jis'
