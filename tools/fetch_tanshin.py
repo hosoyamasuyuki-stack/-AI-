@@ -66,6 +66,7 @@ CACHE_SHEET = '決算短信_キャッシュ'
 HOLDINGS_SHEET = '保有銘柄_v4.3スコア'
 WATCHLIST_SHEET = '監視銘柄_v4.3スコア'
 MAX_TEXT_CHARS = 50000   # Sheets セル上限 50,000 文字
+MIN_TEXT_CHARS = 500     # これ未満は画像PDF/抽出失敗とみなし取得失敗扱い（QA レビュー指摘）
 MAX_PDF_PAGES = 25
 
 # P-1: Supabase Storage 設定（E-2 secret 経由・販売前バックエンドのみ）
@@ -252,6 +253,15 @@ def extract_pdf_text(pdf_url, code=None, submit_date=None, sb=None):
     text = '\n\n'.join(text_parts)
     text = re.sub(r'\n{3,}', '\n\n', text)
     text = text.strip()
+    # QA 独立レビュー指摘: 画像スキャン PDF・テキスト埋め込みなし PDF は
+    # pdfplumber が空〜極少のテキストしか返さない。%PDF ヘッダ検証は通るため
+    # 「決算短信を取得した」と誤計上され、賢者がほぼ空の本文を分析してしまう。
+    # 真正な決算短信はサマリー情報だけで数千字あるため、極端に短い抽出結果は
+    # 取得失敗（None）として扱い、Sheet キャッシュに格納しない。
+    if len(text) < MIN_TEXT_CHARS:
+        print(f'    [ERR] 抽出テキスト過少 ({len(text)}字 < {MIN_TEXT_CHARS}・'
+              f'画像PDF/抽出失敗の疑い): {pdf_url}', file=sys.stderr)
+        return None, pdf_path
     if len(text) > MAX_TEXT_CHARS:
         text = text[:MAX_TEXT_CHARS] + '\n\n[... 以降省略 ...]'
     return text, pdf_path
