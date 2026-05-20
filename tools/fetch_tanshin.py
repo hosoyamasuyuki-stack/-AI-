@@ -46,15 +46,16 @@ MAX_PDF_PAGES = 25
 
 
 def get_target_codes(ss):
-    """保有+監視銘柄コード4桁を取得"""
+    """保有+監視銘柄コードを取得（C-5: 4桁数字 OR 末尾アルファベット銘柄 130A/212A 等を含む）"""
     codes = set()
+    sec_code_re = re.compile(r'^[0-9]{3}[0-9A-Z]$')
     for sheet_name in (HOLDINGS_SHEET, WATCHLIST_SHEET):
         try:
             ws = ss.worksheet(sheet_name)
             data = ws.col_values(1)[1:]
             for v in data:
-                v = (v or '').strip()
-                if re.fullmatch(r'\d{4}', v):
+                v = (v or '').strip().upper()
+                if sec_code_re.fullmatch(v):
                     codes.add(v)
         except Exception as e:
             print(f'[WARN] {sheet_name} 読込失敗: {e}', file=sys.stderr)
@@ -79,8 +80,9 @@ def fetch_tdnet_index(date):
         if len(cells) < 5:
             continue
         time_str = cells[0].get_text(strip=True)
-        code_raw = cells[1].get_text(strip=True)
-        m = re.match(r'(\d{4})', code_raw)
+        code_raw = cells[1].get_text(strip=True).strip().upper()
+        # C-5: 4桁数字 OR 末尾アルファベット銘柄（130A/212A 等）に対応
+        m = re.match(r'([0-9]{3}[0-9A-Z])', code_raw)
         if not m:
             continue
         code = m.group(1)

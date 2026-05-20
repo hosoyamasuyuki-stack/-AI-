@@ -2,8 +2,9 @@ name: TDnet 決算短信取得
 
 on:
   schedule:
-    # 毎週月曜 11:30 JST（02:30 UTC）= weekly_update 完了後
-    - cron: '30 2 * * 1'
+    # 案 X'（2026-05-20 採用）: 週1 → 日1 拡張で 31 日窓の取りこぼし最小化
+    # 毎日 02:30 UTC = 11:30 JST 実行（TDnet 31 日上限制約下で最大蓄積機会）
+    - cron: '30 2 * * *'
   workflow_dispatch:
 
 env:
