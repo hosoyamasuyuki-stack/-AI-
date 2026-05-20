@@ -25,6 +25,8 @@ from datetime import datetime, timedelta, timezone
 import gspread
 import pdfplumber
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 
 from core.config import SPREADSHEET_ID
@@ -37,6 +39,28 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (compatible; RICH-KAIZEN/1.0; '
                   '+https://github.com/hosoyamasuyuki-stack/-AI-)'
 }
+
+
+def _make_session():
+    """3者協議採用（SPEC v1.0 §3.2/§7/§13）: 指数バックオフ付きリトライ Session。
+
+    TDnet の一時的 5xx/429/接続断でページ走査が中断し被覆率が落ちるのを防ぐ。
+    全ページ走査（被覆率根治）と一体で入れるべき対策（HTTP リクエスト数が増えるため）。
+    リトライ全敗時は通常レスポンス/例外を返すので、最悪でも従来挙動と同等。
+    """
+    s = requests.Session()
+    retry = Retry(
+        total=3, connect=3, read=3,
+        backoff_factor=1.5,  # 待機 0 / 1.5 / 3.0 ... 秒
+        status_forcelist=(429, 500, 502, 503, 504),
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    s.mount('https://', adapter)
+    s.mount('http://', adapter)
+    return s
+
+
+SESSION = _make_session()
 
 CACHE_SHEET = '決算短信_キャッシュ'
 HOLDINGS_SHEET = '保有銘柄_v4.3スコア'
@@ -108,42 +132,54 @@ def get_target_codes(ss):
 
 
 def fetch_tdnet_index(date):
-    """TDnet 日次インデックス → 行リスト"""
-    url = f'{TDNET_BASE}/I_list_001_{date.strftime("%Y%m%d")}.html'
-    try:
-        r = requests.get(url, headers=HEADERS, timeout=30)
-    except Exception as e:
-        print(f'  [ERR] {url}: {e}', file=sys.stderr)
-        return []
-    if r.status_code != 200:
-        return []
-    r.encoding = r.apparent_encoding or 'shift_jis'
-    soup = BeautifulSoup(r.text, 'html.parser')
+    """TDnet 日次インデックス → 行リスト（全ページ走査）
+
+    被覆率根治（2026-05-20）: 決算短信ピーク日は TDnet が開示一覧を
+    I_list_001 / I_list_002 / ... と複数ページに分割する（2026-05-14 は
+    23 ページ・744 社開示）。旧実装は I_list_001（1 ページ目・約 106 件）
+    しか読まず、保有/監視銘柄を大量に取りこぼしていた（2026-05 実測：
+    5/12-19 に決算短信を出した顧客対象 60 社が全て page2 以降 →
+    1 ページ走査では 0 社取得＝被覆率 9.4% の真因）。
+    HTTP 200 が返る限り次ページを走査する。
+    """
+    date_str = date.strftime('%Y%m%d')
     rows = []
-    for tr in soup.find_all('tr'):
-        cells = tr.find_all('td')
-        if len(cells) < 5:
-            continue
-        time_str = cells[0].get_text(strip=True)
-        code_raw = cells[1].get_text(strip=True).strip().upper()
-        # C-5: 4桁数字 OR 末尾アルファベット銘柄（130A/212A 等）に対応
-        m = re.match(r'([0-9]{3}[0-9A-Z])', code_raw)
-        if not m:
-            continue
-        code = m.group(1)
-        name = cells[2].get_text(strip=True)
-        title_cell = cells[3]
-        title = title_cell.get_text(strip=True)
-        link = title_cell.find('a')
-        pdf_url = None
-        if link and link.get('href'):
-            href = link['href']
-            if href.lower().endswith('.pdf'):
-                pdf_url = f'{TDNET_BASE}/{href}'
-        rows.append({
-            'time': time_str, 'code': code, 'name': name,
-            'title': title, 'pdf_url': pdf_url,
-        })
+    for page in range(1, 40):
+        url = f'{TDNET_BASE}/I_list_{page:03d}_{date_str}.html'
+        try:
+            r = SESSION.get(url, headers=HEADERS, timeout=30)
+        except Exception as e:
+            print(f'  [ERR] {url}: {e}', file=sys.stderr)
+            break
+        if r.status_code != 200:
+            break  # 存在しないページ番号 → その日の走査終了
+        r.encoding = r.apparent_encoding or 'shift_jis'
+        soup = BeautifulSoup(r.text, 'html.parser')
+        for tr in soup.find_all('tr'):
+            cells = tr.find_all('td')
+            if len(cells) < 5:
+                continue
+            time_str = cells[0].get_text(strip=True)
+            code_raw = cells[1].get_text(strip=True).strip().upper()
+            # C-5: 4桁数字 OR 末尾アルファベット銘柄（130A/212A 等）に対応
+            m = re.match(r'([0-9]{3}[0-9A-Z])', code_raw)
+            if not m:
+                continue
+            code = m.group(1)
+            name = cells[2].get_text(strip=True)
+            title_cell = cells[3]
+            title = title_cell.get_text(strip=True)
+            link = title_cell.find('a')
+            pdf_url = None
+            if link and link.get('href'):
+                href = link['href']
+                if href.lower().endswith('.pdf'):
+                    pdf_url = f'{TDNET_BASE}/{href}'
+            rows.append({
+                'time': time_str, 'code': code, 'name': name,
+                'title': title, 'pdf_url': pdf_url,
+            })
+        time.sleep(0.2)  # TDnet マナー（ページ間）
     return rows
 
 
@@ -168,12 +204,18 @@ def extract_pdf_text(pdf_url, code=None, submit_date=None, sb=None):
           pdf_path: Storage 保存パス or None
     """
     try:
-        r = requests.get(pdf_url, headers=HEADERS, timeout=60)
+        r = SESSION.get(pdf_url, headers=HEADERS, timeout=60)
     except Exception as e:
         print(f'    [ERR] PDF DL失敗 {pdf_url}: {e}', file=sys.stderr)
         return None, None
     if r.status_code != 200:
         print(f'    [ERR] PDF HTTP {r.status_code}: {pdf_url}', file=sys.stderr)
+        return None, None
+    # 3者協議採用（SPEC v1.0 §13 No.3）: PDF ヘッダ検証。HTML エラーページ等を
+    # pdfplumber に渡して空テキスト化＝静かな取りこぼしになるのを防ぐ。
+    if not r.content.startswith(b'%PDF'):
+        ct = (r.headers.get('Content-Type') or '?').lower()
+        print(f'    [ERR] PDF ヘッダ欠如 (Content-Type={ct}): {pdf_url}', file=sys.stderr)
         return None, None
     # P-1: Supabase Storage に put（テキスト抽出と並行）
     pdf_path = None
@@ -245,6 +287,7 @@ def main():
         print(f'  Supabase Storage 連携: 無効（PDF は Sheet キャッシュのみ）')
 
     target_codes = get_target_codes(ss)
+    all_targets = frozenset(target_codes)  # 被覆率算出用に元集合を保持
     print(f'対象銘柄: {len(target_codes)}社')
     if not target_codes:
         print('対象なし。終了')
@@ -272,6 +315,12 @@ def main():
                     and is_target_tanshin(r['title']) and r['pdf_url']]
         if relevant:
             print(f'  {date}: {len(relevant)}件の対象決算短信')
+        # 3者協議採用: 訂正/修正短信を検知したら警告（賢者は通常版を参照・
+        # 訂正版の本格対応は販売後 E-1）。顧客に古い数値が出るリスクの可視化。
+        for r in rows:
+            if (r['code'] in target_codes and '決算短信' in r['title']
+                    and not is_target_tanshin(r['title'])):
+                print(f'  [訂正注意] {r["code"]} {date} {r["title"][:46]}', file=sys.stderr)
 
         for row in relevant:
             code = row['code']
@@ -298,11 +347,26 @@ def main():
             time.sleep(2)  # OpenAI/Sheets rate limiting + TDnet マナー
         time.sleep(1)
 
+    # 3者協議採用（SPEC v1.0 §9/§10）: 被覆率の可視化＋下限ゲート。
+    # 「取りこぼしに誰も気づかない」を防ぐ。TDnet ページ分割バグが
+    # 長期放置された（被覆率 9.4%）再発防止の本丸。
+    cached_targets = all_targets & set(existing.keys())
+    uncovered = sorted(all_targets - set(existing.keys()))
+    coverage = (len(cached_targets) / len(all_targets) * 100.0) if all_targets else 0.0
     print(f'\n=== 結果 ===')
     print(f'  新規/更新   : {found_new}件')
     print(f'  PDF Storage : {pdf_uploaded}件（P-1）')
     print(f'  エラー      : {err_count}件')
     print(f'  キャッシュ計: {len(existing)}件')
+    print(f'  対象銘柄    : {len(all_targets)}社')
+    print(f'  決算短信被覆: {len(cached_targets)}社 / 被覆率 {coverage:.1f}%')
+    if uncovered:
+        print(f'  未取得 {len(uncovered)}社: {", ".join(uncovered)}')
+    # 被覆率下限ゲート: 閾値未満は GitHub Actions に ::warning:: を伝播
+    if coverage < 40.0:
+        print(f'::warning::決算短信 被覆率 {coverage:.1f}% '
+              f'(対象{len(all_targets)}社中{len(cached_targets)}社) '
+              f'— 閾値40%未満。TDnet 取得経路を点検のこと')
     return 0
 
 
