@@ -165,6 +165,10 @@ def fetch_tdnet_index(date):
                 print(f'  [ERR] {date_str}: 連続 {consecutive_errors} ページ取得失敗 '
                       f'— その日の走査を打ち切り（被覆率ゲートで検知）', file=sys.stderr)
                 break
+            # 5xx 連打抑制（独立エンジニアレビュー指摘）: continue は末尾の
+            # time.sleep(0.2) を飛ばすため、例外時は明示的にバックオフして
+            # TDnet への無待機連打（自己 DoS・マナー違反）を防ぐ。
+            time.sleep(1.5 * consecutive_errors)
             continue
         consecutive_errors = 0
         if r.status_code != 200:
