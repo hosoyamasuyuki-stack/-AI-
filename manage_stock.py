@@ -145,6 +145,15 @@ def find_row_by_code(ws, code):
             return i, all_vals
     return None, all_vals
 
+def _ensure_grid_rows(ws, row_index):
+    """append 先の行番号がグリッド行数を超える場合のみ行を追加して拡張する。
+    ws.update は範囲がグリッド外だと 400 (exceeds grid limits) で失敗し自動拡張しない。
+    remove_stock の delete_rows がグリッドを縮めるため、add/remove を繰り返すと
+    グリッドが data 行数まで枯渇し、次の append が失敗する（2026-05-21 add 6432 事案）。"""
+    if row_index > ws.row_count:
+        ws.add_rows(row_index - ws.row_count)
+
+
 def add_stock(code, target):
     """銘柄を追加（スコア計算してシートに書き込み）"""
     sheet_name = SHEET_MAP[target]
@@ -208,6 +217,7 @@ def add_stock(code, target):
     header = all_vals[0] if all_vals else list(value_map.keys())
     new_row = build_row_from_header(header)
     next_row = len(all_vals) + 1
+    _ensure_grid_rows(ws, next_row)
     ws.update(f'A{next_row}', [new_row])
     print(f"  {sheet_name} の行{next_row}に追加完了")
 
@@ -225,6 +235,7 @@ def add_stock(code, target):
             print(f"  コアスキャン_v4.3 行{cs_row}を上書き（既存データを修復）")
         else:
             cs_next = len(cs_all) + 1
+            _ensure_grid_rows(cs_ws, cs_next)
             cs_ws.update(f'A{cs_next}', [cs_new_row])
             print(f"  コアスキャン_v4.3 の行{cs_next}に追加")
     except Exception as e:
@@ -277,6 +288,7 @@ def add_stock(code, target):
                 init_dir, target_price, basis, ver_5y, '', '', '', '',
             ]
             pred_next = len(pred_all) + 1
+            _ensure_grid_rows(pred_ws, pred_next)
             pred_ws.update(f'A{pred_next}', [pred_row_data])
             print(f"  予測記録 の行{pred_next}に初期予測登録（方向={init_dir}・目標{target_price}円）")
     except Exception as e:
@@ -348,6 +360,7 @@ def move_stock(code, target):
     # 移動先に追加（既存スコアをそのまま使う）
     target_all = target_ws.get_all_values()
     next_row = len(target_all) + 1
+    _ensure_grid_rows(target_ws, next_row)
     target_ws.update(f'A{next_row}', [row_data])
     print(f"  {SHEET_MAP[target]} の行{next_row}に追加")
 
