@@ -79,20 +79,23 @@ class TestEnvironmentBanner:
     """環境バナー「現在の環境 短期X点・中期Y点」の動的化（M-9 再発防止）"""
 
     def test_environment_banner_dynamic(self, html):
-        """環境バナーが固定値「短期50点(中立)・中期33点(弱気)」でないこと"""
-        # 旧固定値が残っていないこと（v1 時点の値）
-        old_pattern = '短期50点(中立)・中期33点(弱気)'
-        if old_pattern in html:
-            # ただし真に MacroPhase スコアが 50/33 になった場合は通る
-            # その場合はティッカー値とも一致しているはず
-            pass  # 厳格検出は別テスト
+        """環境スコアが固定値「短期50点(中立)・中期33点(弱気)」でないこと（M-9 再発防止）。
 
-        gbar = re.search(
-            r'<div class="gbar"><span class="gl">現在の環境</span>'
-            r'<span class="gi">短期(\d+)点\(([^)]+)\)・中期(\d+)点\(([^)]+)\)</span>',
-            html
-        )
-        assert gbar, '環境バナーが見つからない（M-9 動的化未実装の疑い）'
+        PR #104 で監視銘柄直下の独立 gbar バナーは廃止され、短期/中期スコアは
+        各銘柄の showD() 引数に動的展開される形へ変更された。本テストは新構造に
+        追従し「旧固定文字列の不在」と「動的スコアの存在」を検証する。
+        """
+        # 旧 v1 固定文字列（ハードコード環境バナー）が残っていないこと
+        assert '短期50点(中立)・中期33点(弱気)' not in html, \
+            '旧固定の環境バナー文字列が残存（M-9 再発の疑い）'
+
+        # 短期/中期スコアが動的に展開されていること（showD 引数内・全銘柄分）
+        short_scores = re.findall(r'短期(\d+)点\(([^)]+)\)', html)
+        mid_scores = re.findall(r'中期(\d+)点\(([^)]+)\)', html)
+        assert len(short_scores) >= 100, \
+            f'短期スコアの動的展開が見つからない（{len(short_scores)} 件・M-9 動的化未実装の疑い）'
+        assert len(mid_scores) >= 100, \
+            f'中期スコアの動的展開が見つからない（{len(mid_scores)} 件・M-9 動的化未実装の疑い）'
 
 
 class TestNextEvaluationDate:
@@ -151,9 +154,11 @@ class TestScoreFormulaConsistency:
     @pytest.fixture
     def all_showd_calls(self, html):
         """全 showD() 呼び出しから (code, total, rank, s1, s2, s3) を抽出"""
+        # 注: showD 第7・第8引数は現行ダッシュボードで空文字 '' になり得るため
+        #     '[^']+'（1文字以上必須）ではなく '[^']*'（空許容）で受ける。
         pattern = re.compile(
             r"showD\('(\d+\w*)','([^']+)','([^']+)',"
-            r"([\d.]+),'([SABCD]\+?)',[^,]+,'[^']+','[^']+','[SABCD]\+?',"
+            r"([\d.]+),'([SABCD]\+?)',[^,]+,'[^']*','[^']*','[SABCD]\+?',"
             r"'[^']*','[^']*','[^']*',"
             r"'v4\.3: ([\d.]+)点\(([SABCD]\+?)\)=ROIC(\d+)\*40%\+Trend(\d+)\*35%\+Price(\d+)\*25%'"
         )
