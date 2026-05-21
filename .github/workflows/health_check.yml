@@ -10,6 +10,15 @@ on:
 env:
   TZ: Asia/Tokyo
 
+# health_check.py は GitHub API を叩く:
+#   - 各ワークフローの直近 run 取得 → actions: read
+#   - system_health.json / .md を Contents API でコミット → contents: write
+# permissions ブロック未宣言だとリポジトリ既定の制限トークンとなり
+# actions API が 401 で落ちる（2026-05 health_check 6 日連続失敗の真因）。
+permissions:
+  actions: read
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
