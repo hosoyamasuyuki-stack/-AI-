@@ -1227,14 +1227,20 @@ if tk_start >= 0 and tk_end >= 0:
 else:
     print(f"WARN: \u30C6\u30A3\u30C3\u30AB\u30FC\u7F6E\u63DB\u30B9\u30AD\u30C3\u30D7 (start={tk_start} end={tk_end})")
 
-# ticker_scroll keyframe追加
+# ticker_scroll keyframe追加（既存累積を除去してから 1 個だけ再注入＝自己回復型 dedup）
+# 背景: 旧コードは count=1 の置換で if-guard 無しのため、増分更新ごとに 1 個追加され
+#       ai_dashboard_v13.html 先頭に約 200 個累積していた（2026-05-22 検知・販売後 TODO 分類）。
+#       本修正は冪等：再実行しても旧 N 個 → 0 → 1 個で同結果になる。
+_ticker_kf = '@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}'
+_removed = src.count(_ticker_kf)
+if _removed:
+    src = src.replace(_ticker_kf, '')
 src = src.replace(
     '@keyframes fadeIn{',
-    '@keyframes ticker_scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}'
-    '@keyframes fadeIn{',
+    _ticker_kf + '@keyframes fadeIn{',
     1
 )
-print("OK: ticker_scroll keyframe追加")
+print(f"OK: ticker_scroll keyframe 追加 (旧 {_removed} 個を整理→ 1 個に統一)")
 
 # CSS修正
 src = re.sub(r'(\.db\{[^}]*)aspect-ratio:[^;]+;', r'\1', src)
