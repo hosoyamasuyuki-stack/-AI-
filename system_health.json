@@ -1,6 +1,6 @@
 {
-  "checked_at_utc": "2026-05-23T23:41:58.805244+00:00",
-  "checked_at_jst": "2026-05-24 08:41 JST",
+  "checked_at_utc": "2026-05-24T23:43:23.185914+00:00",
+  "checked_at_jst": "2026-05-25 08:43 JST",
   "overall": "NG",
   "ok_count": 9,
   "ng_count": 1,
@@ -11,22 +11,22 @@
       "label": "株価更新",
       "status": "RUNNING",
       "ok": true,
-      "last_run_jst": "2026-05-24 08:30 JST",
+      "last_run_jst": "2026-05-25 08:32 JST",
       "hours_ago": 0.2,
       "max_hours": 30,
       "conclusion": null,
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26346410149"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26375855094"
     },
     {
       "wf": "daily_update.yml",
       "label": "FRED指標",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-05-23 08:07 JST",
-      "hours_ago": 24.6,
+      "last_run_jst": "2026-05-25 08:02 JST",
+      "hours_ago": 0.7,
       "max_hours": 80,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26316248619"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26375206316"
     },
     {
       "wf": "weekly_update.yml",
@@ -34,7 +34,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-18 14:00 JST",
-      "hours_ago": 138.7,
+      "hours_ago": 162.7,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26014462105"
@@ -45,7 +45,7 @@
       "status": "FAILURE",
       "ok": false,
       "last_run_jst": "2026-05-18 14:42 JST",
-      "hours_ago": 138.0,
+      "hours_ago": 162.0,
       "max_hours": 200,
       "conclusion": "failure",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26015758087"
@@ -55,11 +55,11 @@
       "label": "全市場スキャン",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-05-17 23:26 JST",
-      "hours_ago": 153.3,
+      "last_run_jst": "2026-05-24 23:26 JST",
+      "hours_ago": 9.3,
       "max_hours": 200,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/25993519352"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26363863947"
     },
     {
       "wf": "generate_handover.yml",
@@ -67,7 +67,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-18 08:53 JST",
-      "hours_ago": 143.8,
+      "hours_ago": 167.8,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26006385311"
@@ -78,7 +78,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-18 15:09 JST",
-      "hours_ago": 137.5,
+      "hours_ago": 161.6,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26016633963"
@@ -89,7 +89,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-01 16:53 JST",
-      "hours_ago": 543.8,
+      "hours_ago": 567.8,
       "max_hours": 800,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/25207168683"
@@ -99,11 +99,11 @@
       "label": "TDnet 決算短信取得",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-05-23 14:50 JST",
-      "hours_ago": 17.9,
+      "last_run_jst": "2026-05-24 15:13 JST",
+      "hours_ago": 17.5,
       "max_hours": 200,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26325033760"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26353738286"
     },
     {
       "wf": "monthly_learning.yml",
@@ -111,7 +111,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-01 18:19 JST",
-      "hours_ago": 542.4,
+      "hours_ago": 566.4,
       "max_hours": 800,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/25209398760"
