@@ -27,3 +27,5 @@ Thumbs.db
 # Claude Code internal
 .claude/settings.local.json
 .claude/plans/
+.claude/worktrees/
+.claude/launch.json
