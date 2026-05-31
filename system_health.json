@@ -1,32 +1,32 @@
 {
-  "checked_at_utc": "2026-05-30T23:42:28.170961+00:00",
-  "checked_at_jst": "2026-05-31 08:42 JST",
-  "overall": "NG",
-  "ok_count": 9,
-  "ng_count": 1,
+  "checked_at_utc": "2026-05-31T23:45:17.208567+00:00",
+  "checked_at_jst": "2026-06-01 08:45 JST",
+  "overall": "OK",
+  "ok_count": 10,
+  "ng_count": 0,
   "total": 10,
   "results": [
     {
       "wf": "daily_price_update.yml",
       "label": "株価更新",
-      "status": "FAILURE",
-      "ok": false,
-      "last_run_jst": "2026-05-31 08:33 JST",
+      "status": "RUNNING",
+      "ok": true,
+      "last_run_jst": "2026-06-01 08:38 JST",
       "hours_ago": 0.1,
       "max_hours": 30,
-      "conclusion": "failure",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26697882024"
+      "conclusion": null,
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26727803256"
     },
     {
       "wf": "daily_update.yml",
       "label": "FRED指標",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-05-30 08:18 JST",
-      "hours_ago": 24.4,
+      "last_run_jst": "2026-06-01 08:06 JST",
+      "hours_ago": 0.6,
       "max_hours": 80,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26667111751"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26727118360"
     },
     {
       "wf": "weekly_update.yml",
@@ -34,7 +34,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-25 14:13 JST",
-      "hours_ago": 138.5,
+      "hours_ago": 162.5,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26384470058"
@@ -45,7 +45,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-25 14:56 JST",
-      "hours_ago": 137.8,
+      "hours_ago": 161.8,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26385776684"
@@ -55,11 +55,11 @@
       "label": "全市場スキャン",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-05-24 23:26 JST",
-      "hours_ago": 153.3,
+      "last_run_jst": "2026-05-31 23:49 JST",
+      "hours_ago": 8.9,
       "max_hours": 200,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26363863947"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26715772590"
     },
     {
       "wf": "generate_handover.yml",
@@ -67,7 +67,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-25 08:55 JST",
-      "hours_ago": 143.8,
+      "hours_ago": 167.8,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26376335272"
@@ -78,7 +78,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-25 15:23 JST",
-      "hours_ago": 137.3,
+      "hours_ago": 161.4,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26386594922"
@@ -89,7 +89,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-01 16:53 JST",
-      "hours_ago": 711.8,
+      "hours_ago": 735.9,
       "max_hours": 800,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/25207168683"
@@ -99,11 +99,11 @@
       "label": "TDnet 決算短信取得",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-05-30 14:58 JST",
-      "hours_ago": 17.7,
+      "last_run_jst": "2026-05-31 15:37 JST",
+      "hours_ago": 17.1,
       "max_hours": 200,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26676291352"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26705543179"
     },
     {
       "wf": "monthly_learning.yml",
@@ -111,7 +111,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-01 18:19 JST",
-      "hours_ago": 710.4,
+      "hours_ago": 734.4,
       "max_hours": 800,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/25209398760"
