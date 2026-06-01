@@ -190,8 +190,7 @@ def compute_diff(snapshot_ws, current_month):
                 # SNAPSHOT_COLS = [snapshot_month, 取得日, 個人/法人, 証券会社, 口座区分,
                 #                  市場, 種別, 証券コード, 銘柄名, 株数, ...]
                 key = (r[2], r[3], r[4], r[5], r[7])  # A 修正: 口座区分(r[4]) を追加
-                shares = float(r[9] or 0)
-                prev_map[key] = shares
+                prev_map[key] = (float(r[9] or 0), r[8], r[6])  # shares, 銘柄名, 種別（全売却の引継ぎ用）
 
     curr_map = {}
     for r in body:
@@ -203,11 +202,12 @@ def compute_diff(snapshot_ws, current_month):
     all_keys = set(prev_map.keys()) | set(curr_map.keys())
     for key in sorted(all_keys):
         owner_jp, broker, account_type, market, code = key  # A 修正: 5 要素 unpack
-        prev_shares = prev_map.get(key, 0)
+        prev = prev_map.get(key)
+        prev_shares = prev[0] if prev else 0
         curr = curr_map.get(key)
         curr_shares = curr[0] if curr else 0
-        name = curr[1] if curr else ''
-        kind = curr[2] if curr else ''
+        name = curr[1] if curr else (prev[1] if prev else '')   # 全売却時は前月の銘柄名を引継ぐ
+        kind = curr[2] if curr else (prev[2] if prev else '')   # 全売却時は前月の種別を引継ぐ
         delta = curr_shares - prev_shares
 
         if prev_shares == 0 and curr_shares > 0:
