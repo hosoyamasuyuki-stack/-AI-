@@ -198,22 +198,31 @@ def compute_diff(snapshot_ws, current_month):
             key = (r[2], r[3], r[4], r[5], r[7])  # A 修正: 5 要素
             curr_map[key] = (float(r[9] or 0), r[8], r[6])  # shares, 銘柄名, 種別
 
+    # ── 銘柄合計（net）で集計（複数口座にまたがる銘柄の誤判定防止・CEO 2026-06）──
+    # 例: 6637 を法人で全売却・個人(楽天)で継続保有 → 口座別だと法人分の 100→0 だけ見て
+    #     「全売却」と誤判定。銘柄合計なら 300→200=一部売却 と正しく判定される。
+    # 個人/法人・証券会社・口座区分は銘柄合算では非該当のため空欄（顧客非表示・CEO指示）。
+    code_agg = {}
+    for src_map, fld in ((prev_map, 'prev'), (curr_map, 'curr')):
+        for key, val in src_map.items():
+            market, code = key[3], key[4]
+            a = code_agg.setdefault(code, {'prev': 0.0, 'curr': 0.0, 'name': '', 'kind': '', 'market': market})
+            a[fld] += val[0]
+            a['market'] = market
+            if val[1]:
+                a['name'] = val[1]
+            if val[2]:
+                a['kind'] = val[2]
+
     diffs = []
-    all_keys = set(prev_map.keys()) | set(curr_map.keys())
-    for key in sorted(all_keys):
-        owner_jp, broker, account_type, market, code = key  # A 修正: 5 要素 unpack
-        prev = prev_map.get(key)
-        prev_shares = prev[0] if prev else 0
-        curr = curr_map.get(key)
-        curr_shares = curr[0] if curr else 0
-        name = curr[1] if curr else (prev[1] if prev else '')   # 全売却時は前月の銘柄名を引継ぐ
-        kind = curr[2] if curr else (prev[2] if prev else '')   # 全売却時は前月の種別を引継ぐ
+    for code in sorted(code_agg.keys()):
+        a = code_agg[code]
+        prev_shares = a['prev']
+        curr_shares = a['curr']
         delta = curr_shares - prev_shares
 
         if prev_shares == 0 and curr_shares > 0:
-            # 過去月スナップショットなし → 初期保有として記録（運用開始時の保有銘柄リスト）
-            # past_months が空のときは「初期保有」（CEO 指示 2026-05-08）
-            # past_months ありで前月 0 株なら通常の「新規」購入
+            # past_months が空のときは「初期保有」（CEO 指示 2026-05-08）/ ありなら「新規」
             ct = '初期保有' if not past_months else '新規'
         elif prev_shares > 0 and curr_shares == 0:
             ct = '全売却'
@@ -222,11 +231,11 @@ def compute_diff(snapshot_ws, current_month):
         elif delta < 0:
             ct = '一部売却'
         else:
-            continue  # unchanged はスキップ
+            continue  # 変化なしはスキップ
 
-        # A 修正: account_type を追加して 12 要素で append
-        diffs.append([current_month, ct, owner_jp, broker, account_type, market, kind,
-                      code, name, prev_shares, curr_shares, delta])
+        # 区分（個人法人/証券会社/口座区分）は銘柄合算では空欄（顧客非表示）
+        diffs.append([current_month, ct, '', '', '', a['market'], a['kind'],
+                      code, a['name'], prev_shares, curr_shares, delta])
     return diffs
 
 
