@@ -819,9 +819,6 @@ def get_sig(rank):
     if rank == 'B':        return '様子見',  '#fbbf24'
     return '時期尚早','#f87171'
 
-RANK_ORDER = {'S': 5, 'A': 4, 'B': 3, 'C': 2, 'D': 1}
-degradation_alerts = []  # abar用アラートリスト
-
 def short_label(s):
     return ('強気' if s>=70 else 'やや強気' if s>=55 else
             '中立' if s>=45 else 'やや弱気' if s>=30 else '弱気')
@@ -952,14 +949,6 @@ for row, stype in all_data:
         f'        </tr>'
     )
     (rows_h if stype == '保有' else rows_w).append(tr)
-
-    # ランク変動検知（保有銘柄のみ・B→C以下の転落をアラート）
-    if stype == '保有' and prev_rank and prev_rank in RANK_ORDER and rank in RANK_ORDER:
-        if RANK_ORDER[rank] < RANK_ORDER[prev_rank]:
-            degradation_alerts.append({
-                'code': code, 'name': name, 'prev': prev_rank,
-                'curr': rank, 'score': tot
-            })
 
 # スクリーニングTop75のテーブル行生成（シートには150社保存・表示は上位75社）
 DISPLAY_TOP_N = 75
@@ -1591,20 +1580,6 @@ if rows_s:
     print(f"OK: スクリーニングTop50テーブル置換（{len(rows_s)}銘柄）")
 else:
     print("SKIP: スクリーニングデータなし（初回スキャン前）")
-
-# abar動的生成（ランク変動アラート）
-if degradation_alerts:
-    abar_items = '<span class="al">&#x26A0; ランク変動</span>'
-    for a in degradation_alerts[:5]:
-        abar_items += (f'<span class="ai">{a["name"]} '
-                       f'{a["prev"]}&#x2192;{a["curr"]}({a["score"]:.0f}点)</span>')
-    src = src.replace(
-        '<!-- ABAR_DYNAMIC --><span class="al">&#x2714; ランク異常なし</span>',
-        abar_items
-    )
-    print(f"OK: abar動的生成（{len(degradation_alerts)}銘柄がランク下落）")
-else:
-    print("OK: abar ランク異常なし")
 
 
 # アラートストリップ動的生成（VIX値に基づく短期リスク＋長期買い場）
