@@ -397,6 +397,41 @@ def main():
         print(f'::warning::決算短信 被覆率 {coverage:.1f}% '
               f'(対象{len(all_targets)}社中{len(cached_targets)}社) '
               f'— 閾値40%未満。TDnet 取得経路を点検のこと')
+
+    # CEO 通達 2026-06-03: 95 日超過個別銘柄アラート（経路 A）
+    # 四半期決算は約 90 日ごと開示。95 日経過してキャッシュにない/古い銘柄は
+    # システム異常（TDnet 31 日制約 + 過去分手動投入忘れ）= CEO 通知対象。
+    # GitHub Actions ::error:: で job conclusion=failure → CEO に GitHub
+    # 通知メール自動送信。admin LISA 表示は別 PR で実装。
+    STALE_DAYS_THRESHOLD = 95
+    stale_stocks = []  # (code, submit_date or '未取得', days_since or None)
+    for code in sorted(all_targets):
+        submit_date_str = existing.get(code, '')
+        if not submit_date_str:
+            # キャッシュに無い = TDnet 31 日内に開示無し + 過去分未投入
+            stale_stocks.append((code, '未取得', None))
+            continue
+        try:
+            submit = datetime.strptime(submit_date_str, '%Y-%m-%d').date()
+            days_since = (today - submit).days
+            if days_since > STALE_DAYS_THRESHOLD:
+                stale_stocks.append((code, submit_date_str, days_since))
+        except Exception:
+            stale_stocks.append((code, submit_date_str, None))
+
+    if stale_stocks:
+        print(f'\n=== 🚨 95 日超過アラート（CEO 通達 2026-06-03） ===')
+        print(f'  {len(stale_stocks)} 銘柄が決算短信未取得 or {STALE_DAYS_THRESHOLD} 日経過')
+        for code, sd, days in stale_stocks[:50]:
+            msg = '未取得' if days is None and sd == '未取得' else f'{sd} ({days}日経過)' if days else f'{sd} (日数不明)'
+            print(f'  - {code}: {msg}')
+        if len(stale_stocks) > 50:
+            print(f'  ... 他 {len(stale_stocks) - 50} 銘柄')
+        # ::error:: で GitHub Actions job を fail にして CEO に通知メール
+        print(f'::error::決算短信アラート: {len(stale_stocks)} 銘柄が {STALE_DAYS_THRESHOLD} '
+              f'日超過（対象 {len(all_targets)} 社中）。CEO 手動投入 or 仕組み点検が必要。')
+        return 1  # job fail で GitHub 通知
+
     return 0
 
 
