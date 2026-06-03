@@ -3203,20 +3203,48 @@ function runKenja(){
   var res=document.getElementById('kenja-result');
   var btn=document.getElementById('kenja-btn');
   if(!res)return;
-  if(btn){btn.disabled=true;btn.textContent='Analyzing...';}
-  res.innerHTML='<div style="text-align:center;padding:20px;">'
-    +'<div style="display:inline-block;width:28px;height:28px;border:3px solid #1e2d40;border-top-color:#f59e0b;border-radius:50%;animation:spin 1s linear infinite;"></div>'
-    +'<div style="color:#f59e0b;font-size:var(--fs-base);font-weight:700;margin-top:8px;">EDINET書類取得 + AI分析中</div>'
-    +'<div style="font-size:var(--fs-xs);color:#475569;margin-top:4px;">'+escH(name)+' ('+code+') / 1-2分</div>'
-    +'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+  if(btn){btn.disabled=true;btn.textContent='分析中…';}
+
+  /* 段階表示（CEO 通達 2026-06-03・顧客 UX 演出）。catch 内で clearTimeout。 */
+  var stageTimers=[];
+  var setStage=function(text){
+    res.innerHTML='<div style="text-align:center;padding:20px;">'
+      +'<div style="display:inline-block;width:28px;height:28px;border:3px solid #1e2d40;border-top-color:#f59e0b;border-radius:50%;animation:spin 1s linear infinite;"></div>'
+      +'<div style="color:#f59e0b;font-size:var(--fs-base);font-weight:700;margin-top:8px;">'+text+'</div>'
+      +'<div style="font-size:var(--fs-xs);color:#475569;margin-top:4px;">'+escH(name)+' ('+code+') / 通常 1〜2 分</div>'
+      +'</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+  };
+  setStage('📚 EDINET 書類を取得しています…');
+  stageTimers.push(setTimeout(function(){setStage('📊 決算短信を読み込んでいます…');},5000));
+  stageTimers.push(setTimeout(function(){setStage('🤖 AI が経営者の言葉を分析しています…');},30000));
+  stageTimers.push(setTimeout(function(){setStage('🔍 数字の真偽を 6 つの視点で検証中…');},60000));
+  stageTimers.push(setTimeout(function(){setStage('✍️ ご報告内容をまとめています（あと少し）…');},90000));
+  var clearStageTimers=function(){stageTimers.forEach(function(t){clearTimeout(t);});};
+
+  /* session_id 生成（PR 3 のカウントロールバック連動用・GAS は受け取るだけで処理しなくて OK） */
+  var sessionId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():(Date.now()+'-'+Math.random().toString(36).slice(2));
+
+  /* AbortController + 3 分タイムアウト（CEO 通達 2026-06-03・ブラウザ永遠待機防止） */
+  var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+  var TIMEOUT_MS=180000;
+  var timeoutId=setTimeout(function(){if(ctrl)ctrl.abort();},TIMEOUT_MS);
+
   var sc=STOCK_SCORES[code]||[0,0,0];
-  var payload={secCode:code,name:name,scores:{v42:window._curV42||'',rank:window._curRank||'',s1:sc[0],s2:sc[1],s3:sc[2],shortScore:window._curShort||'',midScore:window._curMid||''}};
+  var payload={secCode:code,name:name,scores:{v42:window._curV42||'',rank:window._curRank||'',s1:sc[0],s2:sc[1],s3:sc[2],shortScore:window._curShort||'',midScore:window._curMid||''},sessionId:sessionId};
   /* v3.1.1: ユーザー ID を payload に追加（GAS の DB 連携用・uid なしなら GAS は従来通り動作） */
   var __uid = (typeof getKenjaUserId === 'function') ? getKenjaUserId() : '';
   if(__uid) payload.uid = __uid;
-  fetch(KENJA_GAS_URL,{method:'POST',body:JSON.stringify(payload),redirect:'follow'})
+  /* 直近セッションをローカル保管（PR 3 のロールバック判定用） */
+  try{if(window.localStorage){window.localStorage.setItem('kenja_last_session',JSON.stringify({sessionId:sessionId,uid:__uid,secCode:code,startedAt:Date.now()}));}}catch(eLS){}
+
+  var fetchOpts={method:'POST',body:JSON.stringify(payload),redirect:'follow'};
+  if(ctrl)fetchOpts.signal=ctrl.signal;
+
+  fetch(KENJA_GAS_URL,fetchOpts)
   .then(function(r){return r.json();})
   .then(function(data){
+    clearStageTimers();
+    clearTimeout(timeoutId);
     if(!data.ok){
       /* v3.1.1: 月間利用上限到達のハンドリング（ご高齢者向け配慮文面） */
       if(data.error === 'limit_exceeded'){
@@ -3254,11 +3282,30 @@ function runKenja(){
       remNote.textContent='今月の残り利用回数: '+data.scans_remaining+'回';
       res.appendChild(remNote);
     }
-    if(btn){btn.disabled=false;btn.textContent='Re-analyze';}
+    if(btn){btn.disabled=false;btn.textContent='再分析';}
   }).catch(function(e){
-    res.innerHTML='<div style="color:#f87171;padding:10px;font-size:var(--fs-sm);">Error: '+escH(e.message)+'</div>'
-      +'<div style="padding:0 10px 10px;"><a href="https://disclosure2.edinet-fsa.go.jp/WZEK0040.aspx?S1='+code+'" target="_blank" style="color:#60a5fa;font-size:var(--fs-sm);">EDINET</a></div>';
-    if(btn){btn.disabled=false;btn.textContent='Retry';}
+    clearStageTimers();
+    clearTimeout(timeoutId);
+    /* CEO 通達 2026-06-03：タイムアウト時は親切な UI + お問い合わせ番号表示 + カウント返却対応案内 */
+    var isTimeout=(e&&e.name==='AbortError');
+    var errorType=isTimeout?'TIMEOUT':'ERROR';
+    var ts=new Date().toISOString().replace(/[:.]/g,'').slice(0,15);
+    var errorCode='KENJA-'+code+'-'+errorType+'-'+ts;
+    var title=isTimeout?'お時間がかかってしまい中断しました':'エラーが発生しました';
+    var bodyText=isTimeout
+      ? '分析に通常より時間がかかっており、一旦中断いたしました。<br>もう一度「再試行」を押してお試しください。<br>もしご利用回数が消費されている場合は、お問い合わせいただければ弊社にて返却対応いたします。'
+      : 'エラーが発生いたしました。<br>もう一度「再試行」を押してお試しください。<br>解消しない場合は、下記のお問い合わせ番号をお知らせください。';
+    res.innerHTML='<div style="padding:14px;background:#1c0a0a;border:1px solid #f87171;border-radius:8px;">'
+      +'<div style="color:#f87171;font-weight:800;font-size:var(--fs-lg);margin-bottom:10px;">'+title+'</div>'
+      +'<div style="color:#cbd5e1;font-size:var(--fs-base);line-height:1.7;margin-bottom:12px;">'+bodyText+'</div>'
+      +'<div style="font-family:monospace;font-size:var(--fs-sm);color:#94a3b8;padding:8px 12px;background:#0a1428;border:1px solid #1e2d40;border-radius:6px;margin-bottom:10px;">'
+        +'お問い合わせ番号: <strong style="color:#fbbf24;">'+errorCode+'</strong>'
+      +'</div>'
+      +'<div style="color:#94a3b8;font-size:var(--fs-sm);line-height:1.6;">'
+        +'お問い合わせ先：<a href="mailto:info@br-secret.com?subject='+encodeURIComponent('[LISA] '+errorCode)+'" style="color:#60a5fa;">info@br-secret.com</a>'
+      +'</div>'
+      +'</div>';
+    if(btn){btn.disabled=false;btn.textContent='再試行';}
   });
 }
 
