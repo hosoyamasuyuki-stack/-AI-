@@ -1,0 +1,86 @@
+name: Midday Price Update
+
+# 朝（daily_price_update.yml・07:30 JST・J-Quants 前日終値）に加えて、
+# 昼 12:30 JST に当日前場の株価を yfinance で反映する 2 本目の更新。
+# 設計・ミス対策の詳細: ai-keiei/にこにこ本舗/LISA販売/手順書/手順書_昼12時半株価更新_実装_2026-06-05.md
+# CEO 決定（2026-06-05・3者協議 条件付き GO）。朝ジョブは無変更（完全分離）。
+
+on:
+  schedule:
+    # 12:30 JST = 03:30 UTC・月〜金のみ（前場 9:00-11:30 終了後）。
+    # cron は常に UTC。env.TZ はトリガ時刻に無関係。
+    - cron: '30 3 * * 1-5'
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  midday-price-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 依存パッケージをインストール
+        run: |
+          pip install requests gspread google-auth pandas numpy yfinance scipy
+
+      - name: 昼の価格更新を実行（yfinance＝当日前場終値）
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          # 昼は当日前場終値を見せる。yfinance 障害時は daily_price_update.py が
+          # 自動で J-Quants（前日終値）にフォールバックして完走する（停止しない）。
+          PRICE_SOURCE: yfinance
+        run: |
+          python daily_price_update.py
+
+      - name: ダッシュボードHTML再生成
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          echo "=== ダッシュボードHTML再生成 ==="
+          python generate_dashboard.py
+          echo "再生成完了"
+
+      - name: GitHubにプッシュ
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions [Midday Update]"
+          git add ai_dashboard_v13.html
+          git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
+          MSG="dashboard update (midday) $(date +'%Y/%m/%d %H:%M') JST"
+          git commit -m "$MSG"
+          # 朝ジョブと同一の push 競合根治ループ（exit128 再発防止）。
+          # 最新 origin/main に生成物のみ載せ替え＋fast-forward リトライ（失敗は明示 exit1）。
+          FILES="ai_dashboard_v13.html"
+          SRC=$(git rev-parse HEAD)
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            PRESENT=""
+            for fn in $FILES; do git cat-file -e "$SRC:$fn" 2>/dev/null && PRESENT="$PRESENT $fn"; done
+            git checkout "$SRC" -- $PRESENT
+            git add $PRESENT
+            if git diff --staged --quiet; then echo "他更新で差分消滅（スキップ）"; exit 0; fi
+            git commit -m "$MSG" --quiet
+            SRC=$(git rev-parse HEAD)
+            if git push origin HEAD:main; then echo "GitHubプッシュ完了"; exit 0; fi
+            echo "push 競合・リトライ $i/5"
+            sleep $((RANDOM % 5 + 3))
+          done
+          echo "::error::push failed after 5 retries"
+          exit 1
