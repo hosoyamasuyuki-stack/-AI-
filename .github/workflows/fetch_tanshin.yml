@@ -32,6 +32,9 @@ jobs:
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # CEO 通達 2026-06-04: EDINET 補完取得用（TDnet 35 日制約の構造解決）
+          # 未設定でもジョブは動作（::warning:: で skip 案内）。
+          EDINET_API_KEY: ${{ secrets.EDINET_API_KEY }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
           python tools/fetch_tanshin.py 2>&1 | tee fetch_tanshin.log

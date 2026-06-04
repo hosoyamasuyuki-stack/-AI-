@@ -20,6 +20,7 @@ import os
 import re
 import sys
 import time
+import zipfile  # CEO 通達 2026-06-04: EDINET 書類 ZIP 解凍用
 from datetime import datetime, timedelta, timezone
 
 import gspread
@@ -68,6 +69,16 @@ WATCHLIST_SHEET = '監視銘柄_v4.3スコア'
 MAX_TEXT_CHARS = 50000   # Sheets セル上限 50,000 文字
 MIN_TEXT_CHARS = 500     # これ未満は画像PDF/抽出失敗とみなし取得失敗扱い（QA レビュー指摘）
 MAX_PDF_PAGES = 25
+
+# CEO 通達 2026-06-04: EDINET 補完設定（TDnet 35 日制約の構造的解決）
+# 賢者 GAS の searchEdinet を Python 移植。決算短信が取れない過去分を有価証券
+# 報告書・四半期報告書・半期報告書で代替する。
+EDINET_API_KEY = os.environ.get('EDINET_API_KEY', '')
+EDINET_API_BASE = 'https://api.edinet-fsa.go.jp/api/v2'
+EDINET_LOOKBACK_DAYS = 90
+EDINET_MAIN_FORMS = {'030000', '030001', '043000', '043001', '050000'}
+EDINET_FORM_PRIORITY = {'030000': 1, '030001': 2, '043000': 3, '043001': 4, '050000': 5}
+EDINET_STALE_DAYS = 31  # 既存キャッシュが N 日超過なら EDINET 補完で更新候補
 
 # P-1: Supabase Storage 設定（E-2 secret 経由・販売前バックエンドのみ）
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
@@ -307,6 +318,127 @@ def upsert(ws, code, submit_date, title, text, pdf_path=None):
         ws.append_row(row, value_input_option='RAW')
 
 
+# ── CEO 通達 2026-06-04: EDINET 補完取得関数群 ──
+# 賢者 GAS の searchEdinet / fetchDocText / htmlToText / getDocTypeName を
+# Python に移植。既存 TDnet 取得ロジックは一切変更しない（既存破壊ゼロ）。
+
+def _edinet_get_doc_type_name(ord_code, form_code):
+    """EDINET 書類種別名（賢者 GAS getDocTypeName と同等）"""
+    if ord_code == '010' and form_code == '030000': return '有価証券報告書'
+    if ord_code == '010' and form_code == '043000': return '四半期報告書'
+    if ord_code == '010' and form_code == '030001': return '有価証券報告書(訂正)'
+    if ord_code == '010' and form_code == '043001': return '四半期報告書(訂正)'
+    if ord_code == '010' and form_code == '050000': return '半期報告書'
+    return f'{ord_code}/{form_code}'
+
+
+def _html_to_text(html):
+    """HTML → plain text（賢者 GAS htmlToText と同等のロジックを Python 化）"""
+    text = re.sub(r'<script[^>]*>[\s\S]*?</script>', '', html, flags=re.IGNORECASE)
+    text = re.sub(r'<style[^>]*>[\s\S]*?</style>', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'</th>', '\t', text, flags=re.IGNORECASE)
+    text = re.sub(r'</td>', '\t', text, flags=re.IGNORECASE)
+    text = re.sub(r'</tr>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</p>', '\n\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</div>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</h[1-6]>', '\n\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<[^>]+>', '', text)
+    text = (text.replace('&nbsp;', ' ').replace('&amp;', '&')
+            .replace('&lt;', '<').replace('&gt;', '>').replace('&quot;', '"'))
+    text = re.sub(r'&#\d+;', '', text)
+    text = re.sub(r'[ \t]+', ' ', text)
+    text = re.sub(r'\n\s*\n\s*\n', '\n\n', text)
+    return text.strip()
+
+
+def edinet_search_best_doc_for_code(code, lookback_days, api_key, today):
+    """EDINET API で銘柄コードに該当する有報・四半期・半期報告書を検索（過去 90 日）。
+
+    新しい日付から走査し最初に見つかった銘柄の書類を採用。複数同日なら
+    formCode 優先（有報 > 四半期 > 半期）。
+    """
+    sec5 = code if len(code) == 5 else code + '0'
+    auth401_count = 0
+    for d in range(lookback_days):
+        dt = today - timedelta(days=d)
+        date_str = dt.strftime('%Y-%m-%d')
+        url = f'{EDINET_API_BASE}/documents.json?date={date_str}&type=2&Subscription-Key={api_key}'
+        try:
+            r = SESSION.get(url, timeout=30)
+            if r.status_code != 200:
+                time.sleep(0.1)
+                continue
+            text = r.text
+            if '"StatusCode": 401' in text or '"StatusCode":401' in text:
+                auth401_count += 1
+                if auth401_count >= 3:
+                    print('  [ERR] EDINET 認証障害（401 連発）= 補完中断', file=sys.stderr)
+                    return None
+                time.sleep(0.1)
+                continue
+            j = r.json()
+            if 'results' not in j:
+                time.sleep(0.1)
+                continue
+            day_docs = []
+            for doc in j.get('results', []):
+                if (doc.get('secCode') == sec5
+                        and doc.get('formCode') in EDINET_MAIN_FORMS):
+                    day_docs.append({
+                        'docID': doc.get('docID'),
+                        'filerName': doc.get('filerName', ''),
+                        'docDescription': doc.get('docDescription', ''),
+                        'submitDateTime': doc.get('submitDateTime', ''),
+                        'ordinanceCode': doc.get('ordinanceCode', ''),
+                        'formCode': doc.get('formCode', ''),
+                    })
+            if day_docs:
+                day_docs.sort(key=lambda x: EDINET_FORM_PRIORITY.get(x['formCode'], 99))
+                return day_docs[0]  # 同日内優先順位 1 位
+        except Exception:
+            pass
+        time.sleep(0.1)  # EDINET マナー
+    return None
+
+
+def edinet_fetch_doc_text(doc_id, api_key):
+    """EDINET 書類 ZIP を取得 → HTML を結合してテキスト化"""
+    try:
+        url = f'{EDINET_API_BASE}/documents/{doc_id}?type=1&Subscription-Key={api_key}'
+        r = SESSION.get(url, timeout=120)
+        if r.status_code != 200:
+            return None
+        try:
+            zf = zipfile.ZipFile(io.BytesIO(r.content))
+        except Exception:
+            return None
+        html_names = []
+        for name in zf.namelist():
+            lower = name.lower()
+            if lower.endswith(('.htm', '.html')) and 'manifest' not in lower and 'viewer' not in lower:
+                html_names.append(name)
+        if not html_names:
+            return None
+        html_names.sort()
+        all_text = ''
+        for fname in html_names:
+            try:
+                content = zf.read(fname).decode('utf-8', errors='ignore')
+                section = _html_to_text(content)
+                if len(section) > 100:
+                    all_text += f'\n\n=== {fname} ===\n{section}'
+            except Exception:
+                continue
+        text = all_text.strip()
+        if len(text) > MAX_TEXT_CHARS:
+            text = text[:MAX_TEXT_CHARS] + '\n\n[... 以降省略 ...]'
+        return text if len(text) >= MIN_TEXT_CHARS else None
+    except Exception as e:
+        print(f'    [ERR] EDINET doc fetch {doc_id}: {e}', file=sys.stderr)
+        return None
+
+
 def main():
     print(f'=== fetch_tanshin start {datetime.now(JST):%Y-%m-%d %H:%M JST} ===')
     ss = get_spreadsheet()
@@ -377,26 +509,93 @@ def main():
             time.sleep(2)  # OpenAI/Sheets rate limiting + TDnet マナー
         time.sleep(1)
 
+    # ── CEO 通達 2026-06-04: EDINET 補完取得 ──
+    # TDnet 35 日制約により取れない過去分を EDINET（過去 90 日）で補完。
+    # 既存 TDnet 取得ロジック（上記）は不変。本ブロックは「追加」のみ。
+    # 賢者 GAS の fetchTanshinFromCache は同銘柄複数行から submitDate 最新を
+    # 自動選択するため、本処理で「[EDINET補完]」prefix の書類を追加しても
+    # 賢者の挙動は破壊されない（最新が選ばれるだけ）。
+    edinet_found = 0
+    edinet_err = 0
+    edinet_skip_reason = None
+    if not EDINET_API_KEY:
+        edinet_skip_reason = 'EDINET_API_KEY 未設定（GitHub Secrets に追加してください）'
+        print(f'::warning::EDINET 補完スキップ: {edinet_skip_reason}')
+    else:
+        # 対象: 未取得銘柄 OR 既存キャッシュが 31 日超過の銘柄
+        # （TDnet で更新できなかった銘柄を EDINET で補完）
+        edinet_targets = []
+        for code in sorted(all_targets):
+            if code not in existing:
+                edinet_targets.append(code)
+            else:
+                try:
+                    submit = datetime.strptime(existing[code], '%Y-%m-%d').date()
+                    if (today - submit).days > EDINET_STALE_DAYS:
+                        edinet_targets.append(code)
+                except Exception:
+                    edinet_targets.append(code)
+        print(f'\n=== EDINET 補完取得開始: {len(edinet_targets)}社対象 ===')
+        for code in edinet_targets:
+            try:
+                best_doc = edinet_search_best_doc_for_code(
+                    code, EDINET_LOOKBACK_DAYS, EDINET_API_KEY, today)
+                if not best_doc:
+                    continue
+                submit_full = best_doc.get('submitDateTime', '')
+                submit_date = submit_full[:10] if submit_full else ''
+                if not submit_date:
+                    continue
+                # 既存が同日 or より新しければ skip（冪等）
+                if existing.get(code) and existing[code] >= submit_date:
+                    continue
+                doc_type = _edinet_get_doc_type_name(
+                    best_doc.get('ordinanceCode', ''), best_doc.get('formCode', ''))
+                full_title = (f'[EDINET補完] {doc_type} - '
+                              f'{best_doc.get("docDescription", "")[:80]}')
+                print(f'    [{code}] EDINET {submit_date} {doc_type}', flush=True)
+                text = edinet_fetch_doc_text(best_doc['docID'], EDINET_API_KEY)
+                if not text:
+                    edinet_err += 1
+                    continue
+                try:
+                    upsert(cache_ws, code, submit_date, full_title, text, '')
+                    existing[code] = submit_date
+                    edinet_found += 1
+                except Exception as e:
+                    print(f'    [ERR] EDINET sheet write {code}: {e}', file=sys.stderr)
+                    edinet_err += 1
+                time.sleep(2)  # EDINET + Sheets rate limit
+            except Exception as e:
+                print(f'    [ERR] EDINET search {code}: {e}', file=sys.stderr)
+                edinet_err += 1
+        print(f'\n=== EDINET 補完結果 ===')
+        print(f'  新規/更新 (EDINET) : {edinet_found}件')
+        print(f'  エラー (EDINET)    : {edinet_err}件')
+
     # 3者協議採用（SPEC v1.0 §9/§10）: 被覆率の可視化＋下限ゲート。
     # 「取りこぼしに誰も気づかない」を防ぐ。TDnet ページ分割バグが
     # 長期放置された（被覆率 9.4%）再発防止の本丸。
+    # CEO 通達 2026-06-04: TDnet 決算短信 + EDINET 補完 の合算被覆率。
     cached_targets = all_targets & set(existing.keys())
     uncovered = sorted(all_targets - set(existing.keys()))
     coverage = (len(cached_targets) / len(all_targets) * 100.0) if all_targets else 0.0
     print(f'\n=== 結果 ===')
-    print(f'  新規/更新   : {found_new}件')
-    print(f'  PDF Storage : {pdf_uploaded}件（P-1）')
-    print(f'  エラー      : {err_count}件')
-    print(f'  キャッシュ計: {len(existing)}件')
-    print(f'  対象銘柄    : {len(all_targets)}社')
-    print(f'  決算短信被覆: {len(cached_targets)}社 / 被覆率 {coverage:.1f}%')
+    print(f'  新規/更新 (TDnet)   : {found_new}件')
+    print(f'  新規/更新 (EDINET補完): {edinet_found}件')
+    print(f'  PDF Storage         : {pdf_uploaded}件（P-1）')
+    print(f'  エラー (TDnet)      : {err_count}件')
+    print(f'  エラー (EDINET)     : {edinet_err}件')
+    print(f'  キャッシュ計        : {len(existing)}件')
+    print(f'  対象銘柄            : {len(all_targets)}社')
+    print(f'  被覆 (短信+EDINET) : {len(cached_targets)}社 / 被覆率 {coverage:.1f}%')
     if uncovered:
         print(f'  未取得 {len(uncovered)}社: {", ".join(uncovered)}')
     # 被覆率下限ゲート: 閾値未満は GitHub Actions に ::warning:: を伝播
     if coverage < 40.0:
-        print(f'::warning::決算短信 被覆率 {coverage:.1f}% '
+        print(f'::warning::決算短信+EDINET 被覆率 {coverage:.1f}% '
               f'(対象{len(all_targets)}社中{len(cached_targets)}社) '
-              f'— 閾値40%未満。TDnet 取得経路を点検のこと')
+              f'— 閾値40%未満。TDnet+EDINET 取得経路を点検のこと')
     return 0
 
 
