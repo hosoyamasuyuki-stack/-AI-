@@ -66,6 +66,10 @@ SESSION = _make_session()
 CACHE_SHEET = '決算短信_キャッシュ'
 HOLDINGS_SHEET = '保有銘柄_v4.3スコア'
 WATCHLIST_SHEET = '監視銘柄_v4.3スコア'
+# CEO 通達 2026-06-04: Top75 も cron 対象に追加（顧客スキャン時のエラー/遅延防止）
+# スクリーニング_Top50 は実体 150 社保存・表示は上位 75 社（generate_dashboard.py L953）。
+# 全件キャッシュ対象とし、月次変動で Top75 入れ替わっても顧客側で未キャッシュ事故を防ぐ。
+SCREENING_SHEET = 'スクリーニング_Top50'
 MAX_TEXT_CHARS = 50000   # Sheets セル上限 50,000 文字
 MIN_TEXT_CHARS = 500     # これ未満は画像PDF/抽出失敗とみなし取得失敗扱い（QA レビュー指摘）
 MAX_PDF_PAGES = 25
@@ -127,10 +131,15 @@ def upload_pdf_to_storage(sb, code, submit_date, pdf_bytes, is_correction=False)
 
 
 def get_target_codes(ss):
-    """保有+監視銘柄コードを取得（C-5: 4桁数字 OR 末尾アルファベット銘柄 130A/212A 等を含む）"""
+    """保有+監視+Top75スクリーニング銘柄コードを取得（C-5: 4桁数字 OR 末尾アルファベット銘柄 130A/212A 等を含む）
+
+    CEO 通達 2026-06-04: Top75 を cron 対象に追加（顧客スキャン時のエラー/遅延防止）。
+    Top75 は月次変動するため、cron で全件キャッシュ取得しておかないと、
+    新規 Top75 入りした未キャッシュ銘柄を顧客がスキャン → 都度 PDF 取得 → エラー/遅延発生。
+    """
     codes = set()
     sec_code_re = re.compile(r'^[0-9]{3}[0-9A-Z]$')
-    for sheet_name in (HOLDINGS_SHEET, WATCHLIST_SHEET):
+    for sheet_name in (HOLDINGS_SHEET, WATCHLIST_SHEET, SCREENING_SHEET):
         try:
             ws = ss.worksheet(sheet_name)
             data = ws.col_values(1)[1:]
@@ -303,7 +312,16 @@ def load_existing(ws):
 
 
 def upsert(ws, code, submit_date, title, text, pdf_path=None):
-    """既存行更新 or 追加 + P-1-c: F 列 pdf_path"""
+    """既存行更新 or 追加 + P-1-c: F 列 pdf_path
+
+    CEO 通達 2026-06-04: Sheets セル 50,000 字制限による sheet write 失敗
+    （1928 積水ハウス / 6432 竹内製作所 有報事案）を構造的に防ぐため、
+    MAX_TEXT_CHARS 超過時は末尾を切り詰めて投入。投資判断に必要な
+    要約・サマリーは冒頭にあるため影響軽微。
+    """
+    if text and len(text) > MAX_TEXT_CHARS:
+        truncated_marker = f'\n\n[... 元文書 {len(text):,} 字 / Sheets セル制限により末尾 truncate ...]'
+        text = text[:MAX_TEXT_CHARS - len(truncated_marker)] + truncated_marker
     fetched_at = datetime.now(JST).strftime('%Y-%m-%d %H:%M JST')
     row = [code, submit_date, title, text, fetched_at, pdf_path or '']
     cells = ws.col_values(1)
