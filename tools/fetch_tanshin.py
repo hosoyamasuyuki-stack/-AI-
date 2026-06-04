@@ -4,10 +4,11 @@ fetch_tanshin.py
 TDnet（東証適時開示）から保有・監視銘柄の決算短信PDFを取得し、
 テキスト化してGoogle Sheetsの「決算短信_キャッシュ」シートに格納する。
 
-GitHub Actions: 毎週月曜 11:30 JST 自動実行（weekly_update 完了後）
+GitHub Actions: 毎日 11:30 JST 自動実行（cron '30 2 * * *' UTC・案 X' 2026-05-20）
 
 機能:
-  1. 直近35日のTDnet日次インデックスをスクレイプ
+  1. 直近31日のTDnet日次インデックスをスクレイプ（TDnet 31 日上限）
+     ＋ EDINET（過去90日）で未取得・stale 銘柄を補完
   2. 保有銘柄+監視銘柄の決算短信PDFを特定（訂正・補足は除外）
   3. PDFをダウンロード→pdfplumberでテキスト化（先頭20ページ）
   4. Sheetsに [銘柄コード, 提出日, 表題, 本文, 取得日] でupsert
@@ -307,7 +308,10 @@ def load_existing(ws):
     rows = ws.get_all_values()[1:]
     for r in rows:
         if len(r) >= 2 and r[0]:
-            out[r[0]] = r[1] or ''
+            # M-2 (2026-06-05): 同一コードが複数行ある場合は最新の提出日を採用。
+            # 'YYYY-MM-DD' は辞書順＝時系列順のため max で最新が残る
+            # （旧実装の「最終行勝ち」だと行順次第で古い日付に化ける不安定さを排除）。
+            out[r[0]] = max(out.get(r[0], ''), r[1] or '')
     return out
 
 
@@ -331,7 +335,8 @@ def upsert(ws, code, submit_date, title, text, pdf_path=None):
             found_row = i
             break
     if found_row:
-        ws.update(f'A{found_row}:F{found_row}', [row])
+        # M-1 (2026-06-05): append_row(336) と同様 RAW 固定で型強制（数値化・日付化）を防止。
+        ws.update(f'A{found_row}:F{found_row}', [row], value_input_option='RAW')
     else:
         ws.append_row(row, value_input_option='RAW')
 
@@ -471,6 +476,9 @@ def main():
     print(f'対象銘柄: {len(target_codes)}社')
     if not target_codes:
         print('対象なし。終了')
+        # H-1 (2026-06-05): 対象0社は異常（監視シート読込失敗の疑い）。
+        # 死活監視が検知できるよう coverage=0 のサマリを出力する。
+        print('MONITOR_SUMMARY new=0 err=0 coverage=0.0')
         return 0
 
     cache_ws = ensure_cache_sheet(ss)
@@ -540,7 +548,7 @@ def main():
         edinet_skip_reason = 'EDINET_API_KEY 未設定（GitHub Secrets に追加してください）'
         print(f'::warning::EDINET 補完スキップ: {edinet_skip_reason}')
     else:
-        # 対象: 未取得銘柄 OR 既存キャッシュが 31 日超過の銘柄
+        # 対象: 未取得銘柄 OR 既存キャッシュが 31 日以上経過した銘柄
         # （TDnet で更新できなかった銘柄を EDINET で補完）
         edinet_targets = []
         for code in sorted(all_targets):
@@ -549,7 +557,8 @@ def main():
             else:
                 try:
                     submit = datetime.strptime(existing[code], '%Y-%m-%d').date()
-                    if (today - submit).days > EDINET_STALE_DAYS:
+                    # M-3 (2026-06-05): > → >= で 31 日ジャスト境界も補完対象に救済。
+                    if (today - submit).days >= EDINET_STALE_DAYS:
                         edinet_targets.append(code)
                 except Exception:
                     edinet_targets.append(code)
@@ -614,6 +623,11 @@ def main():
         print(f'::warning::決算短信+EDINET 被覆率 {coverage:.1f}% '
               f'(対象{len(all_targets)}社中{len(cached_targets)}社) '
               f'— 閾値40%未満。TDnet+EDINET 取得経路を点検のこと')
+    # H-1 (2026-06-05): 死活監視用の機械可読サマリ 1 行。
+    # yml の監視はこの行のみを parse する（表示文言のドリフトで grep が空振りし
+    # 「異常でも job 緑」になった run 26925050076 の再発防止）。
+    print(f'MONITOR_SUMMARY new={found_new + edinet_found} '
+          f'err={err_count + edinet_err} coverage={coverage:.1f}')
     return 0
 
 
