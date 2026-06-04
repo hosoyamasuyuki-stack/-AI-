@@ -38,26 +38,33 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           python tools/fetch_tanshin.py 2>&1 | tee fetch_tanshin.log
-          # C-6: 死活監視。全件エラー or 被覆率40%未満なら job を「失敗」させる。
-          # 独立レビュー指摘: 旧実装は ::warning:: 止まりで job が緑のまま
-          # ＝管理者に通知が届かず死活監視の体をなさなかった。::error:: +
-          # 非ゼロ終了に昇格する。新規0件のみ（エラーなし）は閑散期の正常挙動。
-          MONITOR_FAIL=0
-          if grep -q "エラー" fetch_tanshin.log; then
-            ERR=$(grep -oE 'エラー\s*: [0-9]+件' fetch_tanshin.log | grep -oE '[0-9]+' | head -1)
-            NEW=$(grep -oE '新規/更新\s*: [0-9]+件' fetch_tanshin.log | grep -oE '[0-9]+' | head -1)
-            ERR=${ERR:-0}
-            NEW=${NEW:-0}
-            echo "ERR=$ERR NEW=$NEW"
-            # 致命的：処理対象があるのに全件エラー（NEW=0 かつ ERR>0）
-            if [ "$ERR" -gt 0 ] && [ "$NEW" -eq 0 ]; then
-              echo "::error::fetch_tanshin: 全件エラー（NEW=$NEW / ERR=$ERR）"
-              MONITOR_FAIL=1
-            fi
+          # C-6 / H-1（2026-06-05 文字列ドリフト根絶）: 死活監視。
+          # 旧実装は py 出力の日本語文字列（"エラー : N件" 等）を grep していたが、
+          # EDINET 補完追加で出力が "エラー (TDnet) : N件" 等に変化し grep が空振り
+          # → エラーが出ても job が緑のまま（run 26925050076 で実証）だった。
+          # py が末尾に出力する機械可読 1 行 MONITOR_SUMMARY を parse する方式に変更。
+          # 表示文言が今後変わっても監視は壊れない。
+          SUMMARY=$(grep -oE 'MONITOR_SUMMARY new=[0-9]+ err=[0-9]+ coverage=[0-9.]+' fetch_tanshin.log | tail -1)
+          if [ -z "$SUMMARY" ]; then
+            echo "::error::fetch_tanshin: MONITOR_SUMMARY 行が無い（py が異常終了/クラッシュした疑い）"
+            exit 1
           fi
-          # 被覆率40%未満（fetch_tanshin.py が ::warning:: を出力）も job 失敗に昇格
-          if grep -qF '::warning::決算短信 被覆率' fetch_tanshin.log; then
-            echo "::error::fetch_tanshin: 決算短信 被覆率が閾値(40%)未満"
+          NEW=$(echo "$SUMMARY" | grep -oE 'new=[0-9]+' | grep -oE '[0-9]+')
+          ERR=$(echo "$SUMMARY" | grep -oE 'err=[0-9]+' | grep -oE '[0-9]+')
+          COV=$(echo "$SUMMARY" | grep -oE 'coverage=[0-9.]+' | grep -oE '[0-9.]+')
+          echo "死活監視サマリ: NEW=$NEW ERR=$ERR COVERAGE=$COV%"
+          MONITOR_FAIL=0
+          # 主ゲート: 被覆率が閾値(40%)未満 = キャッシュ枯渇（chronic）。awk で float 比較。
+          if awk "BEGIN{exit !($COV < 40)}"; then
+            echo "::error::fetch_tanshin: 決算短信+EDINET 被覆率 ${COV}% が閾値(40%)未満"
+            MONITOR_FAIL=1
+          fi
+          # 補助ゲート: 新規0件かつエラー>0 = 当日取得が全滅（acute）。
+          # 被覆率は既存キャッシュが残るため当日全滅を検知できない → 本ゲートが必須。
+          # （閑散期×一過性エラーで誤発火しうるが、死活監視は false-negative より
+          #  false-positive を許容する方針。run 26925050076 は new=0/err=2 がまさにこれ）
+          if [ "$ERR" -gt 0 ] && [ "$NEW" -eq 0 ]; then
+            echo "::error::fetch_tanshin: 新規0件かつエラー${ERR}件（当日取得が全滅の疑い）"
             MONITOR_FAIL=1
           fi
           if [ "$MONITOR_FAIL" -ne 0 ]; then
