@@ -2,7 +2,10 @@ name: Weekly Investment Update
 
 on:
   schedule:
-    - cron: '0 1 * * 1'  # 毎週月曜1時UTC = 月曜10時JST（市場開場後）
+    # X-2 場外化 2026-06-05: 月10:00JST（場中）→ 月07:00JST（寄付前）。
+    # UTC日(0)22:00 +9h = 月07:00JST（JST月曜朝は UTC 日曜夜＝曜日0）。
+    # スコアは前週引け値ベース（jquants EOD は月曜寄付前=金曜終値で同一）。
+    - cron: '0 22 * * 0'  # 日22時UTC = 月曜7時JST（寄付前）
   workflow_dispatch:  # 手動実行ボタンも有効
 
 env:

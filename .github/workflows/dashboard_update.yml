@@ -7,9 +7,10 @@ on:
     types:
       - completed
 
-  # 毎週月曜 10:30 JST（01:30 UTC）にも念のため単独実行
+  # X-2 場外化 2026-06-05: 月10:30JST（場中）→ 月07:30JST（寄付前）にも念のため単独実行。
+  # UTC日(0)22:30 +9h = 月07:30JST（weekly_update 07:00 の workflow_run 連動が主・本cronは予備）。
   schedule:
-    - cron: '30 1 * * 1'
+    - cron: '30 22 * * 0'
 
   # 手動実行ボタン（テスト用）
   workflow_dispatch:
