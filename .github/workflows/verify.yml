@@ -2,8 +2,9 @@ name: verify
 
 on:
   schedule:
-    # 毎週月曜 11:00 JST（02:00 UTC） - verify_monday
-    - cron: '0 2 * * 1'
+    # X-2 場外化 2026-06-05: 月11:00JST（場中）→ 月16:30JST（大引け後）- verify_monday
+    # UTC月07:30 +9h = 月16:30JST（16:30は9時以降ゆえ曜日ずれ無し＝UTCも月曜のまま）。
+    - cron: '30 7 * * 1'
     # 2026/04/15 9:00 JST（00:00 UTC） - verify_0415（STEP0目先）
     - cron: '0 0 15 4 *'
     # 毎月1日 10:00 JST（01:00 UTC） - 目先(4週)検証予定日が到来した銘柄を検証

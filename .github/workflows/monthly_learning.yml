@@ -2,8 +2,9 @@ name: Monthly Learning Batch
 
 on:
   schedule:
-    # 毎月1日 12:00 JST（03:00 UTC）- 他ワークフローとの競合回避
-    - cron: '0 3 1 * *'
+    # X-2 場外化 2026-06-05: 1日12:00JST（昼休み）→ 1日16:00JST（大引け後）。
+    # UTC1日07:00 +9h = 1日16:00JST（16:00は9時以降ゆえ日付ずれ無し＝月境界を跨がない）。
+    - cron: '0 7 1 * *'
   workflow_dispatch:
     # 手動実行ボタン（テスト用）
 
