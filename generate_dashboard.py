@@ -131,6 +131,7 @@ def scrape_cape_us():
 # ── 認証 ────────────────────────────────────────────────────
 from core.auth import get_spreadsheet
 from core.config import GAS_URL_FULL_UPDATE, GAS_URL_KENJA
+import core.market_guard as mg
 ss = get_spreadsheet()
 NOW = datetime.now().strftime('%Y/%m/%d %H:%M')
 
@@ -406,19 +407,36 @@ print(f"  判定:{VAL['verdict']}")
 def fetch_market():
     print("  市場指標取得中...")
     def yp(ticker):
+        # 確定終値ガード（2026-06-05 日経68,402誤値事故の根治・core.market_guard）:
+        # 寄付前/場中の「未確定の当日バー（先物/プレ気配）」を除外し確定終値を採用。
+        # 緩い sanity（崩壊級のみ棄却）も併用。詳細=手順書_指数誤値_再発防止_2026-06-05.md
         try:
-            h = yf.Ticker(ticker).history(period='5d')
-            if len(h) >= 2:
-                now  = float(h['Close'].iloc[-1])
-                prev = float(h['Close'].iloc[-2])
-                chg  = (now - prev) / prev * 100
-                h52  = yf.Ticker(ticker).history(period='1y')
-                hi52 = float(h52['High'].max()) if len(h52) > 0 else now
-                lo52 = float(h52['Low'].min())  if len(h52) > 0 else now
-                pct52 = round((now - lo52) / (hi52 - lo52) * 100) if hi52 != lo52 else 50
-                return {'v': now, 'chg': chg, 'hi52': hi52, 'lo52': lo52, 'pct52': pct52}
-        except: pass
-        return None
+            h = yf.Ticker(ticker).history(period='5d', prepost=False)
+            if h is None or len(h) < 2:
+                return None
+            s = h['Close'].dropna()
+            if len(s) < 2:
+                return None
+            tzname, ch, cm = mg.MKT_INFO.get(ticker, ('Asia/Tokyo', 15, 30))
+            nd, nhm = mg.market_now(tzname)
+            bar_dates = [(d.date() if hasattr(d, 'date') else d) for d in s.index]
+            picked = mg.pick_confirmed(bar_dates, [float(x) for x in s.values], nd, nhm, (ch, cm))
+            if not picked:
+                return None
+            now, prev = picked
+            if not mg.sane_index(ticker, now, prev):
+                print(f"  WARN: {ticker} sanity NG now={now} prev={prev} → 取得失敗扱い")
+                return None
+            chg  = (now - prev) / prev * 100 if prev else 0
+            h52  = yf.Ticker(ticker).history(period='1y', prepost=False)
+            hi52 = float(h52['High'].max()) if len(h52) > 0 else now
+            lo52 = float(h52['Low'].min())  if len(h52) > 0 else now
+            now_clip = max(lo52, min(hi52, now))  # pct52 汚染防止（未確定越境の clip）
+            pct52 = round((now_clip - lo52) / (hi52 - lo52) * 100) if hi52 != lo52 else 50
+            return {'v': now, 'chg': chg, 'hi52': hi52, 'lo52': lo52, 'pct52': pct52}
+        except Exception as e:
+            print(f"  WARN: yp({ticker}) failed: {e}")
+            return None
 
     nk  = yp('^N225')
     sp5 = yp('^GSPC')
