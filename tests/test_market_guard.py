@@ -7,7 +7,9 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.market_guard import pick_confirmed, sane_index, sane_price  # noqa: E402
+from core.market_guard import (  # noqa: E402
+    pick_confirmed, sane_index, sane_price, is_crash, index_change_pct,
+)
 
 
 # 事故再現用バー: 6/03=68,401 / 6/04=67,470.69（実 確定終値） / 6/05=68,402（寄付前 未確定）
@@ -83,6 +85,32 @@ def test_sane_price_skips_change_check_without_prev():
     # 前日 0/None のときは変化率判定をスキップ（正値なら True）
     assert sane_price(1000.0, 0) is True
     assert sane_price(1000.0, None) is True
+
+
+def test_is_crash_fires_on_real_crash():
+    # -5% 以下の本物の暴落は発火（sane_index の 15% 上限では弾かれる -12% 級も拾う）
+    assert is_crash('^N225', 63000, 67000) is True       # -5.97%
+    assert is_crash('^N225', 58000, 67000) is True       # -13.4%（2024-08-05 級）
+
+
+def test_is_crash_no_fire_on_normal():
+    assert is_crash('^N225', 66000, 67000) is False      # -1.49%
+    assert is_crash('^N225', 67000, 67000) is False      # 0%
+    assert is_crash('^N225', 70000, 67000) is False      # 上昇
+
+
+def test_is_crash_rejects_broken_data():
+    assert is_crash('^N225', 5000, 67000) is False        # range 外（下限割れ・garbage）
+    assert is_crash('^N225', 200000, 67000) is False      # range 外（上限超）
+    assert is_crash('^N225', 31000, 85000) is False       # -63.5% < floor(-60%)＝破損級
+    assert is_crash('^N225', None, 67000) is False        # 取得不能
+    assert is_crash('^N225', 63000, 0) is False           # prev 不正
+
+
+def test_index_change_pct():
+    assert abs(index_change_pct(63000, 67000) - (-5.970)) < 0.01
+    assert index_change_pct(63000, 0) is None
+    assert index_change_pct(None, 67000) is None
 
 
 if __name__ == '__main__':
