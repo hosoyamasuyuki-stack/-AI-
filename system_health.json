@@ -1,6 +1,6 @@
 {
-  "checked_at_utc": "2026-06-04T23:50:37.239879+00:00",
-  "checked_at_jst": "2026-06-05 08:50 JST",
+  "checked_at_utc": "2026-06-05T23:49:28.372547+00:00",
+  "checked_at_jst": "2026-06-06 08:49 JST",
   "overall": "OK",
   "ok_count": 10,
   "ng_count": 0,
@@ -11,22 +11,22 @@
       "label": "株価更新",
       "status": "RUNNING",
       "ok": true,
-      "last_run_jst": "2026-06-05 08:45 JST",
+      "last_run_jst": "2026-06-06 08:45 JST",
       "hours_ago": 0.1,
       "max_hours": 30,
       "conclusion": null,
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26986400569"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/27046017119"
     },
     {
       "wf": "daily_update.yml",
       "label": "FRED指標",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-06-05 08:13 JST",
+      "last_run_jst": "2026-06-06 08:14 JST",
       "hours_ago": 0.6,
       "max_hours": 80,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26985216908"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/27045026841"
     },
     {
       "wf": "weekly_update.yml",
@@ -34,7 +34,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-06-01 14:52 JST",
-      "hours_ago": 90.0,
+      "hours_ago": 114.0,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26737729497"
@@ -44,11 +44,11 @@
       "label": "ダッシュボード生成",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-06-01 15:26 JST",
-      "hours_ago": 89.4,
+      "last_run_jst": "2026-06-05 09:26 JST",
+      "hours_ago": 23.4,
       "max_hours": 200,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26738865771"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26987805639"
     },
     {
       "wf": "full_scan.yml",
@@ -56,7 +56,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-05-31 23:49 JST",
-      "hours_ago": 105.0,
+      "hours_ago": 129.0,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26715772590"
@@ -67,7 +67,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-06-01 09:02 JST",
-      "hours_ago": 95.8,
+      "hours_ago": 119.8,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26728306689"
@@ -78,7 +78,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-06-01 15:50 JST",
-      "hours_ago": 89.0,
+      "hours_ago": 113.0,
       "max_hours": 200,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26739748646"
@@ -89,7 +89,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-06-01 13:12 JST",
-      "hours_ago": 91.6,
+      "hours_ago": 115.6,
       "max_hours": 800,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26734740667"
@@ -99,11 +99,11 @@
       "label": "TDnet 決算短信取得",
       "status": "OK",
       "ok": true,
-      "last_run_jst": "2026-06-04 15:58 JST",
-      "hours_ago": 16.9,
+      "last_run_jst": "2026-06-05 15:46 JST",
+      "hours_ago": 17.0,
       "max_hours": 200,
       "conclusion": "success",
-      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26936173845"
+      "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/27000021446"
     },
     {
       "wf": "monthly_learning.yml",
@@ -111,7 +111,7 @@
       "status": "OK",
       "ok": true,
       "last_run_jst": "2026-06-01 17:25 JST",
-      "hours_ago": 87.4,
+      "hours_ago": 111.4,
       "max_hours": 800,
       "conclusion": "success",
       "url": "https://github.com/hosoyamasuyuki-stack/-AI-/actions/runs/26743701401"
