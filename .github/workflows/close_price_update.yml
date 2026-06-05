@@ -1,0 +1,87 @@
+name: Close Price Update
+
+# 朝（daily_price_update.yml・07:30 JST・J-Quants 前日終値）＋ 昼（midday・12:30 JST・
+# yfinance 前場終値）に加えて、大引け後 16:00 JST に当日の確定終値を yfinance で反映する
+# 3 本目の更新（X-2・2026-06-05 CEO 確定「株価/dashboard を 1 日 3 回」）。
+# 設計・ミス対策の詳細: ai-keiei/にこにこ本舗/LISA販売/手順書/手順書_X2_スケジュール最適化_暴落トリガ_2026-06-05.md
+# 朝・昼ジョブは無変更（完全分離）。yfinance 障害時は daily_price_update.py が J-Quants へ自動フォールバック。
+
+on:
+  schedule:
+    # 16:00 JST = 07:00 UTC・月〜金のみ（大引け 15:30 の 30 分後＝yfinance 確定遅延を吸収）。
+    # cron は常に UTC。JST=UTC+9・日本に DST 無し。16:00JST は同日 07:00UTC（曜日ずれ無し）。
+    - cron: '0 7 * * 1-5'
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  close-price-update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 依存パッケージをインストール
+        run: |
+          pip install requests gspread google-auth pandas numpy yfinance scipy
+
+      - name: 大引け後の価格更新を実行（yfinance＝当日確定終値）
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          # 大引け後は当日の確定終値を見せる。yfinance 障害時は daily_price_update.py が
+          # 自動で J-Quants（前日終値）にフォールバックして完走する（停止しない）。
+          PRICE_SOURCE: yfinance
+        run: |
+          python daily_price_update.py
+
+      - name: ダッシュボードHTML再生成
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          echo "=== ダッシュボードHTML再生成 ==="
+          python generate_dashboard.py
+          echo "再生成完了"
+
+      - name: GitHubにプッシュ
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions [Close Update]"
+          git add ai_dashboard_v13.html
+          git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
+          MSG="dashboard update (close) $(date +'%Y/%m/%d %H:%M') JST"
+          git commit -m "$MSG"
+          # 朝・昼ジョブと同一の push 競合根治ループ（exit128 再発防止）。
+          # 最新 origin/main に生成物のみ載せ替え＋fast-forward リトライ（失敗は明示 exit1）。
+          FILES="ai_dashboard_v13.html"
+          SRC=$(git rev-parse HEAD)
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            PRESENT=""
+            for fn in $FILES; do git cat-file -e "$SRC:$fn" 2>/dev/null && PRESENT="$PRESENT $fn"; done
+            git checkout "$SRC" -- $PRESENT
+            git add $PRESENT
+            if git diff --staged --quiet; then echo "他更新で差分消滅（スキップ）"; exit 0; fi
+            git commit -m "$MSG" --quiet
+            SRC=$(git rev-parse HEAD)
+            if git push origin HEAD:main; then echo "GitHubプッシュ完了"; exit 0; fi
+            echo "push 競合・リトライ $i/5"
+            sleep $((RANDOM % 5 + 3))
+          done
+          echo "::error::push failed after 5 retries"
+          exit 1
