@@ -71,3 +71,21 @@ jobs:
             echo "fetch_tanshin 死活監視: 異常を検知したため job を失敗させます"
             exit 1
           fi
+
+      - name: Stale tanshin monitor (X1-a)
+        # X1-a（2026-06-05・協議資料 提案 X1-a 採用）: 決算短信キャッシュの stale 定期検知。
+        # これまで stale 判定は完全 on-demand で定期検知が無く、顧客が古い短信で賢者を
+        # 実行して初めて発覚するリスク（2026-06-03 クレームと同根）があった。日次で可視化する。
+        # CEO 方針: 毎日ログのみ・通知は未実装・job は落とさない（fetch 失敗時も always で実行）。
+        # stale_count>0 / GAS 到達不可 / ok=false は check_stale_tanshin.py が ::warning:: で surface。
+        if: always()
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          # job は落とさない（|| true）。stale/到達不可は script 側 ::warning:: が surface。
+          python tools/check_stale_tanshin.py 2>&1 | tee stale_tanshin.log || true
+          # H-1 同様のクラッシュ検知ガード: 機械可読行が無い＝script が異常終了した疑い。
+          # （正常系・到達不可・JSON不正・ok=false の全経路で必ず STALE_MONITOR_SUMMARY を出力する設計）
+          if ! grep -qE 'STALE_MONITOR_SUMMARY ' stale_tanshin.log; then
+            echo "::warning::stale 監視: STALE_MONITOR_SUMMARY 行が無い（check_stale_tanshin.py がクラッシュした疑い）"
+          fi
