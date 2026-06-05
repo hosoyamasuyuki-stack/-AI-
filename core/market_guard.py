@@ -97,6 +97,41 @@ def sane_index(ticker, now_v, prev_v):
 STOCK_MAX_CHANGE_PCT = 55.0
 
 
+def index_change_pct(now_v, prev_v):
+    """指数の日次変化率（%）。prev<=0 / now=None なら None。"""
+    if now_v is None or not prev_v or prev_v <= 0:
+        return None
+    return (now_v - prev_v) / prev_v * 100.0
+
+
+# 暴落トリガ（X-2・2026-06-05）の閾値。
+# threshold: これ以下で暴落とみなす。floor: これ未満は「1日の指数変動としてあり得ない＝
+# データ破損」として除外（取引所のサーキットブレーカーで実際の下落はこの手前で止まる）。
+CRASH_THRESHOLD_PCT = -5.0
+CRASH_FLOOR_PCT = -60.0
+
+
+def is_crash(ticker, now_v, prev_v, threshold_pct=CRASH_THRESHOLD_PCT, floor_pct=CRASH_FLOOR_PCT):
+    """指数の暴落判定（info 由来の確定値前提）。
+
+    range 健全（MKT_SANITY の lo<now<hi）かつ `floor_pct < 変化率 <= threshold_pct`
+    なら True。
+    - sane_index の日次変化上限（^N225 なら 15%）は **本物の暴落（2024-08-05 の -12% 等）も
+      弾いてしまう**ため、暴落判定には使わず range のみ流用する。
+    - floor_pct（-60%）未満や range 外は「データ破損」として False（誤発火防止・68,402 教訓）。
+    - prev<=0 / now=None（取得不能）も False。
+    """
+    rng = MKT_SANITY.get(ticker)
+    if rng:
+        lo, hi, _ = rng
+        if now_v is None or not (lo < now_v < hi):
+            return False
+    pct = index_change_pct(now_v, prev_v)
+    if pct is None:
+        return False
+    return floor_pct < pct <= threshold_pct
+
+
 def sane_price(now_v, prev_v, max_change_pct=STOCK_MAX_CHANGE_PCT):
     """個別株価の緩い sanity（データ破損のみ False）。
 

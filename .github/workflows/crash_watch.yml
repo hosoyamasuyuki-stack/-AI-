@@ -1,0 +1,97 @@
+name: Crash Watch
+
+# X-2 暴落トリガ（2026-06-05 CEO 確定）。場中 1 時間毎に日経225の前日比を info ベースで監視し、
+# -5% 超の暴落を検知したときだけ price+dashboard を臨時再生成する（スケジュール更新 07:30/12:30/16:00
+# の間の暴落も拾う）。dispatch でなく同ジョブ内で直接 regen（PAT 不要）。通知は未実装。
+# 設計・ミス対策: ai-keiei/にこにこ本舗/LISA販売/手順書/手順書_X2_スケジュール最適化_暴落トリガ_2026-06-05.md
+
+on:
+  schedule:
+    # 09:00-15:00 JST 毎時（月-金）。UTC 00:00-06:00。JST=UTC+9・00-06UTC は同日 09-15JST（曜日ずれ無し）。
+    - cron: '0 0-6 * * 1-5'
+  workflow_dispatch:
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  crash-watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 暴落判定（日経 info ベース・-5%）
+        id: check
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          # 軽量チェック（yfinance のみ）。crash_watch.py が GITHUB_OUTPUT に crash=true/false を書く。
+          # 壊れ得る history でなく info を使い、range 外/-60%未満/取得失敗は誤発火させない（68,402 教訓）。
+          pip install yfinance
+          python tools/crash_watch.py
+
+      # ── 以下は暴落検知時のみ（crash=true）。price+dashboard を臨時再生成 ──
+      - name: 依存パッケージ（再生成用）
+        if: steps.check.outputs.crash == 'true'
+        run: |
+          pip install requests gspread google-auth pandas numpy yfinance scipy
+
+      - name: 臨時 価格更新（yfinance＝当日実勢）
+        if: steps.check.outputs.crash == 'true'
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          PRICE_SOURCE: yfinance
+        run: |
+          python daily_price_update.py
+
+      - name: 臨時 ダッシュボードHTML再生成
+        if: steps.check.outputs.crash == 'true'
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: |
+          echo "=== 暴落検知 → ダッシュボード臨時再生成 ==="
+          python generate_dashboard.py
+          echo "再生成完了"
+
+      - name: GitHubにプッシュ
+        if: steps.check.outputs.crash == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions [Crash Watch]"
+          git add ai_dashboard_v13.html
+          git diff --staged --quiet && echo "変更なし（スキップ）" && exit 0
+          MSG="dashboard update (crash) $(date +'%Y/%m/%d %H:%M') JST"
+          git commit -m "$MSG"
+          # 朝/昼/大引けジョブと同一の push 競合根治ループ（exit128 再発防止）。
+          FILES="ai_dashboard_v13.html"
+          SRC=$(git rev-parse HEAD)
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            PRESENT=""
+            for fn in $FILES; do git cat-file -e "$SRC:$fn" 2>/dev/null && PRESENT="$PRESENT $fn"; done
+            git checkout "$SRC" -- $PRESENT
+            git add $PRESENT
+            if git diff --staged --quiet; then echo "他更新で差分消滅（スキップ）"; exit 0; fi
+            git commit -m "$MSG" --quiet
+            SRC=$(git rev-parse HEAD)
+            if git push origin HEAD:main; then echo "GitHubプッシュ完了"; exit 0; fi
+            echo "push 競合・リトライ $i/5"
+            sleep $((RANDOM % 5 + 3))
+          done
+          echo "::error::push failed after 5 retries"
+          exit 1
