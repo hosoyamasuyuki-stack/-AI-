@@ -1,0 +1,56 @@
+name: Backfill Tanshin (manual)
+
+# 決算短信 手動バックフィル（人間の最終手段＝X-1 stale 検知の Tier 3）。
+# 自動取得（TDnet 31日＋EDINET 90日）が構造的に取れない稀な stale 銘柄を、
+# 人間が「コード＋提出日＋短信PDF URL」を入力して 1 回で埋める。
+# 設計・手順: ai-keiei/にこにこ本舗/LISA販売/手順書/手順書_決算短信_手動バックフィル_2026-06-05.md
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: '銘柄コード（例: 6594）'
+        required: true
+      submit_date:
+        description: '提出日 YYYY-MM-DD（短信の開示日）'
+        required: true
+      pdf_url:
+        description: '決算短信 PDF の URL（TDnet または 会社IR）'
+        required: true
+      title:
+        description: '書類タイトル（例: 2026年3月期 決算短信）。空なら自動付与'
+        required: false
+        default: ''
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 lxml pdfplumber gspread google-auth supabase
+
+      - name: 手動バックフィル実行
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          # ユーザー入力はシェル展開でなく env 経由で渡す（インジェクション回避）。
+          BF_CODE: ${{ inputs.code }}
+          BF_DATE: ${{ inputs.submit_date }}
+          BF_URL: ${{ inputs.pdf_url }}
+          BF_TITLE: ${{ inputs.title }}
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python tools/backfill_tanshin.py
