@@ -88,3 +88,30 @@ def sane_index(ticker, now_v, prev_v):
     if prev_v and abs((now_v - prev_v) / prev_v * 100.0) > maxchg:
         return False
     return True
+
+
+# 個別株の日次変化 sanity 上限（%）。
+# 東証の値幅制限（ストップ高安）は対象ユニバース（保有/監視/Top75 の中〜大型株・
+# 概ね数百円〜数千円台）では日次 ±30% 未満に収まる。55% はその現実的上限を十分
+# 上回る緩い値で、正常な急騰急落は殺さず「データ破損級の偽暴落/偽急騰」だけを弾く。
+STOCK_MAX_CHANGE_PCT = 55.0
+
+
+def sane_price(now_v, prev_v, max_change_pct=STOCK_MAX_CHANGE_PCT):
+    """個別株価の緩い sanity（データ破損のみ False）。
+
+    2026-06-05 の日経 68,402 事故と同根: yfinance の日足が壊れると個別株でも
+    `Close.iloc[-1]` が誤値となり偽暴落を表示しうる。本関数で破損を検知し、
+    呼出側は権威ソース（J-Quants）へフォールバックする。
+
+    now_v / prev_v : 当日・前日の終値。
+    - now_v が None / <=0（明白な破損）→ False。
+    - prev_v が正のとき、日次変化が max_change_pct を超える（崩壊級）→ False。
+    - prev_v が無い/0 のときは変化率判定をスキップ（now_v>0 のみ要求）。
+    """
+    if now_v is None or now_v <= 0:
+        return False
+    if prev_v and prev_v > 0:
+        if abs((now_v - prev_v) / prev_v * 100.0) > max_change_pct:
+            return False
+    return True
