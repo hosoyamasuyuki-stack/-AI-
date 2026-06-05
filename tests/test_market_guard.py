@@ -7,7 +7,7 @@ import sys
 from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.market_guard import pick_confirmed, sane_index  # noqa: E402
+from core.market_guard import pick_confirmed, sane_index, sane_price  # noqa: E402
 
 
 # 事故再現用バー: 6/03=68,401 / 6/04=67,470.69（実 確定終値） / 6/05=68,402（寄付前 未確定）
@@ -60,6 +60,29 @@ def test_sane_index_rejects_out_of_range_and_spikes():
     assert sane_index('^N225', 120000, 67000) is False         # 範囲外（上限超）
     assert sane_index('^N225', 80000, 40000) is False          # 日次変化 +100% > 15%
     assert sane_index('^VIX', 16.1, 16.3) is True              # VIX は変動大でも範囲内OK
+
+
+def test_sane_price_accepts_normal_moves():
+    # 値幅制限内の正常な急騰急落は通す（対象ユニバースの現実的上限は ±30% 未満）
+    assert sane_price(1000.0, 1000.0) is True
+    assert sane_price(1300.0, 1000.0) is True   # +30%
+    assert sane_price(700.0, 1000.0) is True     # -30%
+    assert sane_price(500.0, None) is True       # 前日不明でも正値は OK
+
+
+def test_sane_price_rejects_broken_data():
+    # データ破損級（<=0 / 崩壊級の変化）は弾く → 呼出側で J-Quants フォールバック
+    assert sane_price(0, 1000.0) is False
+    assert sane_price(-5.0, 1000.0) is False
+    assert sane_price(None, 1000.0) is False
+    assert sane_price(400.0, 1000.0) is False     # -60% > 55%（偽暴落級）
+    assert sane_price(1600.0, 1000.0) is False    # +60% > 55%（偽急騰級）
+
+
+def test_sane_price_skips_change_check_without_prev():
+    # 前日 0/None のときは変化率判定をスキップ（正値なら True）
+    assert sane_price(1000.0, 0) is True
+    assert sane_price(1000.0, None) is True
 
 
 if __name__ == '__main__':

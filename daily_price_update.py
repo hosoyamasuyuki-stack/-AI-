@@ -28,6 +28,7 @@ from core.config import (SPREADSHEET_ID, JQUANTS_API_KEY, JQUANTS_HEADERS,
                           JQUANTS_BASE, PEG_THR, FCY_THR)
 from core.auth import get_spreadsheet
 from core.scoring import safe, thr_high, thr_low
+from core.market_guard import sane_price
 warnings.filterwarnings('ignore')
 
 # ── 認証・設定 ─────────────────────────────────────────────
@@ -101,26 +102,40 @@ def get_price_jquants(code):
     return prices
 
 def get_price_yfinance(code):
-    """yfinance: リアルタイム株価を取得（手動更新用・15分遅延）"""
+    """yfinance: リアルタイム株価を取得（手動更新用・15分遅延）。
+
+    yfinance の日足が壊れる（誤バー/欠落）と `Close.iloc[-1]` が誤値となり偽暴落を
+    表示しうる（2026-06-05 日経 68,402 事故と同根）。sane_price で破損を検知した
+    場合は {} を返し、呼出元 get_price_2days が権威ソース J-Quants へフォールバックする。
+    """
     ticker = f"{code}.T"
     prices = {}
     try:
         t = yf.Ticker(ticker)
         h = t.history(period='5d')
         if len(h) >= 2:
+            today_px = round(float(h['Close'].iloc[-1]), 1)
+            yest_px  = round(float(h['Close'].iloc[-2]), 1)
+            if not sane_price(today_px, yest_px):
+                print(f"  WARN yfinance sanity NG {code}: today={today_px} prev={yest_px} -> J-Quants フォールバック")
+                return {}
             prices['today'] = {
-                'price': round(float(h['Close'].iloc[-1]), 1),
+                'price': today_px,
                 'date':  str(h.index[-1].date()),
                 'volume': int(h['Volume'].iloc[-1]) if h['Volume'].iloc[-1] else 0,
             }
             prices['yesterday'] = {
-                'price': round(float(h['Close'].iloc[-2]), 1),
+                'price': yest_px,
                 'date':  str(h.index[-2].date()),
                 'volume': int(h['Volume'].iloc[-2]) if h['Volume'].iloc[-2] else 0,
             }
         elif len(h) == 1:
+            today_px = round(float(h['Close'].iloc[-1]), 1)
+            if not sane_price(today_px, None):
+                print(f"  WARN yfinance sanity NG {code}: today={today_px} -> J-Quants フォールバック")
+                return {}
             prices['today'] = {
-                'price': round(float(h['Close'].iloc[-1]), 1),
+                'price': today_px,
                 'date':  str(h.index[-1].date()),
                 'volume': int(h['Volume'].iloc[-1]) if h['Volume'].iloc[-1] else 0,
             }
