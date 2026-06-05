@@ -407,31 +407,31 @@ print(f"  判定:{VAL['verdict']}")
 def fetch_market():
     print("  市場指標取得中...")
     def yp(ticker):
-        # 確定終値ガード（2026-06-05 日経68,402誤値事故の根治・core.market_guard）:
-        # 寄付前/場中の「未確定の当日バー（先物/プレ気配）」を除外し確定終値を採用。
-        # 緩い sanity（崩壊級のみ棄却）も併用。詳細=手順書_指数誤値_再発防止_2026-06-05.md
+        # 指数値は yfinance info を使う（2026-06-05 根治・改訂版）。
+        # 真因: history(period='5d') 日足は欠落/破損し得る（実例: ^N225 が 06-04 欠落・
+        # 06-03=68,402 を最終確定足と誤採用 → 顧客に 68,402 を公開）。
+        # info.regularMarketPrice / regularMarketPreviousClose は Yahoo 公式の確定値で、
+        # 寄付前は regularMarketPrice=前日終値（先物/プレ気配を含まない）・場中は実勢・
+        # 引け後は当日終値 と全時間帯で正しい（実値一致を実証）。sane_index を補助に併用。
+        # 詳細=手順書_指数誤値_再発防止_2026-06-05.md
         try:
-            h = yf.Ticker(ticker).history(period='5d', prepost=False)
-            if h is None or len(h) < 2:
+            info = yf.Ticker(ticker).info or {}
+            now  = info.get('regularMarketPrice')
+            prev = info.get('regularMarketPreviousClose')
+            if prev is None:
+                prev = info.get('previousClose')
+            if now is None or prev is None:
+                print(f"  WARN: yp({ticker}) info に価格欠落 → 取得失敗扱い")
                 return None
-            s = h['Close'].dropna()
-            if len(s) < 2:
-                return None
-            tzname, ch, cm = mg.MKT_INFO.get(ticker, ('Asia/Tokyo', 15, 30))
-            nd, nhm = mg.market_now(tzname)
-            bar_dates = [(d.date() if hasattr(d, 'date') else d) for d in s.index]
-            picked = mg.pick_confirmed(bar_dates, [float(x) for x in s.values], nd, nhm, (ch, cm))
-            if not picked:
-                return None
-            now, prev = picked
+            now = float(now); prev = float(prev)
             if not mg.sane_index(ticker, now, prev):
                 print(f"  WARN: {ticker} sanity NG now={now} prev={prev} → 取得失敗扱い")
                 return None
             chg  = (now - prev) / prev * 100 if prev else 0
-            h52  = yf.Ticker(ticker).history(period='1y', prepost=False)
-            hi52 = float(h52['High'].max()) if len(h52) > 0 else now
-            lo52 = float(h52['Low'].min())  if len(h52) > 0 else now
-            now_clip = max(lo52, min(hi52, now))  # pct52 汚染防止（未確定越境の clip）
+            hi52 = info.get('fiftyTwoWeekHigh') or now
+            lo52 = info.get('fiftyTwoWeekLow')  or now
+            hi52 = float(hi52); lo52 = float(lo52)
+            now_clip = max(lo52, min(hi52, now))
             pct52 = round((now_clip - lo52) / (hi52 - lo52) * 100) if hi52 != lo52 else 50
             return {'v': now, 'chg': chg, 'hi52': hi52, 'lo52': lo52, 'pct52': pct52}
         except Exception as e:
