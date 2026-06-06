@@ -20,7 +20,7 @@ from core.auth import get_spreadsheet
 # 2026-06-06: 学習(v4.2)スコアを本番(v4.3)と整合させる。独自 thr() は PEG(低良)を
 # 高良ロジックで処理し割高も割安も100点になる誤り（v4.3 は thr_low で修正済）。
 # 本番と同一の thr_high/thr_low を使い、学習モデルの矛盾を解消する。
-from core.scoring import thr_high, thr_low
+from core.scoring import thr_high, thr_low, perstock_short, perstock_mid
 
 warnings.filterwarnings('ignore')
 
@@ -222,8 +222,11 @@ for _,r in df.iterrows():
     rk=str(r['ランク'])
     p=r.get('株価'); peg=r.get('PEG') or 1.0
     roe=r.get('ROE平均') or 0; fcr=r.get('FCR平均') or 0; rs=r.get('ROE傾き') or 0
-    sc_s=max(0,min(100,short_score-5))
-    sc_m=max(0,min(100,medium_score+5))
+    # 2026-06-07 CEO指示: 短期/中期を市場値の全銘柄貼付でなく各銘柄の因子で算出（per-stock化）。
+    # 重み0.4/0.6の根拠・検証は verify/HYPOTHESES.md (H-perstock-0607)。開始仮説でICにより調整。
+    s2v=r.get('トレンド(s2)'); s3v=r.get('価格(s3)')
+    sc_s=perstock_short(short_score, s3v)   # 短期=市場0.4＋銘柄割安(s3)0.6
+    sc_m=perstock_mid(medium_score, s2v)    # 中期=市場0.4＋銘柄トレンド(s2)0.6
     action=('長期強買い' if rk in ['S','A'] and float(peg or 1)<1 else
             '買い検討' if rk in ['S','A'] else '様子見' if rk in ['B','C'] else '売却検討')
     new_rows.append([
@@ -232,10 +235,10 @@ for _,r in df.iterrows():
         arr(sc,70,55),tp(p,sc,0.08,peg),
         f"v4.2:{safe_str(sc)}pt/{r['業種']}({r['時価総額区分']})",
         (TODAY+timedelta(weeks=4)).strftime('%Y/%m/%d'),'','','','',
-        arr(sc_s),tp(p,sc_s,1.0,peg),f"短期{short_score:.0f}点×{r['業種']}業種",
+        arr(sc_s),tp(p,sc_s,1.0,peg),f"短期: 市場{short_score:.0f}+割安(s3){safe_str(s3v)}→{sc_s}点({r['業種']})",
         (TODAY+timedelta(days=365)).strftime('%Y/%m/%d'),'','','','',
         arr(sc_m,60,45),tp(p,sc_m,3.0,peg),
-        f"日本M2加速→2027年後半予測/ROE傾き{safe_str(rs)}%/年",
+        f"中期: 市場{medium_score:.0f}+トレンド(s2){safe_str(s2v)}→{sc_m}点/ROE傾き{safe_str(rs)}%/年",
         (TODAY+timedelta(days=365*3)).strftime('%Y/%m/%d'),'','','','',
         arr(sc),tp(p,sc,5.0,peg),
         f"Real ROIC:ROE{safe_str(roe)}%×FCR{safe_str(fcr)}%",

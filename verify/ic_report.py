@@ -139,6 +139,7 @@ def main():
         ['最終実行日', now_str] + [''] * 8,
         ['指標', 'IC = スコア順位 vs 実現リターン順位の Spearman 相関（横断面）'] + [''] * 8,
         ['注記', 'PIT近似(J-Quants最新版財務・残存改訂バイアスあり)。短中長期は満期到来分のみ・標本不足は集計せず'] + [''] * 8,
+        ['仮説', '現行の予測仮説と重みの根拠は verify/HYPOTHESES.md (H-perstock-0607)。IC と突合して当否判定・1度に1パラメータ調整(CEO指示2026-06-07)'] + [''] * 8,
         [''] * 10,
         ['軸', '標本数', 'IC(騰落率)', 'IC(日経比超過)', 'ICIR', 'Q5平均%', 'Q1平均%', 'Q5-Q1', '単調性', '判定'],
     ]
@@ -149,6 +150,7 @@ def main():
     axes_ok = sum(1 for r in results if isinstance(r[1], int) and r[1] >= MIN_SAMPLES)
     mic = min_ic if min_ic is not None else 'NA'
     print(f"✅ {OUT_SHEET} 出力: 全{len(results)}軸 / 集計{axes_ok}軸 / 標本{total_samples}")
+    print("📋 現行仮説は verify/HYPOTHESES.md (H-perstock-0607) 参照。IC と突合して当否判定・1度に1パラメータ調整")
     print(f"IC_MONITOR_SUMMARY ok=true axes={axes_ok} samples={total_samples} min_ic={mic}")
 
 
