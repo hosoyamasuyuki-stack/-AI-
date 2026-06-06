@@ -66,7 +66,12 @@ jobs:
           elif grep -qE 'ADVISOR_MONITOR_SUMMARY ok=false' advisor.log; then
             echo "::warning::threshold_advisor: ok=false（提案生成は走ったが内部失敗）"
           else
-            echo "閾値補正提案 死活監視 OK: $(grep -oE 'ADVISOR_MONITOR_SUMMARY ok=true candidates=[0-9]+ samples=[0-9]+' advisor.log | tail -1)"
+            SUM=$(grep -oE 'ADVISOR_MONITOR_SUMMARY ok=true candidates=[0-9]+ samples=[0-9]+' advisor.log | tail -1)
+            echo "閾値補正提案 死活監視 OK: $SUM"
+            CAND=$(echo "$SUM" | grep -oE 'candidates=[0-9]+' | grep -oE '[0-9]+')
+            if [ -n "$CAND" ] && [ "$CAND" -ge 1 ]; then
+              echo "::warning::閾値補正提案が ${CAND} 件あります（「閾値補正提案」シートで CEO 判定待ち）"
+            fi
           fi
 
       - name: スコア point-in-time スナップショット（読込のみ・追記・2026-06-06 自己学習の母）

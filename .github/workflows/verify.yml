@@ -68,13 +68,20 @@ jobs:
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
         run: python verify/verify_axis.py --axis 目先
 
-      - name: Run 目先 monthly verification (毎月1日)
+      - name: Run 目先/短期/中期 monthly verification (毎月1日・only_past_due)
         if: github.event.schedule == '0 1 1 * *'
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
-        run: python verify/verify_axis.py --axis 目先 --only_past_due
+        run: |
+          # 2026-06-06: 短期(1年)/中期(3年)も月次で「予定日到来分」を検証(D4)。
+          # --only_past_due ゆえ満期未到来は0件で正常終了。母(snapshot)同様"受け皿"を先に開ける。
+          python verify/verify_axis.py --axis 目先 --only_past_due
+          echo "---"
+          python verify/verify_axis.py --axis 短期 --only_past_due
+          echo "---"
+          python verify/verify_axis.py --axis 中期 --only_past_due
 
       - name: Run 短期 verification (毎年3/18)
         if: github.event.schedule == '0 0 18 3 *'
