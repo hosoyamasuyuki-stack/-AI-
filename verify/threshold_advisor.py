@@ -307,10 +307,17 @@ def main():
         write_to_sheet(candidates, total_samples)
         log_to_work_log(candidates, total_samples)
 
+    # 2026-06-06: 死活監視用の機械可読サマリ（monthly_learning.yml の guard が parse）
+    print(f"ADVISOR_MONITOR_SUMMARY ok=true candidates={len(candidates)} samples={total_samples}")
     print(f"\n✅ 完了: {NOW_STR}")
     print(f"次回実行: 毎月1日 12:00 JST（monthly_learning.yml の Step 4）")
     print(f"レビュー手順: PRE_LAUNCH_HEALTH_CHECK_SPEC.md v1.2 §H 参照")
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        # 2026-06-06: 失敗時も機械可読サマリを出力（guard が ok=false を検知）。再 raise で従来挙動維持。
+        print(f"ADVISOR_MONITOR_SUMMARY ok=false candidates=0 samples=0 reason={type(e).__name__}")
+        raise

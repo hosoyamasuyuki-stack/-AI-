@@ -51,5 +51,20 @@ jobs:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           JQUANTS_API_KEY: ${{ secrets.JQUANTS_API_KEY }}
+          # 2026-06-06: verify/ 配下スクリプトは sys.path[0]=verify/ となり core を import 不能
+          # → PYTHONPATH にリポジトリルートを通す（verify.yml と同方式・propose クラッシュ根治）
+          PYTHONPATH: ${{ github.workspace }}
         run: |
-          python verify/threshold_advisor.py
+          # 出力を保存し後段の死活監視で「静かな失敗」を surface（continue-on-error は維持）
+          python verify/threshold_advisor.py 2>&1 | tee advisor.log || true
+
+      - name: 閾値補正提案の死活監視（静かな失敗を surface・2026-06-06）
+        if: always()
+        run: |
+          if ! grep -qE 'ADVISOR_MONITOR_SUMMARY ' advisor.log 2>/dev/null; then
+            echo "::error::threshold_advisor: ADVISOR_MONITOR_SUMMARY 行が無い（import/接続でクラッシュした疑い）"
+          elif grep -qE 'ADVISOR_MONITOR_SUMMARY ok=false' advisor.log; then
+            echo "::warning::threshold_advisor: ok=false（提案生成は走ったが内部失敗）"
+          else
+            echo "閾値補正提案 死活監視 OK: $(grep -oE 'ADVISOR_MONITOR_SUMMARY ok=true candidates=[0-9]+ samples=[0-9]+' advisor.log | tail -1)"
+          fi
