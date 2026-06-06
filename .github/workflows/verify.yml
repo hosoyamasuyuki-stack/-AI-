@@ -50,7 +50,10 @@ jobs:
           pip install gspread google-auth pandas yfinance requests
 
       - name: Run verify_monday (毎週月曜)
-        if: github.event.schedule == '0 2 * * 1'
+        # 2026-06-06: X-2(6/5)で月曜 cron を '0 2 * * 1'→'30 7 * * 1' に変更したがガード文字列が旧のまま
+        # → 月曜 schedule に永久に一致せず verify_monday が起動せず（顧客 framework_page「毎週月曜日に自動実行」が不履行に）。
+        # 実 cron(L7)に一致させて週次自動検証を復活。verify_monday.py は健全性チェックの記録のみで顧客データ/スコア不可触。
+        if: github.event.schedule == '30 7 * * 1'
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
