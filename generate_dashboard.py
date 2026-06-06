@@ -685,6 +685,7 @@ print(f"  合計: {len(all_data)}銘柄 + スクリーニング{len(screen_data)
 # CLAUDE.md 4軸予測システム: STEP0で記録された方向予測を
 # ダッシュボードに表示する。シートスキーマ自動検出で堅牢化。
 PREDICTIONS = {}  # code -> {'目先':{...}, '短期':{...}, '中期':{...}, '長期':{...}}
+REC_DATE = {}     # code -> 予測記録 col0 の記録日(=銘柄の追加日)。日数の銘柄別化用（2026-06-06）
 try:
     _pred_ws = ss.worksheet('予測記録')
     _pred_rows = _pred_ws.get_all_values()
@@ -740,6 +741,9 @@ try:
             code = str(r[_c_code]).strip()
             if not code:
                 continue
+            # 記録日(col0)を併取（_c_code は通常 1=コード列なので col0 は記録日）。日数の銘柄別化用。
+            if _c_code != 0 and len(r) > 0 and str(r[0]).strip():
+                REC_DATE.setdefault(code, str(r[0]).strip())
             for axis_name, start_col in _axis_starts.items():
                 if len(r) <= start_col:
                     continue
@@ -884,6 +888,27 @@ ELAPSED_DAYS = (datetime.now() - STEP0_DATE).days
 DAYS_LABEL = f"{ELAPSED_DAYS}日"
 print(f"  学習経過日数: {DAYS_LABEL}（STEP0: 2026/03/18）")
 
+# 2026-06-06: 日数を銘柄別化。各銘柄の予測記録 記録日(=追加日)からの経過日数を出す。
+# 記録日が無い銘柄は当面 DAYS_LABEL(従来の全体日数)へフォールバック＝無回帰(degradation 回避)。
+# 記録日カバレッジ確認後、欠損銘柄を「—」にする方針(R2)へ移行予定。
+def stock_days_label(code):
+    rec = REC_DATE.get(code)
+    if not rec:
+        return DAYS_LABEL
+    try:
+        d = (datetime.now() - datetime.strptime(rec.replace('-', '/'), '%Y/%m/%d')).days
+        return f"{max(d, 0)}日"
+    except Exception:
+        return DAYS_LABEL
+
+# 検証用: 表示銘柄(保有/監視)の記録日カバレッジをログ出力（dashboard_update のログで確認）
+try:
+    _disp_codes = [str(_r.get('コード', '')).strip() for _r, _st in all_data if str(_r.get('コード', '')).strip()]
+    _cov = sum(1 for _c in _disp_codes if REC_DATE.get(_c))
+    print(f"DAYS_COVERAGE displayed={len(_disp_codes)} have_recdate={_cov} 9757={REC_DATE.get('9757', 'NONE')} 7068={REC_DATE.get('7068', 'NONE')}")
+except Exception as _e:
+    print(f"DAYS_COVERAGE 集計失敗: {_e}")
+
 for row, stype in all_data:
     code  = str(row.get('コード',    '')).strip()
     name  = str(row.get('銘柄名',    '')).strip()
@@ -928,6 +953,7 @@ for row, stype in all_data:
 
     # 予測記録シートから各銘柄の短期/中期予測を取得。なければ proxy へフォールバック
     _pred = PREDICTIONS.get(code, {})
+    _dl = stock_days_label(code)   # 銘柄別 日数（2026-06-06）
     # 短期（1年）: 予測記録があれば方向ラベル＋勝敗バッジ、なければ proxy 計算
     _s_info = _pred.get('短期', {})
     _s_pred = _s_info.get('direction', '')
@@ -951,7 +977,7 @@ for row, stype in all_data:
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{_short_s},'','','{rank}',"
-        f"'{sb}','{mb}','{lb}','{nt}','{DAYS_LABEL}'"
+        f"'{sb}','{mb}','{lb}','{nt}','{_dl}'"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
@@ -961,7 +987,7 @@ for row, stype in all_data:
         f'          <td style="color:{_mc};">{_ml}{_m_badge}</td>\n'
         f'          <td><span style="background:{rb};color:{rc};padding:1px 6px;'
         f'border-radius:4px;font-weight:900;font-size:var(--fs-base);">{rank}</span></td>\n'
-        f'          <td>{DAYS_LABEL}</td>\n'
+        f'          <td>{_dl}</td>\n'
         f'          <td><span class="s-buy" style="background:{rbg(rank)};color:{sc};">'
         f'{st}</span></td>\n'
         f'        </tr>'
@@ -1012,6 +1038,7 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
 
     # 予測記録シートから取得（なければ proxy）
     _pred2 = PREDICTIONS.get(code, {})
+    _dl2 = stock_days_label(code)   # 銘柄別 日数（スクリーニング詳細パネル・C1）
     _s_info2 = _pred2.get('短期', {})
     _s_pred2 = _s_info2.get('direction', '')
     _sl2, _sc2 = direction_label(_s_pred2) if _s_pred2 else (None, None)
@@ -1033,7 +1060,7 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{_short_s2},'','','{rank}',"
-        f"'{sb2}','{mb2}','{lb2}','{nt2}','{DAYS_LABEL}'"
+        f"'{sb2}','{mb2}','{lb2}','{nt2}','{_dl2}'"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
