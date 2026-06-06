@@ -68,3 +68,26 @@ jobs:
           else
             echo "閾値補正提案 死活監視 OK: $(grep -oE 'ADVISOR_MONITOR_SUMMARY ok=true candidates=[0-9]+ samples=[0-9]+' advisor.log | tail -1)"
           fi
+
+      - name: スコア point-in-time スナップショット（読込のみ・追記・2026-06-06 自己学習の母）
+        if: success()
+        continue-on-error: true
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          # verify/ 配下は sys.path[0]=verify/ で core を import 不能 → リポジトリルートを通す
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          # 既存スコアシートは読込のみ・スコア履歴_snapshot へ追記のみ（顧客 v4.3 不可触）
+          python verify/snapshot_scores.py 2>&1 | tee snapshot.log || true
+
+      - name: スコア履歴スナップショットの死活監視（静かな失敗を surface）
+        if: always()
+        run: |
+          if ! grep -qE 'SNAPSHOT_MONITOR_SUMMARY ' snapshot.log 2>/dev/null; then
+            echo "::error::snapshot_scores: SNAPSHOT_MONITOR_SUMMARY 行が無い（import/接続でクラッシュした疑い）"
+          elif grep -qE 'SNAPSHOT_MONITOR_SUMMARY ok=false' snapshot.log; then
+            echo "::warning::snapshot_scores: ok=false（スナップショットが内部失敗）"
+          else
+            echo "スコア履歴スナップショット 死活監視 OK: $(grep -oE 'SNAPSHOT_MONITOR_SUMMARY ok=true rows=[0-9]+ read=[0-9]+' snapshot.log | tail -1)"
+          fi
