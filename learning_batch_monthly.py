@@ -17,6 +17,10 @@ import gspread
 from core.config import (SPREADSHEET_ID, ROE_THR, FCR_THR, RS_THR,
                           FS_THR, PEG_THR, FCY_THR)
 from core.auth import get_spreadsheet
+# 2026-06-06: 学習(v4.2)スコアを本番(v4.3)と整合させる。独自 thr() は PEG(低良)を
+# 高良ロジックで処理し割高も割安も100点になる誤り（v4.3 は thr_low で修正済）。
+# 本番と同一の thr_high/thr_low を使い、学習モデルの矛盾を解消する。
+from core.scoring import thr_high, thr_low
 
 warnings.filterwarnings('ignore')
 
@@ -76,12 +80,6 @@ STOCKS = [
 
 # ── v4.2スコア計算（閾値はcore/config.pyからimport済み）─────
 
-def thr(v,t):
-    if v is None or (isinstance(v,float) and (np.isnan(v) or np.isinf(v))): return 0
-    for th,s in t:
-        if v>=th: return s
-    return 0
-
 def slope(s):
     v=pd.Series(s).replace([np.inf,-np.inf],np.nan).dropna().values
     return float(np.polyfit(range(len(v)),v,1)[0]) if len(v)>=2 else 0.0
@@ -129,10 +127,10 @@ def calc(d,di):
     if d is None: return 0,'D',{}
     roe=safe(d['roe'].dropna().mean()) if 'roe' in d.columns else None
     fcr=safe(d['fcr'].dropna().mean())  if 'fcr' in d.columns else None
-    s1 =round(thr(roe,ROE_THR)*0.6+thr(fcr,FCR_THR)*0.4) if fcr else round(thr(roe,ROE_THR)*0.6+30*0.4)
+    s1 =round(thr_high(roe,ROE_THR)*0.6+(thr_high(fcr,FCR_THR) if fcr is not None else 30)*0.4)
     rsl=slope(d['roe'].dropna().tail(4)) if 'roe' in d.columns else 0
     fsl=slope(d['fcr'].dropna().tail(4)) if 'fcr' in d.columns else 0
-    s2 =round(thr(rsl,RS_THR)*0.6+thr(fsl,FS_THR)*0.4)
+    s2 =round(thr_high(rsl,RS_THR)*0.6+thr_high(fsl,FS_THR)*0.4)
     per=di.get('per'); eg=di.get('eps_growth')
     if eg is None and 'ni' in d.columns and len(d)>=3:
         s0,s1d,n=d['ni'].iloc[0],d['ni'].iloc[-1],len(d)-1
@@ -141,7 +139,7 @@ def calc(d,di):
     mc=di.get('market_cap')
     fcf=d['fcf'].dropna().iloc[-1] if 'fcf' in d.columns and len(d['fcf'].dropna())>0 else None
     fy=abs(fcf)/mc*100 if fcf and mc and mc>0 else None
-    s3=round(thr(peg,PEG_THR)*0.5+thr(fy,FCY_THR)*0.5)
+    s3=round(thr_low(peg,PEG_THR)*0.5+thr_high(fy,FCY_THR)*0.5)
     tot=round(s1*0.4+s2*0.35+s3*0.25,1)
     rk='S' if tot>=80 else 'A' if tot>=65 else 'B' if tot>=50 else 'C' if tot>=35 else 'D'
     return tot,rk,{'s1':s1,'s2':s2,'s3':s3,'roe':roe,'fcr':fcr,
