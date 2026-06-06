@@ -96,3 +96,25 @@ jobs:
           else
             echo "スコア履歴スナップショット 死活監視 OK: $(grep -oE 'SNAPSHOT_MONITOR_SUMMARY ok=true rows=[0-9]+ read=[0-9]+' snapshot.log | tail -1)"
           fi
+
+      - name: IC（情報係数）レポート（読込のみ・評価段・2026-06-06）
+        if: success()
+        continue-on-error: true
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          # "勝率"でなく IC（スコア順位 vs 実現リターン順位の Spearman）で評価。読込のみ・IC_レポートへ出力
+          python verify/ic_report.py 2>&1 | tee ic.log || true
+
+      - name: IC レポートの死活監視（静かな失敗を surface）
+        if: always()
+        run: |
+          if ! grep -qE 'IC_MONITOR_SUMMARY ' ic.log 2>/dev/null; then
+            echo "::error::ic_report: IC_MONITOR_SUMMARY 行が無い（import/接続でクラッシュした疑い）"
+          elif grep -qE 'IC_MONITOR_SUMMARY ok=false' ic.log; then
+            echo "::warning::ic_report: ok=false（IC計測が内部失敗）"
+          else
+            echo "IC レポート 死活監視 OK: $(grep -oE 'IC_MONITOR_SUMMARY ok=true axes=[0-9]+ samples=[0-9]+ min_ic=[^ ]+' ic.log | tail -1)"
+          fi
