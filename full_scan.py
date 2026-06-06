@@ -443,6 +443,29 @@ try:
 except Exception as e:
     print(f"  WARNING: 予測記録への登録失敗: {e}")
 
+# ============================================================
+# Phase 5c: 業種ベンチマーク書き出し（コアスキャン v2.1 B・業種内順位）
+# 全社 results から業種×指標の中央値/四分位を集計し新タブ「業種ベンチマーク」に保存。
+# 既存スキャン/既存タブ/週次cron は無変更。失敗しても本スキャンは止めない（try/except・
+# import も try 内に置き、モジュール不在でも本体に波及させない）。
+# ============================================================
+try:
+    from core.sector_benchmark import compute_sector_benchmarks, to_sheet_rows
+    bm = compute_sector_benchmarks(results, as_of=NOW)
+    bench_rows = to_sheet_rows(bm)
+    BENCH_SHEET = '業種ベンチマーク'
+    try:
+        bws = ss.worksheet(BENCH_SHEET)
+        bws.clear()
+        if bws.row_count < len(bench_rows) + 10:
+            bws.resize(rows=len(bench_rows) + 10)
+    except gspread.exceptions.WorksheetNotFound:
+        bws = ss.add_worksheet(title=BENCH_SHEET, rows=len(bench_rows) + 10, cols=12)
+    bws.update(f'A1:J{len(bench_rows)}', bench_rows)
+    print(f"  業種ベンチマーク: {bm['sector_count']}業種 / {len(bench_rows) - 1}行書き出し（全{bm['total_rows']}社集計）")
+except Exception as e:
+    print(f"  WARNING: 業種ベンチマーク書き出し失敗: {e}")
+
 # チェックポイント削除
 if os.path.exists(CHECKPOINT_FILE):
     os.remove(CHECKPOINT_FILE)
