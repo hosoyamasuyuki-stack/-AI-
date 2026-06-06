@@ -91,3 +91,36 @@ def slope_fn(series):
     if len(v) < 2:
         return 0.0
     return float(np.polyfit(range(len(v)), v, 1)[0])
+
+
+# ── per-stock 短期/中期 予測スコア（2026-06-07 CEO指示・自己学習の仮説）──────────
+# 旧方式は市場値(週次シグナルの短期/中期スコア)を全銘柄に貼付し、短期/中期が全銘柄同一
+# になっていた（CEO指摘「Top75全部一緒」）。各銘柄の因子で算出して銘柄差を出す。
+# 重み w_market の根拠・検証方法は verify/HYPOTHESES.md (H-perstock-0607)。
+# これは決め打ちでなく開始仮説であり、ic_report の IC で定期検証して調整する（1度に1パラメータ）。
+PERSTOCK_W_MARKET_SHORT = 0.4   # 短期(1年): 市場0.4 + 銘柄割安度(s3)0.6
+PERSTOCK_W_MARKET_MID = 0.4     # 中期(3年): 市場0.4 + 銘柄トレンド(s2)0.6
+
+
+def perstock_short(market_short, s3, w_market=PERSTOCK_W_MARKET_SHORT):
+    """短期(1年)の銘柄別予測スコア = 市場短期 * w + 銘柄割安度(s3) * (1-w)。
+
+    根拠と検証方法は verify/HYPOTHESES.md (H-perstock-0607)。None/NaN は中立50。
+    """
+    m = safe(market_short)
+    v = safe(s3)
+    m = 50.0 if m is None else m
+    v = 50.0 if v is None else v
+    return max(0, min(100, round(m * w_market + v * (1 - w_market))))
+
+
+def perstock_mid(market_mid, s2, w_market=PERSTOCK_W_MARKET_MID):
+    """中期(3年)の銘柄別予測スコア = 市場中期 * w + 銘柄トレンド(s2) * (1-w)。
+
+    根拠と検証方法は verify/HYPOTHESES.md (H-perstock-0607)。None/NaN は中立50。
+    """
+    m = safe(market_mid)
+    v = safe(s2)
+    m = 50.0 if m is None else m
+    v = 50.0 if v is None else v
+    return max(0, min(100, round(m * w_market + v * (1 - w_market))))
