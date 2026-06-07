@@ -948,22 +948,17 @@ for row, stype in all_data:
     # 予測記録シートから各銘柄の短期/中期予測を取得。なければ proxy へフォールバック
     _pred = PREDICTIONS.get(code, {})
     _dl = stock_days_label(code)   # 銘柄別 日数（2026-06-06）
-    # 短期（1年）: 予測記録があれば方向ラベル＋勝敗バッジ、なければ proxy 計算
+    # 短期（1年）: 案B(2026-06-08) — 予測記録の古い方向(append-only の全同一↑↑)を表示に
+    # 使わず、常に per-stock proxy(short_stock_score) を表示する（日次で新鮮・銘柄別）。
     _s_info = _pred.get('短期', {})
-    _s_pred = _s_info.get('direction', '')
-    _sl, _sc = direction_label(_s_pred) if _s_pred else (None, None)
     _s_badge = verify_badge(_s_info.get('win_lose', ''))
-    if _sl is None:
-        _short_s = short_stock_score(s3)
-        _sl, _sc = short_label(_short_s), label_color(_short_s)
-    # 中期（3年）: 同様
+    _short_s = short_stock_score(s3)
+    _sl, _sc = short_label(_short_s), label_color(_short_s)
+    # 中期（3年）: 案B(2026-06-08) — 同様に常に per-stock proxy(mid_stock_score) を表示。
     _m_info = _pred.get('中期', {})
-    _m_pred = _m_info.get('direction', '')
-    _ml, _mc = direction_label(_m_pred) if _m_pred else (None, None)
     _m_badge = verify_badge(_m_info.get('win_lose', ''))
-    if _ml is None:
-        _mid_s = mid_stock_score(s2)
-        _ml, _mc = short_label(_mid_s), label_color(_mid_s)
+    _mid_s = mid_stock_score(s2)
+    _ml, _mc = short_label(_mid_s), label_color(_mid_s)
     # showD用の短期/中期スコア（数値）。詳細欄の3軸矢印は出さない（CEO 2026-06-07: 詳細欄に矢印不要・元の空状態を維持）。中期スコアはカード用に渡す
     _short_s = short_stock_score(s3)
     _mid_s   = mid_stock_score(s2)
@@ -1036,20 +1031,15 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
     # 予測記録シートから取得（なければ proxy）
     _pred2 = PREDICTIONS.get(code, {})
     _dl2 = stock_days_label(code)   # 銘柄別 日数（スクリーニング詳細パネル・C1）
+    # 案B(2026-06-08): 常に per-stock proxy を表示（予測記録の古い方向は使わない）。
     _s_info2 = _pred2.get('短期', {})
-    _s_pred2 = _s_info2.get('direction', '')
-    _sl2, _sc2 = direction_label(_s_pred2) if _s_pred2 else (None, None)
     _s_badge2 = verify_badge(_s_info2.get('win_lose', ''))
-    if _sl2 is None:
-        _short_s2 = short_stock_score(s3)
-        _sl2, _sc2 = short_label(_short_s2), label_color(_short_s2)
+    _short_s2 = short_stock_score(s3)
+    _sl2, _sc2 = short_label(_short_s2), label_color(_short_s2)
     _m_info2 = _pred2.get('中期', {})
-    _m_pred2 = _m_info2.get('direction', '')
-    _ml2, _mc2 = direction_label(_m_pred2) if _m_pred2 else (None, None)
     _m_badge2 = verify_badge(_m_info2.get('win_lose', ''))
-    if _ml2 is None:
-        _mid_s2 = mid_stock_score(s2)
-        _ml2, _mc2 = short_label(_mid_s2), label_color(_mid_s2)
+    _mid_s2 = mid_stock_score(s2)
+    _ml2, _mc2 = short_label(_mid_s2), label_color(_mid_s2)
     _short_s2 = short_stock_score(s3)
     _mid_s2   = mid_stock_score(s2)
 
