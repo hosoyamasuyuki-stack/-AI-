@@ -1,0 +1,3 @@
+# per-stock 過去IC バックテストのローカル生成物(コミットしない)
+.cache_perstock/
+output/
