@@ -2966,7 +2966,7 @@ const HELP={
 <div class="row"><span class="lbl">サンリオ</span><span class="val">77.9点：Real ROIC 91pt ／ トレンド 63pt ／ 価格 78pt</span></div>
 <div class="row"><span class="lbl">三菱商事</span><span class="val">73.0点：Real ROIC 75pt ／ トレンド 57pt ／ 価格 92pt</span></div>
 <div class="row"><span class="lbl">HOYA</span><span class="val">68.2点：Real ROIC 82pt ／ トレンド 52pt ／ 価格 69pt</span></div>
-<div class="note">バックテスト実証（J-Quants実株価）：Aランク上位10銘柄の3年リターン平均+122.2%（日経+37.2%）。日経比超過+85.0%。スプレッド+79.9%で強い分離を確認。5年では+313.6%（日経+97.1%）・勝率100%。</div>`
+<div class="note">このランクは、企業の本質的価値（Real ROIC・トレンド・価格）を相対評価した点数です。将来のリターンや勝率を保証するものではありません。市場環境とともに毎月見直されます。</div>`
   },
   short_score:{
     title:'📅 短期スコア（1年以内）とは',
@@ -2979,13 +2979,13 @@ const HELP={
 <div class="row"><span class="lbl">SOX変化率×30%</span><span class="val">米国ハイテク株指数。市場全体の短期方向の代表指標</span></div>
 <div class="row"><span class="lbl">SP500変化率×25%</span><span class="val">米国株全体の方向</span></div>
 <div class="row"><span class="lbl">HYG変化率×25%</span><span class="val">社債市場の動向（リスクオン／オフの指標）</span></div>
-<div class="row"><span class="lbl">VIX変化率×20%</span><span class="val">恐怖指数（上昇＝市場全体に逆風）</span></div>
+<div class="row"><span class="lbl">VIX変化率×20%</span><span class="val">恐怖指数（上昇＝市場全体の下押し要因）</span></div>
 <h3>スコア基準</h3>
-<div class="row"><span class="lbl"><span class="tag-g">70点以上</span></span><span class="val">🟢🟢 強気：市場環境が強い追い風</span></div>
-<div class="row"><span class="lbl"><span class="tag-g">55〜70点</span></span><span class="val">🟢 やや強気：追い風の環境</span></div>
+<div class="row"><span class="lbl"><span class="tag-g">70点以上</span></span><span class="val">🟢🟢 強気：市場の短期環境が強い水準</span></div>
+<div class="row"><span class="lbl"><span class="tag-g">55〜70点</span></span><span class="val">🟢 やや強気：やや強い環境</span></div>
 <div class="row"><span class="lbl"><span class="tag-y">45〜55点</span></span><span class="val">🟡 中立：方向感の乏しい環境</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">30〜45点</span></span><span class="val">🔴 やや弱気：逆風の環境</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">30点未満</span></span><span class="val">🔴🔴 弱気：強い逆風の環境</span></div>
+<div class="row"><span class="lbl"><span class="tag-r">30〜45点</span></span><span class="val">🔴 やや弱気：やや弱い環境</span></div>
+<div class="row"><span class="lbl"><span class="tag-r">30点未満</span></span><span class="val">🔴🔴 弱気：弱い環境</span></div>
 <h3>スコアの読み方</h3>
 <div class="row"><span class="lbl">市場の短期スコア</span><span class="val">上記4指標（SOX・SP500・HYG・VIX）から、市場全体の「短期の体温」を毎日算出します。現在の値は画面上部のマクロ総合でご確認いただけます。</span></div>
 <div class="note">各銘柄カードの短期は、この市場の短期スコアを起点に、その銘柄の割安度で補正した銘柄別の参考値です。市場環境とともに毎月見直されます。将来を保証する予測ではありません。</div>`
@@ -3003,7 +3003,7 @@ const HELP={
 <div class="row"><span class="lbl">米GDP加速度×30%</span><span class="val">12ヶ月前の値を使用</span></div>
 <div class="row"><span class="lbl">WTI加速度×20%</span><span class="val">10ヶ月前の値（低いほど良い＝コスト低下）</span></div>
 <h3>スコア基準</h3>
-<div class="row"><span class="lbl"><span class="tag-g">70点以上</span></span><span class="val">🟢🟢 1〜2年後に内需関連が好転</span></div>
+<div class="row"><span class="lbl"><span class="tag-g">70点以上</span></span><span class="val">🟢🟢 中期の環境が強い水準</span></div>
 <div class="row"><span class="lbl"><span class="tag-g">55〜70点</span></span><span class="val">🟢 中期投資環境は良好</span></div>
 <div class="row"><span class="lbl"><span class="tag-y">45〜55点</span></span><span class="val">🟡 中立</span></div>
 <div class="row"><span class="lbl"><span class="tag-r">30〜45点</span></span><span class="val">🔴 やや弱気</span></div>
@@ -3019,7 +3019,7 @@ const HELP={
 <p>市場の短期スコア（市場の体温）を起点に、各銘柄の割安度・業種特性で補正した銘柄別の参考方向です（検証中・参考。将来を保証する予測ではありません）。<br>
 <strong>長期Aランク銘柄では、短期の下落局面で割安度が高まる傾向があります。</strong></p>
 <h3>ラベルの意味</h3>
-<div class="row"><span class="lbl"><span class="tag-g">強気</span></span><span class="val">短期スコア70点超。1年以内に日経を大幅上回る可能性高</span></div>
+<div class="row"><span class="lbl"><span class="tag-g">強気</span></span><span class="val">短期スコア70点超。市場の短期環境がこの銘柄に強く出ている水準（参考。将来を保証しません）</span></div>
 <div class="row"><span class="lbl"><span class="tag-g">やや強気</span></span><span class="val">短期スコア55〜70点。日経をやや上回る可能性</span></div>
 <div class="row"><span class="lbl">中立</span><span class="val">短期スコア45〜55点。日経と同程度</span></div>
 <div class="row"><span class="lbl"><span class="tag-r">やや弱気</span></span><span class="val">短期スコア30〜45点。日経を下回る可能性</span></div>
@@ -3033,8 +3033,8 @@ const HELP={
 <p>日本M2加速度（15〜18ヶ月前のデータ）を業種別に補正した中期予測。<br>
 「今のマクロ環境が1〜2年後にどう影響するか」を実データから計算します。</p>
 <h3>ラベルの意味</h3>
-<div class="row"><span class="lbl"><span class="tag-g">強気</span></span><span class="val">1〜2年後に日経を大幅に上回る可能性が見込まれる環境</span></div>
-<div class="row"><span class="lbl"><span class="tag-g">やや強気</span></span><span class="val">中期的な追い風が見込まれる環境</span></div>
+<div class="row"><span class="lbl"><span class="tag-g">強気</span></span><span class="val">中期の環境がこの銘柄に強く出ている水準（参考。将来を保証しません）</span></div>
+<div class="row"><span class="lbl"><span class="tag-g">やや強気</span></span><span class="val">中期の環境がやや強い水準</span></div>
 <div class="row"><span class="lbl">中立</span><span class="val">日経と同程度。短期・長期のシグナルも参照</span></div>
 <div class="row"><span class="lbl"><span class="tag-r">やや弱気</span></span><span class="val">中期の上値が重くなりやすい環境</span></div>
 <div class="row"><span class="lbl"><span class="tag-r">弱気</span></span><span class="val">1〜2年後に悪化リスク。特に逆相関業種は注意</span></div>
@@ -3049,19 +3049,18 @@ const HELP={
 <h3>何を表しているか</h3>
 <p>v4.2のマトリックスランク（S/A/B/C/D）が長期予測の唯一の基準。<br>
 「企業の本質的価値」だけで判断します。短期・中期のノイズは無視。</p>
-<h3>長期投資の根拠（実証データ）</h3>
+<h3>長期投資の考え方</h3>
 <div class="row"><span class="lbl">1年保有の勝率</span><span class="val">約50%（コイン投げ）。どんな分析も1年では当たらない</span></div>
-<div class="row"><span class="lbl">3年保有の勝率</span><span class="val">A以上ランク：日経比超過+85%を確認（J-Quants実株価）</span></div>
-<div class="row"><span class="lbl">5年保有の勝率</span><span class="val">100%・超過リターン+287%（修正①条件）</span></div>
+<div class="row"><span class="lbl">3年保有</span><span class="val">高ランクの企業ほど、複利力（Real ROIC）が結果に表れやすい傾向（過去の傾向・将来を保証しません）</span></div>
+<div class="row"><span class="lbl">5年保有</span><span class="val">長期ほど企業の本質的価値が反映されやすいとされます（過去の傾向・将来を保証しません）</span></div>
 <div class="row"><span class="lbl">なぜ長期が有効？</span><span class="val">短期は市場心理・需給が支配。長期は企業の複利力（Real ROIC）が支配</span></div>
-<h3>ランク別の長期予測と実績</h3>
-<div class="row"><span class="lbl"><span class="tag-g">A → 強気</span></span><span class="val">3年+122.2%（日経+37.2%）。日経比+85%の超過を実証</span></div>
-<div class="row"><span class="lbl"><span class="tag-g">実績Aランク銘柄</span></span><span class="val">サンリオ+555.9% / アドバンテスト+225.9% / 三菱商事+110.6%（3年）</span></div>
+<h3>ランク別の長期評価の目安</h3>
+<div class="row"><span class="lbl"><span class="tag-g">A → 強気</span></span><span class="val">企業の複利力が高く、長期評価が最も高い水準（過去の傾向・将来を保証しません）</span></div>
 <div class="row"><span class="lbl"><span class="tag-y">B → 中立</span></span><span class="val">3年で日経と同程度か若干上回る。タイミングで損益が分かれる</span></div>
 <div class="row"><span class="lbl"><span class="tag-r">C/D → 弱気</span></span><span class="val">3年保有でも日経を下回るリスク高。Real ROICの低下が止まらない限り評価は低いままになりやすい</span></div>
 <h3>長期の考え方</h3>
 <div class="row"><span class="lbl">長期の見方</span><span class="val">長期はマトリックスランク（S/A/B/C/D）が基準です。短期・中期の市場環境は画面上部のマクロ総合、各銘柄の長期評価はランクをご参照ください。</span></div>
-<div class="note">バックテスト実証（Aランク上位銘柄・3年リターン）：リクルートHD+57.4% / サンリオ+555.9% / 三菱商事+110.6% / 任天堂+70.4% / HOYA+11.5% / アドバンテスト+225.9% / 味の素+80.8%。平均+122.2%（日経+37.2%）。</div>`
+<div class="note">長期評価は、企業の複利力（Real ROIC）を中心とした相対評価です。個別銘柄の将来のリターンを示すものではなく、市場環境とともに毎月見直されます。</div>`
   }
 };
 

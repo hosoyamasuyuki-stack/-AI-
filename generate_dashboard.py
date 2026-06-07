@@ -151,8 +151,8 @@ def build_phase_gauge_html(ss):
     except Exception as e:
         print(f"  WARN: {e}")
     if label=='GREEN':   cm='#22c55e';cbr='#166534';st='良好'
-    elif label=='YELLOW':cm='#f59e0b';cbr='#92400e';st='慎重に'
-    else:                cm='#ef4444';cbr='#991b1b';st='今は待て'
+    elif label=='YELLOW':cm='#f59e0b';cbr='#92400e';st='中立'
+    else:                cm='#ef4444';cbr='#991b1b';st='低調'
     pct=min(max(score,0),100)
     bar = f'<div style="flex:1;background:#1e293b;border-radius:3px;height:5px;position:relative;"><div style="position:absolute;left:30%;width:1px;height:5px;background:#374151;"></div><div style="position:absolute;left:60%;width:1px;height:5px;background:#374151;"></div><div style="width:{pct}%;height:5px;border-radius:3px;background:{cm};transition:width .3s;"></div></div>'
     return (
@@ -565,7 +565,7 @@ mid_vc    = 'cg' if MID_SCORE >= 55 else 'ca' if MID_SCORE >= 45 else 'cr'
 mid_lbl   = '🟢 強気' if MID_SCORE >= 55 else '🟡 中立' if MID_SCORE >= 45 else '🔴 弱気'
 _mp_bc = 'bg' if _mp_lbl=='GREEN' else 'ba' if _mp_lbl=='YELLOW' else 'br'
 _mp_vc = 'cg' if _mp_lbl=='GREEN' else 'ca' if _mp_lbl=='YELLOW' else 'cr'
-_mp_txt = '良好' if _mp_lbl=='GREEN' else '慎重に' if _mp_lbl=='YELLOW' else '今は待て'
+_mp_txt = '良好' if _mp_lbl=='GREEN' else '中立' if _mp_lbl=='YELLOW' else '低調'
 cape_jp = VAL.get('cape_jp', 20); pbr_jp = VAL.get('pbr_jp', 1.76)
 buf_jp  = VAL.get('buffett_jp') or 140; yld_jp = VAL.get('yield_jp', 3.5)  # buf_jp は廃止済_MSTRIP専用・None回避の無害値
 cape_bc = 'br' if cape_jp > 25 else 'ba' if cape_jp > 18 else 'bg'
@@ -859,16 +859,9 @@ def mid_stock_score(s2, market=None):
     return perstock_mid(m, s2)
 
 def mid_sector_comment(sect, mid):
-    sector_map = {
-        '商社':'商社業種はM2加速の恩恵大',
-        '小売':'小売・内需株が好転局面',
-        '銀行':'銀行業種は金利上昇と連動',
-        '陸運':'陸運は内需回復で追い風',
-        '半導体':'半導体は逆相関・慎重に',
-        '輸送機器':'輸送機器は逆相関・慎重に',
-    }
-    comment = sector_map.get(sect, f'{sect}業種の動向に注目')
-    return f"中期{mid}点({('弱気' if mid<45 else '中立' if mid<55 else '強気')})。{comment}。"
+    # 2026-06-08 B-Step0(規約適合): 業種別の方向断定/助言語/マクロ物語を撤去し観察文へ統一。
+    # 中期(s2/トレンド)は過去ICで広域ほぼ無相関と実測（検証中・参考）。sect は呼出側互換のため維持。
+    return f"中期{mid}点({('弱気' if mid<45 else '中立' if mid<55 else '強気')})。市場の中期環境とこの銘柄の業績トレンドで算出（検証中・参考）。"
 
 SCORES  = {}
 rows_h  = []
@@ -1626,14 +1619,7 @@ if vix_now >= 30:
         '<span style="color:#f87171;font-size:var(--fs-xs);font-weight:900;">'
         '\u26A0 \u77ED\u671F\u30EA\u30B9\u30AF\u9AD8</span>'
         '<span style="color:#fca5a5;font-size:var(--fs-xs);font-weight:700;">'
-        f'VIX {vix_now}\u2026\u65B0\u898F\u8CB7\u3044\u306F\u63A7\u3048\u3066\u304F\u3060\u3055\u3044</span>'
-        '<span style="color:#1e2d40;">|</span>'
-        '<span style="color:#fbbf24;font-size:var(--fs-xs);font-weight:900;">'
-        '\u2605 \u9577\u671F\u6295\u8CC7\u5BB6\u306B\u306F\u6B74\u53F2\u7684\u8CB7\u3044\u5834</span>'
-        '<span style="color:#fcd34d;font-size:var(--fs-xs);font-weight:700;">'
-        'H005-B\u691C\u8A3C\u6E08\uFF1A\u66B4\u843D\u6642\u8CB7\u30445\u5E74\u4FDD\u6709\u2192+21.81%/\u5E74\uFF08p=0.0035\uFF09</span>'
-        '<span style="color:#6b7280;font-size:var(--fs-micro);font-weight:700;">'
-        '\u203B\u6295\u8CC7\u52A9\u8A00\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002\u904E\u53BB\u306E\u691C\u8A3C\u7D50\u679C\u306E\u8868\u793A\u3067\u3059</span>'
+        f'VIX {vix_now}\u2026\u5E02\u5834\u306E\u5909\u52D5\u304C\u5927\u304D\u3044\u5C40\u9762\u3067\u3059</span>'
         '</div>')
 elif vix_now >= 25:
     ALERT_HTML = (
@@ -1643,7 +1629,7 @@ elif vix_now >= 25:
         '<span style="color:#fbbf24;font-size:var(--fs-xs);font-weight:900;">'
         '\u26A0 \u8B66\u6212</span>'
         '<span style="color:#fcd34d;font-size:var(--fs-xs);font-weight:700;">'
-        f'VIX {vix_now}\u2026\u65B0\u898F\u8CB7\u3044\u306F\u614E\u91CD\u306B</span>'
+        f'VIX {vix_now}\u2026\u5E02\u5834\u306E\u5909\u52D5\u304C\u3084\u3084\u5927\u304D\u3044\u5C40\u9762\u3067\u3059</span>'
         '</div>')
 else:
     ALERT_HTML = ''
