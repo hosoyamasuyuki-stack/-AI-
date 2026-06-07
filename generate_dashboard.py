@@ -132,6 +132,7 @@ def scrape_cape_us():
 from core.auth import get_spreadsheet
 from core.config import GAS_URL_FULL_UPDATE, GAS_URL_KENJA
 import core.market_guard as mg
+from core.scoring import perstock_short, perstock_mid  # WP2: 短期/中期 per-stock化(市場0.4+銘柄0.6)
 ss = get_spreadsheet()
 NOW = datetime.now().strftime('%Y/%m/%d %H:%M')
 
@@ -810,14 +811,7 @@ def direction_label(d):
     return s[:6], '#94a3b8'  # 不明は生文字列
 
 def verify_badge(win_lose):
-    """勝敗列の文字列から✓/✗バッジHTMLを返す（未検証は空）"""
-    if not win_lose or win_lose in ('-', '', '未検証', 'pending'):
-        return ''
-    s = win_lose.strip()
-    if '勝' in s or 'win' in s.lower() or '○' in s or '✓' in s:
-        return '<span style="color:#4ade80;font-weight:900;">✓</span>'
-    if '負' in s or 'lose' in s.lower() or '×' in s or '✗' in s:
-        return '<span style="color:#f87171;font-weight:900;">✗</span>'
+    """勝敗バッジは撤去（CEO 2026-06-07・不要/優良誤認回避）。常に空文字を返す。"""
     return ''
 
 def sf(v, d=0):
@@ -837,7 +831,7 @@ def rbg(r):
     return m.get(r, 'rgba(100,116,139,.1)')
 
 def get_sig(rank):
-    if rank in ['S','A']: return '買い検討','#60a5fa'
+    if rank in ['S','A']: return '注目','#60a5fa'
     if rank == 'B':        return '様子見',  '#fbbf24'
     return '時期尚早','#f87171'
 
@@ -855,16 +849,14 @@ def label_color(s):
     return '#f87171'                    # 弱気=赤
 
 def short_stock_score(s3, market=None):
-    """銘柄固有の短期（1年）スコア = 市場短期 × 0.5 + 変数3(割安度) × 0.5"""
+    """銘柄固有の短期（1年）スコア。2026-06-07 per-stock化: 市場0.4+割安(s3)0.6（WP1 perstock_short・検証中）。"""
     m = SHORT_SCORE if market is None else market
-    v = 50 if s3 is None else s3
-    return int(round(m * 0.5 + v * 0.5))
+    return perstock_short(m, s3)
 
 def mid_stock_score(s2, market=None):
-    """銘柄固有の中期（3年）スコア = 市場中期 × 0.5 + 変数2(トレンド) × 0.5"""
+    """銘柄固有の中期（3年）スコア。2026-06-07 per-stock化: 市場0.4+トレンド(s2)0.6（WP1 perstock_mid・検証中）。"""
     m = MID_SCORE if market is None else market
-    v = 50 if s2 is None else s2
-    return int(round(m * 0.5 + v * 0.5))
+    return perstock_mid(m, s2)
 
 def mid_sector_comment(sect, mid):
     sector_map = {
@@ -946,38 +938,36 @@ for row, stype in all_data:
     def e(s):
         return s.replace("'","&#39;").replace('\n',' ')
 
-    sb = e(f"短期{SHORT_SCORE}点({short_label(SHORT_SCORE)})。SOX・SP500の動向に注目。")
-    mb = e(mid_sector_comment(sect, MID_SCORE))
+    _sb_s = short_stock_score(s3)   # per-stock 短期（市場0.4+割安0.6・検証中）
+    _mb_m = mid_stock_score(s2)     # per-stock 中期（市場0.4+トレンド0.6・検証中）
+    sb = e(f"短期{_sb_s}点({short_label(_sb_s)})。市場環境×この銘柄の割安度で算出（検証中・参考）。")
+    mb = e(mid_sector_comment(sect, _mb_m))
     lb = e(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt = e(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
     # 予測記録シートから各銘柄の短期/中期予測を取得。なければ proxy へフォールバック
     _pred = PREDICTIONS.get(code, {})
     _dl = stock_days_label(code)   # 銘柄別 日数（2026-06-06）
-    # 短期（1年）: 予測記録があれば方向ラベル＋勝敗バッジ、なければ proxy 計算
+    # 短期（1年）: 案B(2026-06-08) — 予測記録の古い方向(append-only の全同一↑↑)を表示に
+    # 使わず、常に per-stock proxy(short_stock_score) を表示する（日次で新鮮・銘柄別）。
     _s_info = _pred.get('短期', {})
-    _s_pred = _s_info.get('direction', '')
-    _sl, _sc = direction_label(_s_pred) if _s_pred else (None, None)
     _s_badge = verify_badge(_s_info.get('win_lose', ''))
-    if _sl is None:
-        _short_s = short_stock_score(s3)
-        _sl, _sc = short_label(_short_s), label_color(_short_s)
-    # 中期（3年）: 同様
-    _m_info = _pred.get('中期', {})
-    _m_pred = _m_info.get('direction', '')
-    _ml, _mc = direction_label(_m_pred) if _m_pred else (None, None)
-    _m_badge = verify_badge(_m_info.get('win_lose', ''))
-    if _ml is None:
-        _mid_s = mid_stock_score(s2)
-        _ml, _mc = short_label(_mid_s), label_color(_mid_s)
-    # showD用の短期スコア（数値）
     _short_s = short_stock_score(s3)
+    _sl, _sc = short_label(_short_s), label_color(_short_s)
+    # 中期（3年）: 案B(2026-06-08) — 同様に常に per-stock proxy(mid_stock_score) を表示。
+    _m_info = _pred.get('中期', {})
+    _m_badge = verify_badge(_m_info.get('win_lose', ''))
+    _mid_s = mid_stock_score(s2)
+    _ml, _mc = short_label(_mid_s), label_color(_mid_s)
+    # showD用の短期/中期スコア（数値）。詳細欄の3軸矢印は出さない（CEO 2026-06-07: 詳細欄に矢印不要・元の空状態を維持）。中期スコアはカード用に渡す
+    _short_s = short_stock_score(s3)
+    _mid_s   = mid_stock_score(s2)
 
     tr = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{_short_s},'','','{rank}',"
-        f"'{sb}','{mb}','{lb}','{nt}','{_dl}'"
+        f"'{sb}','{mb}','{lb}','{nt}','{_dl}',{_mid_s}"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
@@ -1031,36 +1021,34 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
     def e2(s):
         return s.replace("'","&#39;").replace('\n',' ')
 
-    sb2 = e2(f"短期{SHORT_SCORE}点({short_label(SHORT_SCORE)})。")
-    mb2 = e2(mid_sector_comment(sect, MID_SCORE))
+    _sb2_s = short_stock_score(s3)   # per-stock 短期（検証中・参考）
+    _mb2_m = mid_stock_score(s2)     # per-stock 中期（検証中・参考）
+    sb2 = e2(f"短期{_sb2_s}点({short_label(_sb2_s)})。市場×この銘柄の割安度で算出（検証中・参考）。")
+    mb2 = e2(mid_sector_comment(sect, _mb2_m))
     lb2 = e2(f"ROE平均{roe:.1f}%・FCR{fcr:.0f}%・ROEトレンド{roeT:+.2f}/年。")
     nt2 = e2(f"v4.3: {tot:.1f}点({rank})=ROIC{s1:.0f}*40%+Trend{s2:.0f}*35%+Price{s3:.0f}*25%")
 
     # 予測記録シートから取得（なければ proxy）
     _pred2 = PREDICTIONS.get(code, {})
     _dl2 = stock_days_label(code)   # 銘柄別 日数（スクリーニング詳細パネル・C1）
+    # 案B(2026-06-08): 常に per-stock proxy を表示（予測記録の古い方向は使わない）。
     _s_info2 = _pred2.get('短期', {})
-    _s_pred2 = _s_info2.get('direction', '')
-    _sl2, _sc2 = direction_label(_s_pred2) if _s_pred2 else (None, None)
     _s_badge2 = verify_badge(_s_info2.get('win_lose', ''))
-    if _sl2 is None:
-        _short_s2 = short_stock_score(s3)
-        _sl2, _sc2 = short_label(_short_s2), label_color(_short_s2)
-    _m_info2 = _pred2.get('中期', {})
-    _m_pred2 = _m_info2.get('direction', '')
-    _ml2, _mc2 = direction_label(_m_pred2) if _m_pred2 else (None, None)
-    _m_badge2 = verify_badge(_m_info2.get('win_lose', ''))
-    if _ml2 is None:
-        _mid_s2 = mid_stock_score(s2)
-        _ml2, _mc2 = short_label(_mid_s2), label_color(_mid_s2)
     _short_s2 = short_stock_score(s3)
+    _sl2, _sc2 = short_label(_short_s2), label_color(_short_s2)
+    _m_info2 = _pred2.get('中期', {})
+    _m_badge2 = verify_badge(_m_info2.get('win_lose', ''))
+    _mid_s2 = mid_stock_score(s2)
+    _ml2, _mc2 = short_label(_mid_s2), label_color(_mid_s2)
+    _short_s2 = short_stock_score(s3)
+    _mid_s2   = mid_stock_score(s2)
 
     rb2 = rbg(rank)
     tr_s = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{_short_s2},'','','{rank}',"
-        f"'{sb2}','{mb2}','{lb2}','{nt2}','{_dl2}'"
+        f"'{sb2}','{mb2}','{lb2}','{nt2}','{_dl2}',{_mid_s2}"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
