@@ -964,14 +964,15 @@ for row, stype in all_data:
     if _ml is None:
         _mid_s = mid_stock_score(s2)
         _ml, _mc = short_label(_mid_s), label_color(_mid_s)
-    # showD用の短期スコア（数値）
+    # showD用の短期/中期スコア（数値）。詳細欄の3軸矢印は出さない（CEO 2026-06-07: 詳細欄に矢印不要・元の空状態を維持）。中期スコアはカード用に渡す
     _short_s = short_stock_score(s3)
+    _mid_s   = mid_stock_score(s2)
 
     tr = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{_short_s},'','','{rank}',"
-        f"'{sb}','{mb}','{lb}','{nt}','{_dl}'"
+        f"'{sb}','{mb}','{lb}','{nt}','{_dl}',{_mid_s}"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
@@ -1050,13 +1051,14 @@ for row, stype in screen_data[:DISPLAY_TOP_N]:
         _mid_s2 = mid_stock_score(s2)
         _ml2, _mc2 = short_label(_mid_s2), label_color(_mid_s2)
     _short_s2 = short_stock_score(s3)
+    _mid_s2   = mid_stock_score(s2)
 
     rb2 = rbg(rank)
     tr_s = (
         f'        <tr class="dr" onclick="sel(this);showD('
         f"'{code}','{name}','{sect}',"
         f"{tot},'{rank}',{_short_s2},'','','{rank}',"
-        f"'{sb2}','{mb2}','{lb2}','{nt2}','{_dl2}'"
+        f"'{sb2}','{mb2}','{lb2}','{nt2}','{_dl2}',{_mid_s2}"
         f')">\n'
         f'          <td><span style="font-size:var(--fs-sm);color:#475569;">{code}</span><br>'
         f'<span style="font-weight:900;color:#f1f5f9;">{name}</span></td>\n'
