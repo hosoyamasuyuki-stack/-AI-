@@ -63,7 +63,8 @@ class TestPanelHeaderConsistency:
         ticker_match = re.search(r'監視\((\d+)\)', html)
         panel_match = re.search(
             r'<span style="background:#60a5fa22[^>]+>(\d+)銘柄</span>'
-            r'<span style="color:#34d399;font-weight:800;">購入候補\s*(\d+)</span>',
+            # 2026-06-08: 規約適合で「購入候補」→「注目」へリネーム（generate_dashboard.py L1551）。両表記を許容。
+            r'<span style="color:#34d399;font-weight:800;">(?:購入候補|注目)\s*(\d+)</span>',
             html
         )
         assert ticker_match, 'ティッカー監視数が見つからない'
