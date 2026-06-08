@@ -2710,7 +2710,7 @@ function showD(code,name,sector,v42,rk,sScore,sArr,mArr,lRk,sBody,mBody,lBody,no
     // マトリックス補足説明
     const mn=document.getElementById('d-matrix-note');
     if(mn&&rk){
-      mn.textContent=`総合${v42}点（${rk}ランク）= Real ROIC ${s1}pt×40% + トレンド ${s2}pt×35% + 価格 ${s3}pt×25%。${
+      mn.textContent=`${
         rk==='S'||rk==='A'?'稼ぐ力・成長・割安度のバランスが良好で、総合評価の高い銘柄です。':
         rk==='B'?'総合評価は中庸。短期・中期シグナルの改善が今後の注目点です。':
         '総合評価は低め。稼ぐ力や成長の改善が確認できるかが注目点です。'
@@ -2932,130 +2932,44 @@ const HELP={
   v42:{
     title:'📐 v4.2 マトリックス分析とは',
     html:`
-<h3>設計思想</h3>
-<p>株価＝将来FCFの現在価値。FCFを決める変数は3つだけ。それを測るのがv4.2です。<br>
-バフェットが言う「10年後もその企業が強いか」を数値化する試みです。</p>
-<h3>変数1：Real ROIC（ウェイト40%）</h3>
-<div class="row"><span class="lbl">定義</span><span class="val">ROEスコア×60% + FCF変換率スコア×40%</span></div>
-<div class="row"><span class="lbl">意味</span><span class="val">「今どれだけ稼ぐか」×「その利益は本物か」＝堀の現在地</span></div>
-<div class="row"><span class="lbl">ROE基準</span><span class="val"><span class="tag-g">25%以上→100pt</span> <span class="tag-g">20%→85pt</span> <span class="tag-y">12%→58pt</span> <span class="tag-r">5%以下→20pt</span></span></div>
-<div class="row"><span class="lbl">FCR基準</span><span class="val"><span class="tag-g">80%以上→78pt↑</span> <span class="tag-y">60%→62pt</span> <span class="tag-r">20%以下→26pt</span></span></div>
-<div class="row"><span class="lbl">なぜ重要？</span><span class="val">ROEだけでは「借金で水増し」を見抜けない。FCRで利益の質を掛け合わせることで真の収益力を測る</span></div>
-<h3>変数2：トレンド（ウェイト35%）</h3>
-<div class="row"><span class="lbl">定義</span><span class="val">ROEの3〜4年傾き×60% + FCR傾き×40%</span></div>
-<div class="row"><span class="lbl">意味</span><span class="val">「堀が深まっているか・崩れ始めているか」＝5年後の姿</span></div>
-<div class="row"><span class="lbl">なぜ最重要？</span><span class="val">上昇中のROE＝「競合が侵食できない堀が広がっている」証拠。バックテストで最も将来リターンと相関</span></div>
-<div class="row"><span class="lbl">傾き基準</span><span class="val"><span class="tag-g">+4%/年以上→100pt</span> <span class="tag-g">+2%→82pt</span> <span class="tag-y">0%→64pt</span> <span class="tag-r">-2%→28pt</span></span></div>
-<h3>変数3：価格（ウェイト25%）</h3>
-<div class="row"><span class="lbl">定義</span><span class="val">PEGスコア×50% + FCF利回りスコア×50%</span></div>
-<div class="row"><span class="lbl">PEG基準</span><span class="val"><span class="tag-g">0.5以下→100pt（超割安成長）</span> <span class="tag-g">1.0→72pt</span> <span class="tag-y">1.5→42pt</span> <span class="tag-r">2.0超→26pt</span></span></div>
-<div class="row"><span class="lbl">FCF利回り</span><span class="val"><span class="tag-g">8%以上→100pt</span> <span class="tag-g">4%→70pt</span> <span class="tag-y">2%→38pt</span> <span class="tag-r">0%以下→8pt</span></span></div>
-<div class="row"><span class="lbl">なぜ25%？</span><span class="val">長期保有では価格の影響は薄れる。堀と複利が価格を上回るため最低ウェイト</span></div>
-<h3>ランク基準とバックテスト実績</h3>
-<div class="row"><span class="lbl"><span class="tag-g">S 80点以上</span></span><span class="val">長期で最も評価の高い水準</span></div>
-<div class="row"><span class="lbl"><span class="tag-g">A 65点以上</span></span><span class="val">優良・長期で注目される水準</span></div>
-<div class="row"><span class="lbl"><span class="tag-y">B 50点以上</span></span><span class="val">中立・経過観察の水準</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">C/D 50点未満</span></span><span class="val">評価が低く、改善の確認が必要な水準</span></div>
-<h3>実際のAランク銘柄スコア内訳（2026/3/18）</h3>
-<div class="row"><span class="lbl">リクルートHD</span><span class="val">79.3点：Real ROIC 91pt ／ トレンド 62pt ／ 価格 85pt</span></div>
-<div class="row"><span class="lbl">サンリオ</span><span class="val">77.9点：Real ROIC 91pt ／ トレンド 63pt ／ 価格 78pt</span></div>
-<div class="row"><span class="lbl">三菱商事</span><span class="val">73.0点：Real ROIC 75pt ／ トレンド 57pt ／ 価格 92pt</span></div>
-<div class="row"><span class="lbl">HOYA</span><span class="val">68.2点：Real ROIC 82pt ／ トレンド 52pt ／ 価格 69pt</span></div>
-<div class="note">このランクは、企業の本質的価値（Real ROIC・トレンド・価格）を相対評価した点数です。将来のリターンや勝率を保証するものではありません。市場環境とともに毎月見直されます。</div>`
+<p>企業の本質的価値を独自に相対評価し、S/A/B/C/D のランクに分類した参考評価です。</p>
+<div class="note">将来のリターンや勝率を保証するものではありません。市場環境とともに毎月見直されます。</div>
+`
   },
   short_score:{
     title:'📅 短期スコア（1年以内）とは',
     html:`
-<h3>設計思想</h3>
-<p>25業種×114指標×ラグ0〜24ヶ月の相関分析（30,000通り）から導出。<br>
-<strong>核心の発見：短期はほぼ全業種でラグ0（同時反応）。</strong><br>
-下の計算式は市場全体の短期スコア（市場の体温）の求め方です。各銘柄カードの短期は、この市場の体温を起点に、その銘柄の割安度で補正した<strong>銘柄別の参考値</strong>です（将来を保証する予測ではありません）。</p>
-<h3>計算式（市場全体の短期スコア）</h3>
-<div class="row"><span class="lbl">SOX変化率×30%</span><span class="val">米国ハイテク株指数。市場全体の短期方向の代表指標</span></div>
-<div class="row"><span class="lbl">SP500変化率×25%</span><span class="val">米国株全体の方向</span></div>
-<div class="row"><span class="lbl">HYG変化率×25%</span><span class="val">社債市場の動向（リスクオン／オフの指標）</span></div>
-<div class="row"><span class="lbl">VIX変化率×20%</span><span class="val">恐怖指数（上昇＝市場全体の下押し要因）</span></div>
-<h3>スコア基準</h3>
-<div class="row"><span class="lbl"><span class="tag-g">70点以上</span></span><span class="val">🟢🟢 強気：市場の短期環境が強い水準</span></div>
-<div class="row"><span class="lbl"><span class="tag-g">55〜70点</span></span><span class="val">🟢 やや強気：やや強い環境</span></div>
-<div class="row"><span class="lbl"><span class="tag-y">45〜55点</span></span><span class="val">🟡 中立：方向感の乏しい環境</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">30〜45点</span></span><span class="val">🔴 やや弱気：やや弱い環境</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">30点未満</span></span><span class="val">🔴🔴 弱気：弱い環境</span></div>
-<h3>スコアの読み方</h3>
-<div class="row"><span class="lbl">市場の短期スコア</span><span class="val">上記4指標（SOX・SP500・HYG・VIX）から、市場全体の「短期の体温」を毎日算出します。現在の値は画面上部のマクロ総合でご確認いただけます。</span></div>
-<div class="note">各銘柄カードの短期は、この市場の短期スコアを起点に、その銘柄の割安度で補正した銘柄別の参考値です。市場環境とともに毎月見直されます。将来を保証する予測ではありません。</div>`
+<p>市場全体の短期的な環境（市場の体温）を数値化した指標です。各銘柄カードの短期は、この体温を起点に、その銘柄の割安度で補正した銘柄別の参考値です。</p>
+<div class="note">将来を保証する予測ではありません。市場環境とともに毎月見直されます。</div>
+`
   },
   medium_score:{
     title:'📆 中期スコア（3年以内）とは',
     html:`
-<h3>最重要発見（仮説を覆した実データ）</h3>
-<p>当初の仮説は「米M2ラグ12ヶ月」が最重要と予想。<br>
-しかし25業種×114指標の実データ分析で判明：<br>
-<strong>中期の支配変数は「日本M2前年比加速度（ラグ15〜18ヶ月）」。</strong><br>
-25業種中19業種で日本M2関連指標が最強先行指標として出現。</p>
-<h3>計算式</h3>
-<div class="row"><span class="lbl">日本M2加速度×50%</span><span class="val">15ヶ月前の値を使用（最重要・最強先行指標）</span></div>
-<div class="row"><span class="lbl">米GDP加速度×30%</span><span class="val">12ヶ月前の値を使用</span></div>
-<div class="row"><span class="lbl">WTI加速度×20%</span><span class="val">10ヶ月前の値（低いほど良い＝コスト低下）</span></div>
-<h3>スコア基準</h3>
-<div class="row"><span class="lbl"><span class="tag-g">70点以上</span></span><span class="val">🟢🟢 中期の環境が強い水準</span></div>
-<div class="row"><span class="lbl"><span class="tag-g">55〜70点</span></span><span class="val">🟢 中期投資環境は良好</span></div>
-<div class="row"><span class="lbl"><span class="tag-y">45〜55点</span></span><span class="val">🟡 中立</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">30〜45点</span></span><span class="val">🔴 やや弱気</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">30点未満</span></span><span class="val">🔴🔴 1〜2年後に悪化リスク</span></div>
-<h3>スコアの読み方</h3>
-<div class="row"><span class="lbl">市場の中期スコア</span><span class="val">上記3指標（日本M2加速度・米GDP加速度・WTI加速度）から、市場全体の「中期の環境」を算出します。現在の値は画面上部のマクロ総合でご確認いただけます。</span></div>
-<div class="note">各銘柄カードの中期は、この市場の中期スコアを起点に、その銘柄の業績トレンドで補正した銘柄別の参考値です。市場環境とともに毎月見直されます。将来を保証する予測ではありません。</div>`
+<p>市場全体の中期的な環境（おおむね1〜3年）を数値化した指標です。各銘柄カードの中期は、この環境を起点に、その銘柄の業績トレンドで補正した銘柄別の参考値です。</p>
+<div class="note">将来を保証する予測ではありません。市場環境とともに毎月見直されます。</div>
+`
   },
   short:{
     title:'📅 短期予測（1年以内）の見方',
     html:`
-<h3>何を表しているか</h3>
-<p>市場の短期スコア（市場の体温）を起点に、各銘柄の割安度・業種特性で補正した銘柄別の参考方向です（検証中・参考。将来を保証する予測ではありません）。<br>
-<strong>長期Aランク銘柄では、短期の下落局面で割安度が高まる傾向があります。</strong></p>
-<h3>ラベルの意味</h3>
-<div class="row"><span class="lbl"><span class="tag-g">強気</span></span><span class="val">短期スコア70点超。市場の短期環境がこの銘柄に強く出ている水準（参考。将来を保証しません）</span></div>
-<div class="row"><span class="lbl"><span class="tag-g">やや強気</span></span><span class="val">短期スコア55〜70点。日経をやや上回る可能性</span></div>
-<div class="row"><span class="lbl">中立</span><span class="val">短期スコア45〜55点。日経と同程度</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">やや弱気</span></span><span class="val">短期スコア30〜45点。日経を下回る可能性</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">弱気</span></span><span class="val">短期スコア30点未満。日経を大幅に下回るリスク</span></div>
-<div class="note">このラベルは、市場の短期環境と各銘柄の割安度・業種特性から毎月見直される銘柄別の参考評価です（検証中・参考。将来を保証する予測ではありません）。次回評価：2026/07/01（月次更新後）。</div>`
+<p>市場の短期的な環境を起点に、各銘柄の割安度・業種特性で補正した銘柄別の参考方向です（検証中・参考）。ラベル（強気〜弱気）は相対的な強弱の目安にすぎません。</p>
+<div class="note">毎月見直されます。将来を保証する予測ではありません。</div>
+`
   },
   medium:{
     title:'📆 中期予測（3年以内）の見方',
     html:`
-<h3>何を表しているか</h3>
-<p>日本M2加速度（15〜18ヶ月前のデータ）を業種別に補正した中期予測。<br>
-「今のマクロ環境が1〜2年後にどう影響するか」を実データから計算します。</p>
-<h3>ラベルの意味</h3>
-<div class="row"><span class="lbl"><span class="tag-g">強気</span></span><span class="val">中期の環境がこの銘柄に強く出ている水準（参考。将来を保証しません）</span></div>
-<div class="row"><span class="lbl"><span class="tag-g">やや強気</span></span><span class="val">中期の環境がやや強い水準</span></div>
-<div class="row"><span class="lbl">中立</span><span class="val">日経と同程度。短期・長期のシグナルも参照</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">やや弱気</span></span><span class="val">中期の上値が重くなりやすい環境</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">弱気</span></span><span class="val">1〜2年後に悪化リスク。特に逆相関業種は注意</span></div>
-<h3>加速度指標の見方（なぜラグを使うのか）</h3>
-<div class="row"><span class="lbl">前年比加速度</span><span class="val">前年比の変化量。景気の「転換点」を捉える最強の先行指標</span></div>
-<div class="row"><span class="lbl">ラグの意味</span><span class="val">「15ヶ月前のM2加速度」＝「現在の株価への影響」。実データで相関を実証</span></div>
-<div class="note">このラベルは、市場の中期環境と各銘柄の業績トレンドから毎月見直される銘柄別の参考評価です（検証中・参考。将来を保証する予測ではありません）。</div>`
+<p>市場の中期的な環境を起点に、各銘柄の業績トレンドで補正した銘柄別の参考方向です（検証中・参考）。ラベルは相対的な強弱の目安にすぎません。</p>
+<div class="note">毎月見直されます。将来を保証する予測ではありません。</div>
+`
   },
   long:{
     title:'🏛️ 長期予測（3年以上）の見方',
     html:`
-<h3>何を表しているか</h3>
-<p>v4.2のマトリックスランク（S/A/B/C/D）が長期予測の唯一の基準。<br>
-「企業の本質的価値」だけで判断します。短期・中期のノイズは無視。</p>
-<h3>長期投資の考え方</h3>
-<div class="row"><span class="lbl">1年保有</span><span class="val">約50%（コイン投げ）。どんな分析も1年では当たらない</span></div>
-<div class="row"><span class="lbl">3年保有</span><span class="val">高ランクの企業ほど、複利力（Real ROIC）が結果に表れやすい傾向（過去の傾向・将来を保証しません）</span></div>
-<div class="row"><span class="lbl">5年保有</span><span class="val">長期ほど企業の本質的価値が反映されやすいとされます（過去の傾向・将来を保証しません）</span></div>
-<div class="row"><span class="lbl">なぜ長期が有効？</span><span class="val">短期は市場心理・需給が支配。長期は企業の複利力（Real ROIC）が支配</span></div>
-<h3>ランク別の長期評価の目安</h3>
-<div class="row"><span class="lbl"><span class="tag-g">A → 強気</span></span><span class="val">企業の複利力が高く、長期評価が最も高い水準（過去の傾向・将来を保証しません）</span></div>
-<div class="row"><span class="lbl"><span class="tag-y">B → 中立</span></span><span class="val">日経と同程度の水準になりやすい傾向。タイミングで損益が分かれます（過去の傾向・将来を保証しません）</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">C/D → 弱気</span></span><span class="val">評価が低く、Real ROICの低下が止まらない限り低いままになりやすい水準（過去の傾向・将来を保証しません）</span></div>
-<h3>長期の考え方</h3>
-<div class="row"><span class="lbl">長期の見方</span><span class="val">長期はマトリックスランク（S/A/B/C/D）が基準です。短期・中期の市場環境は画面上部のマクロ総合、各銘柄の長期評価はランクをご参照ください。</span></div>
-<div class="note">長期評価は、企業の複利力（Real ROIC）を中心とした相対評価です。個別銘柄の将来のリターンを示すものではなく、市場環境とともに毎月見直されます。</div>`
+<p>企業の本質的価値を中心とした相対評価（ランク）にもとづく長期の目安です。</p>
+<div class="note">個別銘柄の将来のリターンを示すものではなく、市場環境とともに毎月見直されます。</div>
+`
   }
 };
 
