@@ -213,8 +213,8 @@ def load_valuation():
                     'buffett_jp': None,
                     'buffett_us': buffett_us_selfcalc(),
                     'usdjpy':    sf('ドル円',        149),
-                    'verdict':   rec.get('総合判定',  '日本株優位'),
-                    'verdict_us':rec.get('米国判定',  '米国株 慎重'),
+                    'verdict':   rec.get('総合判定',  '日本株 割安'),
+                    'verdict_us':rec.get('米国判定',  '米国株 割高'),
                     'updated_at':rec.get('更新日時',  '-'),
                     'source_updated': True,
                 }
@@ -333,12 +333,12 @@ def load_valuation():
     _n     = len(_valid) or 1
     jp_adv = sum(1 for x in _valid if x)
     _r     = jp_adv / _n
-    verdict    = ('日本株フルポジ' if _r >= 0.8 else
-                  '日本株優位'     if _r >= 0.6 else
-                  '均衡局面'       if _r >= 0.4 else '要検討')
-    verdict_us = ('米国株 慎重'    if _r >= 0.8 else
-                  '米国株 様子見'  if _r >= 0.6 else
-                  '分散推奨'       if _r >= 0.4 else '米国株も検討')
+    verdict    = ('日本株 大幅割安' if _r >= 0.8 else
+                  '日本株 割安'     if _r >= 0.6 else
+                  'ほぼ拮抗'       if _r >= 0.4 else '日本株 やや割高')
+    verdict_us = ('米国株 割高'    if _r >= 0.8 else
+                  '米国株 やや割高'  if _r >= 0.6 else
+                  'ほぼ拮抗'       if _r >= 0.4 else '米国株 割安')
 
     # 更新日時に「ソース更新済み」を明記（50代初心者への配慮）
     updated_at = datetime.now().strftime('%Y/%m/%d %H:%M') + ' ソース更新済み'
@@ -1541,20 +1541,20 @@ else:
 # 監視銘柄: 購入候補シグナル数集計（rows_w の s-buy セル文字列から「買」を含む銘柄をカウント）
 _buy_candidates_w = 0
 for _tr in rows_w:
-    if 's-buy' in _tr and '買' in _tr:
+    if 's-buy' in _tr and '注目' in _tr:
         _buy_candidates_w += 1
 
 # 監視パネルヘッダ「14銘柄 / 購入候補 1」を動的化
 _before_w = src
 src = re.sub(
-    r'<span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">\d+銘柄</span><span style="color:#34d399;font-weight:800;">購入候補\s*\d+</span>',
-    f'<span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">{_n_watch}銘柄</span><span style="color:#34d399;font-weight:800;">購入候補 {_buy_candidates_w}</span>',
+    r'<span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">\d+銘柄</span><span style="color:#34d399;font-weight:800;">(?:購入候補|注目)\s*\d+</span>',
+    f'<span style="background:#60a5fa22;color:#60a5fa;padding:1px 6px;border-radius:6px;font-weight:800;">{_n_watch}銘柄</span><span style="color:#34d399;font-weight:800;">注目 {_buy_candidates_w}</span>',
     src, count=1
 )
 if _before_w == src:
     print(f"WARN: 監視パネルヘッダ M-8/M-8-2 マッチなし")
 else:
-    print(f"OK: 監視パネルヘッダ動的化 → {_n_watch}銘柄 / 購入候補 {_buy_candidates_w}")
+    print(f"OK: 監視パネルヘッダ動的化 → {_n_watch}銘柄 / 注目 {_buy_candidates_w}")
 
 # M-12 / M-14: 翌月 1 日を動的計算
 _now_m12 = datetime.now()
@@ -1901,7 +1901,7 @@ var VI_DATA={{
   pbr:{{ttl:'PBR（株価純資産倍率）とは',body:'会社の純資産と株価を比べた指標です。\\n1倍＝今すぐ会社を解散したときの価値と同じ。\\n日本は東証の改革でPBR改善が進んでいます。\\n\\n目安：1倍以下→超割安 / 1〜2倍→割安 / 3倍超→割高',jp:{{min:0.9,max:2.4,now:{pbr_jp:.2f},g:1.4,w:2.0,flag:'🇯🇵 日本'}},us:{{min:2.5,max:6.5,now:{pbr_us:.2f},g:3.5,w:4.5,flag:'🇺🇸 米国'}}}},
   yield:{{ttl:'益回り（株式益回り）とは',body:'PERの逆数（1÷PER×100）。\\n株式投資をした場合の利回りに相当します。\\n国債利回りより高ければ株式が有利。\\n\\n目安：6%超→株式有利 / 4〜6%→中立 / 4%未満→割高',jp:{{min:3,max:9,now:{yld_jp:.2f},g:6,w:4,flag:'🇯🇵 日本',inv:1}},us:{{min:2,max:7,now:{yld_us:.2f},g:5,w:3.5,flag:'🇺🇸 米国',inv:1}}}},
   buffett:{{ttl:'バフェット指数とは',body:'国の株式市場全体の時価総額をGDPで割った指標。\\nバフェットが重視することで有名。\\n数値が高いほど株式市場が割高です。\\n\\n米国は米FRB/BEAの公的統計から算出。\\n日本は信頼できる最新データの整備が整うまで一時非表示としています。\\n\\n目安：100%以下→割安 / 100〜150%→適正 / 150%超→割高',jp:null,us:{{min:80,max:260,now:{_buf_us_js},g:120,w:170,flag:'🇺🇸 米国'}}}},
-  verdict:{{ttl:'総合判定の仕組み',body:'4指標（PBR・PER・配当利回り・益回り）を日米で比較し、日本が有利な割合で自動判定します。\\n\\n8割以上→日本株フルポジ\\n6割以上→日本株優位\\n4割以上→均衡局面\\nそれ未満→要検討\\n\\nバフェット指数は日本側データ整備中のため判定対象外としています。',jp:null,us:null}}
+  verdict:{{ttl:'総合判定の仕組み',body:'4指標（PBR・PER・配当利回り・益回り）を日米で比較し、日本が有利な割合で自動判定します。\\n\\n8割以上→日本株が大幅に割安\\n6割以上→日本株が割安\\n4割以上→ほぼ拮抗\\nそれ未満→日本株が割高寄り\\n\\nバフェット指数は日本側データ整備中のため判定対象外としています。',jp:null,us:null}}
 }};
 function pct(mn,mx,v){{return Math.min(100,Math.max(0,Math.round((v-mn)/(mx-mn)*100)));}}
 function dc(p,gp,wp,inv){{if(inv)return p>=gp?'#34d399':p>=wp?'#fbbf24':'#f87171';return p<=gp?'#34d399':p<=wp?'#fbbf24':'#f87171';}}

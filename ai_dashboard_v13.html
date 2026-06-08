@@ -2630,12 +2630,7 @@ const arrowColor={
   '↑↑':'#34d399','↑':'#6ee7b7','→':'#94a3b8','↓':'#fb923c','↓↓':'#f87171'
 };
 const rkColor={S:'#34d399',A:'#5eead4',B:'#fbbf24',C:'#fb923c',D:'#f87171'};
-const sigMap={
-  buy:'<span class="s-buy">長期買い</span>',
-  wait:'<span class="s-wait">待ち</span>',
-  watch:'<span class="s-watch">中立</span>',
-  warn:'<span class="s-warn">要注意</span>'
-};
+// sigMap 削除(2026-06-08 Tier3規約適合): 未参照デッドコード(売買シグナル語)を除去
 let last=null;
 function sel(r){if(last)last.classList.remove('sel');r.classList.add('sel');last=r;}
 // ── 銘柄別スコアテーブル（コードで引く）──
@@ -2892,7 +2887,7 @@ function buildSummary(code,name,sector,v42,rk,sArr,mArr,lRk,s1,s2,s3){
 const HELP={
   vix:{
     title:'VIX 恐怖指数とは',
-    html:'<h3>一言でいうと</h3><p>投資家が「怖い」と感じているかを測る指数です。高いほど市場が不安定です。</p><h3>数値の見方</h3><div class="row"><span class="lbl"><span class="tag-g">20未満</span></span><span class="val">安定相場。安心して投資できる環境</span></div><div class="row"><span class="lbl"><span class="tag-y">20-30</span></span><span class="val">やや警戒。急な変動に注意</span></div><div class="row"><span class="lbl"><span class="tag-r">30以上</span></span><span class="val">恐怖相場。暴落の可能性あり</span></div><div class="note">現在27.0 = 警戒レベル。新規購入は慎重に。</div>'
+    html:'<h3>一言でいうと</h3><p>投資家が「怖い」と感じているかを測る指数です。高いほど市場が不安定です。</p><h3>数値の見方</h3><div class="row"><span class="lbl"><span class="tag-g">20未満</span></span><span class="val">安定相場。安心して投資できる環境</span></div><div class="row"><span class="lbl"><span class="tag-y">20-30</span></span><span class="val">やや警戒。急な変動に注意</span></div><div class="row"><span class="lbl"><span class="tag-r">30以上</span></span><span class="val">恐怖相場。暴落の可能性あり</span></div><div class="note">現在27.0 = 警戒レベル。市場が不安定な状態です。</div>'
   },
   hyg:{
     title:'HYG 社債市場（ハイイールド債）とは',
@@ -2912,7 +2907,7 @@ const HELP={
   },
   cape:{
     title:'シラーPER（CAPE）とは',
-    html:'<h3>一言でいうと</h3><p>過去10年間の平均利益で計算したPER（株価収益率）です。通常のPERより信頼性が高いです。</p><h3>数値の見方</h3><div class="row"><span class="lbl"><span class="tag-g">15倍以下</span></span><span class="val">割安。買いのチャンス</span></div><div class="row"><span class="lbl"><span class="tag-y">15-25倍</span></span><span class="val">適正。普通の水準</span></div><div class="row"><span class="lbl"><span class="tag-r">25倍以上</span></span><span class="val">割高。注意が必要</span></div><div class="note">日本29倍/米国38倍 = どちらも割高圏。歴史的に高い水準です。</div>'
+    html:'<h3>一言でいうと</h3><p>過去10年間の平均利益で計算したPER（株価収益率）です。通常のPERより信頼性が高いです。</p><h3>数値の見方</h3><div class="row"><span class="lbl"><span class="tag-g">15倍以下</span></span><span class="val">割安水準</span></div><div class="row"><span class="lbl"><span class="tag-y">15-25倍</span></span><span class="val">適正。普通の水準</span></div><div class="row"><span class="lbl"><span class="tag-r">25倍以上</span></span><span class="val">割高。注意が必要</span></div><div class="note">日本29倍/米国38倍 = どちらも割高圏。歴史的に高い水準です。</div>'
   },
   pbr:{
     title:'PBR（株価純資産倍率）とは',
@@ -2924,7 +2919,7 @@ const HELP={
   },
   buffett:{
     title:'バフェット指数とは',
-    html:'<h3>一言でいうと</h3><p>ウォーレン・バフェットが重視する指標。株式市場全体の時価総額をGDP（国の経済規模）で割ったもの。</p><h3>数値の見方</h3><div class="row"><span class="lbl"><span class="tag-g">80%未満</span></span><span class="val">割安。絶好の買い場</span></div><div class="row"><span class="lbl"><span class="tag-y">80-120%</span></span><span class="val">適正。普通の水準</span></div><div class="row"><span class="lbl"><span class="tag-r">120%以上</span></span><span class="val">割高。バフェットなら売りを検討</span></div><div class="note">日本140%/米国200% = どちらも割高圏。特に米国は警戒レベルです。</div>'
+    html:'<h3>一言でいうと</h3><p>ウォーレン・バフェットが重視する指標。株式市場全体の時価総額をGDP（国の経済規模）で割ったもの。</p><h3>数値の見方</h3><div class="row"><span class="lbl"><span class="tag-g">80%未満</span></span><span class="val">割安水準</span></div><div class="row"><span class="lbl"><span class="tag-y">80-120%</span></span><span class="val">適正。普通の水準</span></div><div class="row"><span class="lbl"><span class="tag-r">120%以上</span></span><span class="val">割高水準（過熱・注意）</span></div><div class="note">日本140%/米国200% = どちらも割高圏。特に米国は警戒レベルです。</div>'
   },
   wti:{
     title:'WTI原油価格とは',
@@ -3056,8 +3051,8 @@ const HELP={
 <div class="row"><span class="lbl">なぜ長期が有効？</span><span class="val">短期は市場心理・需給が支配。長期は企業の複利力（Real ROIC）が支配</span></div>
 <h3>ランク別の長期評価の目安</h3>
 <div class="row"><span class="lbl"><span class="tag-g">A → 強気</span></span><span class="val">企業の複利力が高く、長期評価が最も高い水準（過去の傾向・将来を保証しません）</span></div>
-<div class="row"><span class="lbl"><span class="tag-y">B → 中立</span></span><span class="val">3年で日経と同程度か若干上回る。タイミングで損益が分かれる</span></div>
-<div class="row"><span class="lbl"><span class="tag-r">C/D → 弱気</span></span><span class="val">3年保有でも日経を下回るリスク高。Real ROICの低下が止まらない限り評価は低いままになりやすい</span></div>
+<div class="row"><span class="lbl"><span class="tag-y">B → 中立</span></span><span class="val">日経と同程度の水準になりやすい傾向。タイミングで損益が分かれます（過去の傾向・将来を保証しません）</span></div>
+<div class="row"><span class="lbl"><span class="tag-r">C/D → 弱気</span></span><span class="val">評価が低く、Real ROICの低下が止まらない限り低いままになりやすい水準（過去の傾向・将来を保証しません）</span></div>
 <h3>長期の考え方</h3>
 <div class="row"><span class="lbl">長期の見方</span><span class="val">長期はマトリックスランク（S/A/B/C/D）が基準です。短期・中期の市場環境は画面上部のマクロ総合、各銘柄の長期評価はランクをご参照ください。</span></div>
 <div class="note">長期評価は、企業の複利力（Real ROIC）を中心とした相対評価です。個別銘柄の将来のリターンを示すものではなく、市場環境とともに毎月見直されます。</div>`
