@@ -1991,15 +1991,25 @@ if 'hdr-fold-wrap' not in src:
 else:
     print("OK: 折りたたみトグル既存確認")
 
-# モーダル+JS挿入（</body>直前、なければ末尾に追加）
-INJECT_HTML = TOGGLE_JS + VI_MODAL_HTML + MC_MODAL_HTML
+# モーダル+JS挿入（冪等化・2026-06-08 残課題④: 注入の累積を封筒マーカーで防止 + 死蔵MC排出停止）
+# 旧来この注入はガード無しで毎回 </body> 直前へ追記していたため、full_update のたびに
+# TOGGLE_JS + VI_DATA + MC_INFO が1コピーずつ蓄積（実測165コピー・約1.1MB肥大、最新varのみ有効）。
+# showMC は live 呼出ゼロ（唯一の呼出元 _MSTRIP_UNUSED は出力されない死蔵）のため MC_MODAL_HTML を排出停止。
+# VI_MODAL_HTML（showVI=live・最新クリーン）のみ封筒マーカーで1コピー維持し、再実行で 165→1 へ自己収束させる。
+# ① 既存の注入を全除去（本fix後の封筒付き / 旧無印トリプル= toggleHdr..closeMC の双方を掃く）
+src = re.sub(r'<!--MODAL_INJECT_START-->.*?<!--MODAL_INJECT_END-->', '', src, flags=re.DOTALL)
+_legacy_modal_pat = r'<script>function toggleHdr\(\).*?function closeMC\(\)\{[^{}]*\}\s*</script>'
+_n_legacy_modal = len(re.findall(_legacy_modal_pat, src))
+src = re.sub(_legacy_modal_pat, '', src, flags=re.DOTALL)
+# ② 封筒マーカー付きで1コピーだけ再注入（MC排出停止・VIは最新クリーン）
+INJECT_HTML = '<!--MODAL_INJECT_START-->' + TOGGLE_JS + VI_MODAL_HTML + '<!--MODAL_INJECT_END-->'
 if '</body>' in src:
     src = src.replace('</body>', INJECT_HTML + '</body>', 1)
 elif '</html>' in src:
     src = src.replace('</html>', INJECT_HTML + '</html>', 1)
 else:
     src += INJECT_HTML
-print("OK: モーダル+トグルJS注入")
+print(f"OK: モーダル+トグルJS注入（冪等化・旧注入除去 marked+legacy={_n_legacy_modal} → 1コピー・MC死蔵排出停止）")
 
 # 銘柄管理ボタン挿入（ヘッダーに存在しなければ追加）
 MGMT_BTN = '<span id="mgmt-btn" onclick="openStockMgmt()" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#1e293b;border:1px solid #f97316;border-radius:6px;cursor:pointer;font-size:var(--fs-xs);font-weight:900;color:#f97316;transition:all .2s;" onmouseover="this.style.background=\'#f97316\';this.style.color=\'#000\'" onmouseout="this.style.background=\'#1e293b\';this.style.color=\'#f97316\'">&#x1F4DD; \u9298\u67C4\u7BA1\u7406</span>'
