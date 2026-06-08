@@ -1227,6 +1227,11 @@ _hdr = (
     f'height:20px;flex-shrink:0;white-space:nowrap;">'
     f'<span style="color:#f59e0b;font-weight:900;">SYSTEM STATUS</span></span>'
 )
+# 投資助言免責（2026-06-07 CEO指示・流れる帯に追加。文言は法務確認推奨）
+ticker_items.append(_ti(
+    '#fbbf24', '免責',
+    '本表示は投資助言ではありません。情報提供のみ・最終判断はご自身の責任で。過去実績は将来を保証しません'))
+
 _all_items = _hdr + ''.join(ticker_items)
 # ループ再生のため2回繰り返す
 TICKER_DYN = (
