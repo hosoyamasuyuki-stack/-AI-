@@ -6,6 +6,11 @@ on:
     # 毎日 02:30 UTC = 11:30 JST 実行（TDnet 31 日上限制約下で最大蓄積機会）
     - cron: '30 2 * * *'
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'dry-run（true で Sheet 書込なし・取得と判定のみ・System B 実データ検証用）'
+        required: false
+        default: 'false'
 
 env:
   TZ: Asia/Tokyo
@@ -35,6 +40,8 @@ jobs:
           # CEO 通達 2026-06-04: EDINET 補完取得用（TDnet 35 日制約の構造解決）
           # 未設定でもジョブは動作（::warning:: で skip 案内）。
           EDINET_API_KEY: ${{ secrets.EDINET_API_KEY }}
+          # System B (2026-06-09): workflow_dispatch の dry_run=true で Sheet 書込をスキップ（実データ検証用）。
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
           python tools/fetch_tanshin.py 2>&1 | tee fetch_tanshin.log
