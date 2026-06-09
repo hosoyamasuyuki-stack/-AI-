@@ -57,6 +57,19 @@
 
 ## H-perstock-0607-BT（過去先行検証・2026-06-08・status: 計測実行中）
 
+> ## ⚠⚠⚠ 2026-06-09 重大訂正（F1 look-ahead）— 本セクションの +0.087/+0.090/+0.146 は全て無効・下記が真値 ⚠⚠⚠
+> 多角検証(2026-06-09・14エージェント)＋自前再測定で **F1＝分割調整基準不一致の look-ahead バグ** を確定。
+> `backtest_perstock_v1.factors_asof` が PER=price_t/eps・mc=price_t*shout の price_t に **AdjC（将来分割まで遡及反映した調整後終値）** を当時開示の EPS/ShOutFY（未来分割なし）で割っていた。as-of 後に分割する銘柄（＝株価上昇銘柄に偏る）の s3 を人為的に押し上げ → s3 と将来リターンに偽の正相関。本番（yfinance 現在 trailingPE/marketCap）は自己整合ゆえこのバグ無し＝BT は系統的に上振れした偽 proxy（バグは s3 のみ・s1/s2 は price 非依存で無関係）。
+> **F1 修正（当時生終値 C 使用）後の真値**（`backtests/backtest_perstock_v3_corrected.py`・survivorship 670・2026-06-09・私の実行）:
+> | 因子 | 1y full | 3y full |
+> |---|---|---|
+> | s3割安(F1修正) | **+0.019**（CI −0.061..0.092・0含む） | **−0.017**（CI −0.165..0.149・0含む・符号反転） |
+> | s3割安(現行AdjC=バグ・再現) | +0.090 | +0.115 |
+> | s2トレンド | +0.004 | −0.012 |
+> | s1質 | −0.034 | −0.016 |
+> 業種内・サイズ内 中立化後も s3 は全て CI が 0 を含む。**＝F1 修正後、s1/s2/s3 のどれも横断面 IC が 0 と区別できない。**
+> **結論: 「s3割安が明確に効く・株価は財務に収斂」は look-ahead 産物だった。下記 Phase0/S2 の数値は全て F1未修正＝過大。walk-forward/H-1 の前提（検証すべき信号）は消滅。** 出力=`backtests/output/perstock_ic_v3_corrected.csv`。branch `claude/perstock-walkforward-0609`。残る別問題＝JQ≠本番yfinance 因子源乖離・ライブ満期(短期2027/中期2029)未到来。
+
 **背景**: per-stock 予測は 2026-06-07 稼働でライブ満期がゼロ（短期2027/中期2029）。CEO 指示「過去データで先行検証し個別銘柄の足掛かりを作る」に基づき、過去株価×過去財務で因子の効きを IC で先に観測する。実装 = `backtests/backtest_perstock_v1.py`（読取専用・本番SS非汚染・出力は `backtests/output/perstock_ic_*.csv`）。
 
 ### S0 実測（2026-06-08・`backtests/probe_jquants_pit.py`・推測でない）
