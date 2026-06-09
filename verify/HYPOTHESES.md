@@ -69,6 +69,7 @@
 > | s1質 | −0.034 | −0.016 |
 > 業種内・サイズ内 中立化後も s3 は全て CI が 0 を含む。**＝F1 修正後、s1/s2/s3 のどれも横断面 IC が 0 と区別できない。**
 > **結論: 「s3割安が明確に効く・株価は財務に収斂」は look-ahead 産物だった。下記 Phase0/S2 の数値は全て F1未修正＝過大。walk-forward/H-1 の前提（検証すべき信号）は消滅。** 出力=`backtests/output/perstock_ic_v3_corrected.csv`。branch `claude/perstock-walkforward-0609`。残る別問題＝JQ≠本番yfinance 因子源乖離・ライブ満期(短期2027/中期2029)未到来。
+> （注: 下記 Phase0/S2 の「99銘柄」は `backtest_perstock_v1.py` STOCKS 実数 **96** の誤記＝2026-06-09 実カウント確認・IC値に影響なし。）
 
 **背景**: per-stock 予測は 2026-06-07 稼働でライブ満期がゼロ（短期2027/中期2029）。CEO 指示「過去データで先行検証し個別銘柄の足掛かりを作る」に基づき、過去株価×過去財務で因子の効きを IC で先に観測する。実装 = `backtests/backtest_perstock_v1.py`（読取専用・本番SS非汚染・出力は `backtests/output/perstock_ic_*.csv`）。
 
