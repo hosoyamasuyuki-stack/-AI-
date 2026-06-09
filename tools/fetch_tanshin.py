@@ -428,7 +428,12 @@ def edinet_sweep_latest_for_codes(target_codes, lookback_days, api_key, today):
             scanned_days += 1
             for doc in j.get('results', []):
                 sec5 = doc.get('secCode')
-                if sec5 not in code5_to_4 or doc.get('formCode') not in EDINET_MAIN_FORMS:
+                # ordinanceCode='010'（企業内容等の開示に関する内閣府令＝有報/四半期/半期）に限定。
+                # formCode '030000' は ord='060' だと「大量保有報告書」等の非決算書類になるため
+                # ord でも絞る（2026-06-09 dry-run で 8306 が大量保有報告書を拾う事象を検出・根治）。
+                if (sec5 not in code5_to_4
+                        or doc.get('ordinanceCode') != '010'
+                        or doc.get('formCode') not in EDINET_MAIN_FORMS):
                     continue
                 code4 = code5_to_4[sec5]
                 submit_full = doc.get('submitDateTime', '') or ''
@@ -652,7 +657,7 @@ def main():
     # 「異常でも job 緑」になった run 26925050076 の再発防止）。
     # System B (2026-06-09): CEO 報告用に edinet_new/doctype を末尾追記（yml の grep は
     # new/err/coverage を個別抽出するため後方互換・追記は監視を壊さない）。
-    _doctype_str = '/'.join(f'{k}{v}' for k, v in sorted(edinet_doctype_counts.items())) or 'none'
+    _doctype_str = ','.join(f'{k}:{v}' for k, v in sorted(edinet_doctype_counts.items())) or 'none'
     print(f'MONITOR_SUMMARY new={found_new + edinet_found} '
           f'err={err_count + edinet_err} coverage={coverage:.1f} '
           f'edinet_new={edinet_found} edinet_doctype={_doctype_str}')
