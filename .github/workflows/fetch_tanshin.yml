@@ -75,8 +75,16 @@ jobs:
             MONITOR_FAIL=1
           fi
           if [ "$MONITOR_FAIL" -ne 0 ]; then
-            echo "fetch_tanshin 死活監視: 異常を検知したため job を失敗させます"
-            exit 1
+            echo "fetch_tanshin 死活監視: 異常を検知しました"
+            # System B (2026-06-09): dry-run は preview のため new=0（=新規取込なし＝キャッシュが最新）が正常。
+            # ソフトゲート（被覆率 / 新規0&err>0）では dry-run の job を失敗させない。
+            # クラッシュ検知（MONITOR_SUMMARY 行欠落の exit 1）は上で実施済＝dry-run でも有効。
+            if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+              echo "（dry-run のため job は失敗させない: new=0 等は preview では正常値）"
+            else
+              echo "job を失敗させます"
+              exit 1
+            fi
           fi
 
       - name: Stale tanshin monitor (X1-a)
