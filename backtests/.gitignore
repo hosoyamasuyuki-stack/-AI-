@@ -1,3 +1,5 @@
 # per-stock 過去IC バックテストのローカル生成物(コミットしない)
 .cache_perstock/
 output/
+# A=アナリスト・コンセンサス Route1 週次ロガーの生データ(社内シグナル=git非追跡・2026-06-09)
+consensus_log/
