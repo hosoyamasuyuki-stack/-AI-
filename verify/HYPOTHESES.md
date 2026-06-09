@@ -133,4 +133,30 @@
 **残る限界(補正後も)**: ①廃止リターンは last-traded price 近似=倒産時の最終ゼロ化を取りこぼし s3 をやや楽観に振る可能性(方向: 真の s3 はこれより僅かに低い)。②因子源乖離(JQ再構成≠本番yfinance)。③改訂バイアス。→ **採否は持たない(観測値のみ)・本番重み変更は三重ゲートのみ**。次=walk-forward/OOS安定性 + H-1影試算(`mid=市場0.4+s2*α+s3*(0.6−α)`)。
 
 ### 変更履歴(続き)
-- 2026-06-08 S2(survivorship補正・TOPIX500当時母集団)実行。s3割安は補正後も残存(1y+0.090)・s2トレンドは広域で無相関化・H-1の動機強化。branch `claude/perstock-phase1-survivorship-0607`。
+- 2026-06-08 S2(survivorship補正・TOPIX500当時母集団)実行。s3割安は補正後も残存(1y+0.090)・s2トレンドは広域で無相関化・H-1の動機強化。branch `claude/perstock-phase1-survivorship-0607`。**※2026-06-09 F1訂正で本行の+0.090は無効(look-ahead産物)。**
+
+---
+
+## H-newfactor-0609（新因子探索 MVP・F1修正済 harness・status: 観測）
+
+**背景**: F1修正後、現行3因子(s1/s2/s3)は過去ICが0と区別できない(上記⚠訂正)。CEO「C 新因子の探索(精度の本筋)」承認。F1修正済クリーン harness で新候補因子の過去ICを測る。実装=`backtests/backtest_perstock_v4_newfactors.py`(読取専用・survivorship670・出力 `perstock_ic_v4_newfactors.csv`)。
+
+### MVP結果(2026-06-09・momentum 12-1 + clean E/P・survivorship full・横断面Spearman IC)
+| 因子 | 6m | 1y | 3y | 判定 |
+|---|---|---|---|---|
+| momentum 12-1 | −0.022 | **−0.033** | −0.010 | 全CI0含む・**わずかに負(リバーサル)** |
+| clean E/P | +0.015 | +0.020 | +0.024 | 全CI0含む・弱い正 |
+
+業種/サイズ中立化後も同様(momentum 1y業種内 −0.044/E/P 1y業種内 +0.029・いずれも非有意)。
+
+**読み取り(重要)**:
+- **momentum は効かない(むしろ微負)**。「日本株はモメンタムが弱い/効かない」文献(Asness 等・日本はグローバル momentum の例外)と整合＝**harness は壊れておらず忠実**(momentum を『日本では弱い』と正しく再現)。
+- **clean E/P は弱い正(+0.02)だが非有意**(s3修正版と同程度)。
+- → **現行3+新2=計5因子のどれも、TOPIX Large+Mid・1y/3y で横断面ICが0と有意に区別できない**。momentum が日本文献どおり弱い事実が harness 健全性を裏付け＝「測定の失敗」でなく「**この粒度(大型株・1-3y・単一因子横断面)は本質的に低シグナル**」が最有力。
+- 限界: 因子源乖離(本番yfinance≠JQ)・3y nIndep=3・大型株のみ・単一因子(複合/条件付けは未試行)・多重比較(因子探索で検定数増)。
+
+### 次の選択肢(CEO判断)
+- C続行: 追加因子(リビジョン FEPS/NxFEPS・低ボラ・QARP複合・アクルーアル)を試す。ただし momentum すら効かない事実で事前確率は低下。
+- 方針転換: per-stock 1y/3y 方向予測は低シグナル＝v4.3 品質スクリーン(ルールベース順位)を主とし「予測」表現を弱める(規約・正直さと整合)。
+- Option A: ライブ満期(2027/2029)依存。
+- 観測値のみ・本番反映は三重ゲートのみ。branch `claude/perstock-walkforward-0609`。
