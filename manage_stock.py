@@ -367,16 +367,19 @@ def move_stock(code, target):
 # ── エントリーポイント ───────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description='銘柄管理（追加・削除・移動）')
-    parser.add_argument('--code',   required=True, help='銘柄コード（4桁）')
+    parser.add_argument('--code',   required=True, help='銘柄コード（4桁数字 or 130A 等の新形式・3桁+英字）')
     parser.add_argument('--action', required=True, choices=['add', 'remove', 'move'],
                         help='操作: add=追加, remove=削除, move=移動')
     parser.add_argument('--target', required=True, choices=['保有', '監視'],
                         help='対象シート: 保有 or 監視')
     args = parser.parse_args()
 
-    code = args.code.strip()
-    if not code.isdigit() or len(code) != 4:
-        print(f"ERROR: 銘柄コードは4桁の数字で指定してください: {code}")
+    # 銘柄コード形式: 4桁数字（例 7203）または 3桁数字+英字 の新形式（例 130A/212A/544A）。
+    # 取得側 fetch_tanshin.py の正準 `^[0-9]{3}[0-9A-Z]$` に統一。
+    code = args.code.strip().upper()
+    if not (len(code) == 4 and code[:3].isdigit()
+            and (code[3].isdigit() or 'A' <= code[3] <= 'Z')):
+        print(f"ERROR: 銘柄コードは4文字で指定してください（4桁数字 or 3桁+英字 例: 7203 / 130A）: {code}")
         sys.exit(1)
 
     print(f"{'='*50}")

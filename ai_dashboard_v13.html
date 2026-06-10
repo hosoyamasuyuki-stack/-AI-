@@ -253,7 +253,7 @@ table.mx td.rh{background:rgba(255,255,255,.03);color:#8892b0;font-size:var(--fs
 <div id="hdr">
   <div id="logo">
     <div id="logo-icon">⚡</div>
-    <div id="logo-text">長期運用AI 分析システム v13</div>
+    <div id="logo-text">長期運用AI 分析システム v14</div>
   </div>
   <div id="hdr-r">
     <span onclick="window.open('holdings_history_page.html','_blank')" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#1e293b;border:1px solid #34d399;border-radius:6px;cursor:pointer;font-size:var(--fs-xs);font-weight:900;color:#34d399;transition:all .2s;" onmouseover="this.style.background='#34d399';this.style.color='#000'" onmouseout="this.style.background='#1e293b';this.style.color='#34d399'">&#x1F4CA; 取引履歴</span>
@@ -3203,7 +3203,7 @@ function renderKenjaResult(el,data,code,name){
   var ds=data.dataSource||'no_edinet';
   if(ds==='full_text'){html+='<div style="display:flex;align-items:center;gap:5px;padding:5px 0;margin-bottom:6px;"><span style="background:#064e3b;color:#34d399;font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">EDINET全文分析</span><span style="color:#64748b;font-size:var(--fs-sm);">'+escH(ed.docType||'')+' '+escH((ed.submitDate||'').substring(0,10))+'</span></div>';}
   else if(ds==='metadata_only'){html+='<div style="display:flex;align-items:center;gap:5px;padding:5px 0;margin-bottom:6px;"><span style="background:#92400e;color:#fbbf24;font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">メタデータのみ</span><span style="color:#64748b;font-size:var(--fs-sm);">'+escH(ed.docType||'')+' 全文取得に失敗</span></div>';}
-  else{var _hasT=(ds.indexOf('tanshin')>=0);html+='<div style="padding:4px 0;margin-bottom:6px;"><span style="background:'+(_hasT?'#064e3b':'#1e2d40')+';color:'+(_hasT?'#34d399':'#94a3b8')+';font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">'+(_hasT?'最新の決算短信をもとに分析':'公開情報をもとに分析')+'</span></div>';}  /* 2026-06-09: EDINETライブ検索停止に伴い「EDINET書類なし」表記を廃止。決算短信あり→「最新の決算短信をもとに分析」/なし→「公開情報をもとに分析」。 */
+  else{var _hasT=(ds.indexOf('tanshin')>=0);html+='<div style="padding:4px 0;margin-bottom:6px;"><span style="background:'+(_hasT?'#064e3b':'#1e2d40')+';color:'+(_hasT?'#34d399':'#94a3b8')+';font-size:var(--fs-sm);font-weight:800;padding:3px 8px;border-radius:3px;">'+(_hasT?'最新の開示資料をもとに分析':'公開情報をもとに分析')+'</span></div>';}  /* 2026-06-09: EDINETライブ検索停止に伴い「EDINET書類なし」表記を廃止。決算短信あり→「最新の決算短信をもとに分析」/なし→「公開情報をもとに分析」。 */
   // Score total (sum of partA scores / 30)
   var scoreSum=0;var scoreCnt=0;
   ['businessResults','growthQuality','sustainability','outlook','defense','cashFlow'].forEach(function(k){if(pA[k]&&pA[k].score){scoreSum+=pA[k].score;scoreCnt++;}});
@@ -3261,8 +3261,8 @@ function escH(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
     </div>
     <div style="padding:16px;">
       <div style="margin-bottom:12px;">
-        <label style="color:#94a3b8;font-size:var(--fs-xs);font-weight:700;display:block;margin-bottom:4px;">銘柄コード（4桁）</label>
-        <input id="mgmt-code" type="text" maxlength="4" placeholder="例: 7203" style="width:100%;padding:8px 10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e2e8f0;font-size:var(--fs-md);font-family:monospace;box-sizing:border-box;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        <label style="color:#94a3b8;font-size:var(--fs-xs);font-weight:700;display:block;margin-bottom:4px;">銘柄コード（4文字 例: 7203 / 130A）</label>
+        <input id="mgmt-code" type="text" maxlength="4" placeholder="例: 7203 / 130A" style="width:100%;padding:8px 10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e2e8f0;font-size:var(--fs-md);font-family:monospace;box-sizing:border-box;" oninput="this.value=this.value.replace(/[^0-9A-Za-z]/g,'').toUpperCase()">
       </div>
       <div style="margin-bottom:12px;">
         <label style="color:#94a3b8;font-size:var(--fs-xs);font-weight:700;display:block;margin-bottom:4px;">対象</label>
@@ -3295,8 +3295,8 @@ function execMgmt(action){
     return;
   }
   var code=document.getElementById('mgmt-code').value.trim();
-  if(!code||code.length!==4||!/^\d{4}$/.test(code)){
-    document.getElementById('mgmt-status').innerHTML='<span style="color:#f87171;">4桁の銘柄コードを入力してください</span>';
+  if(!code||!/^[0-9]{3}[0-9A-Z]$/.test(code)){
+    document.getElementById('mgmt-status').innerHTML='<span style="color:#f87171;">銘柄コードを正しく入力してください（例: 7203 / 130A）</span>';
     return;
   }
   var target=document.querySelector('input[name="mgmt-target"]:checked').value;
