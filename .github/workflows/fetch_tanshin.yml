@@ -60,6 +60,17 @@ jobs:
           ERR=$(echo "$SUMMARY" | grep -oE 'err=[0-9]+' | grep -oE '[0-9]+')
           COV=$(echo "$SUMMARY" | grep -oE 'coverage=[0-9.]+' | grep -oE '[0-9.]+')
           echo "死活監視サマリ: NEW=$NEW ERR=$ERR COVERAGE=$COV%"
+          # 被覆モニタ（2026-06-10）: 保有/監視の未取得を surface。MONITOR_SUMMARY 末尾の
+          # uncovered_count=/uncovered_codes= を full log から抽出（SUMMARY 変数は先頭3トークン
+          # 固定のため別 grep）。未取得>0 は ::warning:: で可視化するが job は落とさない
+          # （監視は知らせるだけ・パイプは止めない）。screening は対象外＝保有/監視のみ。
+          UNCOV=$(grep -oE 'uncovered_count=[0-9]+' fetch_tanshin.log | tail -1 | grep -oE '[0-9]+')
+          UNCOV=${UNCOV:-0}
+          UNCOV_CODES=$(grep -oE 'uncovered_codes=[0-9A-Za-z,]+' fetch_tanshin.log | tail -1 | sed 's/uncovered_codes=//')
+          echo "被覆モニタ: 保有/監視の未取得=${UNCOV}社 (${UNCOV_CODES:-none})"
+          if [ "$UNCOV" -gt 0 ]; then
+            echo "::warning::保有/監視の未取得が ${UNCOV}社あります: ${UNCOV_CODES}（顧客が古い/欠落データを踏む前に要対応）"
+          fi
           MONITOR_FAIL=0
           # 主ゲート: 被覆率が閾値(40%)未満 = キャッシュ枯渇（chronic）。awk で float 比較。
           if awk "BEGIN{exit !($COV < 40)}"; then

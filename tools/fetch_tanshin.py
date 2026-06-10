@@ -158,6 +158,44 @@ def get_target_codes(ss):
     return codes
 
 
+def get_priority_codes(ss):
+    """保有+監視銘柄コードのみを取得（被覆モニタの優先警告対象・2026-06-10）。
+
+    screening（スクリーニング_Top50）は月次入替でチャーンが激しく毎日違う銘柄が
+    落ちるためノイズ化する。保有・監視（CEO にとって重要な銘柄）の未取得だけを
+    優先警告するため、get_target_codes と同じ正準 regex で保有+監視に限定して取得する。
+    """
+    codes = set()
+    sec_code_re = re.compile(r'^[0-9]{3}[0-9A-Z]$')
+    for sheet_name in (HOLDINGS_SHEET, WATCHLIST_SHEET):
+        try:
+            ws = ss.worksheet(sheet_name)
+            data = ws.col_values(1)[1:]
+            for v in data:
+                v = (v or '').strip().upper()
+                if sec_code_re.fullmatch(v):
+                    codes.add(v)
+        except Exception as e:
+            print(f'[WARN] {sheet_name} 読込失敗（優先）: {e}', file=sys.stderr)
+    return codes
+
+
+def build_monitor_summary(new_count, err_count, coverage,
+                          edinet_found, doctype_str, priority_uncovered):
+    """H-1 死活監視用の機械可読サマリ 1 行を組み立てる（単体テスト可能化・2026-06-10）。
+
+    後方互換厳守: 先頭 3 トークン `new= err= coverage=` の順序・書式は不変
+    （yml の grep が個別抽出する）。System B の `edinet_new= edinet_doctype=` に続けて、
+    被覆モニタの `uncovered_count= uncovered_codes=` を末尾に追記する（監視を壊さない）。
+    priority_uncovered = 保有/監視の未取得コード列（screening は含めない＝ノイズ化回避）。
+    """
+    codes_str = ','.join(priority_uncovered) if priority_uncovered else 'none'
+    return (f'MONITOR_SUMMARY new={new_count} '
+            f'err={err_count} coverage={coverage:.1f} '
+            f'edinet_new={edinet_found} edinet_doctype={doctype_str} '
+            f'uncovered_count={len(priority_uncovered)} uncovered_codes={codes_str}')
+
+
 def fetch_tdnet_index(date):
     """TDnet 日次インデックス → 行リスト（全ページ走査）
 
@@ -517,12 +555,15 @@ def main():
 
     target_codes = get_target_codes(ss)
     all_targets = frozenset(target_codes)  # 被覆率算出用に元集合を保持
-    print(f'対象銘柄: {len(target_codes)}社')
+    # 被覆モニタ（2026-06-10）: 保有/監視のみ（screening 除外）の優先警告対象を別途取得。
+    priority_targets = get_priority_codes(ss)
+    print(f'対象銘柄: {len(target_codes)}社（うち保有/監視 {len(priority_targets)}社）')
     if not target_codes:
         print('対象なし。終了')
         # H-1 (2026-06-05): 対象0社は異常（監視シート読込失敗の疑い）。
         # 死活監視が検知できるよう coverage=0 のサマリを出力する。
-        print('MONITOR_SUMMARY new=0 err=0 coverage=0.0')
+        print('MONITOR_SUMMARY new=0 err=0 coverage=0.0 '
+              'uncovered_count=0 uncovered_codes=none')
         return 0
 
     cache_ws = ensure_cache_sheet(ss)
@@ -635,6 +676,8 @@ def main():
     # CEO 通達 2026-06-04: TDnet 決算短信 + EDINET 補完 の合算被覆率。
     cached_targets = all_targets & set(existing.keys())
     uncovered = sorted(all_targets - set(existing.keys()))
+    # 被覆モニタ（2026-06-10）: 保有/監視に限定した未取得（優先警告・Gmail 通知の対象）。
+    priority_uncovered = sorted(priority_targets - set(existing.keys()))
     coverage = (len(cached_targets) / len(all_targets) * 100.0) if all_targets else 0.0
     print(f'\n=== 結果 ===')
     print(f'  新規/更新 (TDnet)   : {found_new}件')
@@ -647,6 +690,10 @@ def main():
     print(f'  被覆 (短信+EDINET) : {len(cached_targets)}社 / 被覆率 {coverage:.1f}%')
     if uncovered:
         print(f'  未取得 {len(uncovered)}社: {", ".join(uncovered)}')
+    if priority_uncovered:
+        print(f'  [優先] 保有/監視の未取得 {len(priority_uncovered)}社: {", ".join(priority_uncovered)}')
+    else:
+        print('  [優先] 保有/監視の未取得: なし')
     # 被覆率下限ゲート: 閾値未満は GitHub Actions に ::warning:: を伝播
     if coverage < 40.0:
         print(f'::warning::決算短信+EDINET 被覆率 {coverage:.1f}% '
@@ -658,9 +705,13 @@ def main():
     # System B (2026-06-09): CEO 報告用に edinet_new/doctype を末尾追記（yml の grep は
     # new/err/coverage を個別抽出するため後方互換・追記は監視を壊さない）。
     _doctype_str = ','.join(f'{k}:{v}' for k, v in sorted(edinet_doctype_counts.items())) or 'none'
-    print(f'MONITOR_SUMMARY new={found_new + edinet_found} '
-          f'err={err_count + edinet_err} coverage={coverage:.1f} '
-          f'edinet_new={edinet_found} edinet_doctype={_doctype_str}')
+    print(build_monitor_summary(
+        new_count=found_new + edinet_found,
+        err_count=err_count + edinet_err,
+        coverage=coverage,
+        edinet_found=edinet_found,
+        doctype_str=_doctype_str,
+        priority_uncovered=priority_uncovered))
     return 0
 
 
