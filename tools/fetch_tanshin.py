@@ -8,7 +8,7 @@ GitHub Actions: 毎日 11:30 JST 自動実行（cron '30 2 * * *' UTC・案 X' 2
 
 機能:
   1. 直近31日のTDnet日次インデックスをスクレイプ（TDnet 31 日上限）
-     ＋ EDINET（過去90日）で未取得・stale 銘柄を補完
+     ＋ EDINET（過去90日・日付インデックス走査）で全銘柄の最新の有報/半期/四半期を取得（System B・2026-06-09）
   2. 保有銘柄+監視銘柄の決算短信PDFを特定（訂正・補足は除外）
   3. PDFをダウンロード→pdfplumberでテキスト化（先頭20ページ）
   4. Sheetsに [銘柄コード, 提出日, 表題, 本文, 取得日] でupsert
@@ -75,6 +75,10 @@ MAX_TEXT_CHARS = 50000   # Sheets セル上限 50,000 文字
 MIN_TEXT_CHARS = 500     # これ未満は画像PDF/抽出失敗とみなし取得失敗扱い（QA レビュー指摘）
 MAX_PDF_PAGES = 25
 
+# System B (2026-06-09): dry-run（Sheet 書込・Storage put をスキップし取得/判定のみ）。
+# 環境変数 DRY_RUN=1 または引数 --dry-run。CI の workflow_dispatch から安全に実データ検証する用途。
+DRY_RUN = ('--dry-run' in sys.argv) or (os.environ.get('DRY_RUN', '').strip().lower() in ('1', 'true', 'yes'))
+
 # CEO 通達 2026-06-04: EDINET 補完設定（TDnet 35 日制約の構造的解決）
 # 賢者 GAS の searchEdinet を Python 移植。決算短信が取れない過去分を有価証券
 # 報告書・四半期報告書・半期報告書で代替する。
@@ -83,7 +87,8 @@ EDINET_API_BASE = 'https://api.edinet-fsa.go.jp/api/v2'
 EDINET_LOOKBACK_DAYS = 90
 EDINET_MAIN_FORMS = {'030000', '030001', '043000', '043001', '050000'}
 EDINET_FORM_PRIORITY = {'030000': 1, '030001': 2, '043000': 3, '043001': 4, '050000': 5}
-EDINET_STALE_DAYS = 31  # 既存キャッシュが N 日超過なら EDINET 補完で更新候補
+# System B (2026-06-09): 旧 EDINET_STALE_DAYS(31日ゲート)は廃止。全銘柄を日付インデックス
+# 走査で常時チェックし、短信の鮮度に関係なく最新の有報/半期を取り込む（B-1）。
 
 # P-1: Supabase Storage 設定（E-2 secret 経由・販売前バックエンドのみ）
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
@@ -323,6 +328,9 @@ def upsert(ws, code, submit_date, title, text, pdf_path=None):
     MAX_TEXT_CHARS 超過時は末尾を切り詰めて投入。投資判断に必要な
     要約・サマリーは冒頭にあるため影響軽微。
     """
+    if DRY_RUN:
+        print(f'    [DRY-RUN] would upsert {code} {submit_date} {str(title)[:50]} ({len(text or "")}字)', flush=True)
+        return
     if text and len(text) > MAX_TEXT_CHARS:
         truncated_marker = f'\n\n[... 元文書 {len(text):,} 字 / Sheets セル制限により末尾 truncate ...]'
         text = text[:MAX_TEXT_CHARS - len(truncated_marker)] + truncated_marker
@@ -375,14 +383,27 @@ def _html_to_text(html):
     return text.strip()
 
 
-def edinet_search_best_doc_for_code(code, lookback_days, api_key, today):
-    """EDINET API で銘柄コードに該当する有報・四半期・半期報告書を検索（過去 90 日）。
+def edinet_sweep_latest_for_codes(target_codes, lookback_days, api_key, today):
+    """EDINET 当日インデックスを日付走査し、対象【全銘柄】の最新の有報/半期/四半期を返す。
 
-    新しい日付から走査し最初に見つかった銘柄の書類を採用。複数同日なら
-    formCode 優先（有報 > 四半期 > 半期）。
+    System B（2026-06-09）: 旧 edinet_search_best_doc_for_code（銘柄ごとに過去 N 日を遡る・
+    268社×90日＝API 過多）を置換。日付ごとに documents.json を 1 回だけ取得し、対象銘柄の
+    該当書類をまとめて収集する（O(日数)＝約 lookback_days 回）。銘柄ごとに提出日最新
+    （同日は formCode 優先 有報>四半期>半期）を採用。
+
+    Args:
+        target_codes: 4桁（末尾英字含む）銘柄コードの集合
+    Returns:
+        dict {code(4桁): best_doc}  best_doc は submit_date(YYYY-MM-DD) と EDINET メタを保持
     """
-    sec5 = code if len(code) == 5 else code + '0'
+    # EDINET の secCode は 5 桁（4桁+'0'）。5桁→対象4桁 の逆引きを作る。
+    code5_to_4 = {}
+    for c in target_codes:
+        c5 = c if len(c) == 5 else c + '0'
+        code5_to_4[c5] = c
+    best_by_code = {}
     auth401_count = 0
+    scanned_days = 0
     for d in range(lookback_days):
         dt = today - timedelta(days=d)
         date_str = dt.strftime('%Y-%m-%d')
@@ -396,33 +417,52 @@ def edinet_search_best_doc_for_code(code, lookback_days, api_key, today):
             if '"StatusCode": 401' in text or '"StatusCode":401' in text:
                 auth401_count += 1
                 if auth401_count >= 3:
-                    print('  [ERR] EDINET 認証障害（401 連発）= 補完中断', file=sys.stderr)
-                    return None
+                    print('  [ERR] EDINET 認証障害（401 連発）= sweep 中断', file=sys.stderr)
+                    break
                 time.sleep(0.1)
                 continue
             j = r.json()
             if 'results' not in j:
                 time.sleep(0.1)
                 continue
-            day_docs = []
+            scanned_days += 1
             for doc in j.get('results', []):
-                if (doc.get('secCode') == sec5
-                        and doc.get('formCode') in EDINET_MAIN_FORMS):
-                    day_docs.append({
-                        'docID': doc.get('docID'),
-                        'filerName': doc.get('filerName', ''),
-                        'docDescription': doc.get('docDescription', ''),
-                        'submitDateTime': doc.get('submitDateTime', ''),
-                        'ordinanceCode': doc.get('ordinanceCode', ''),
-                        'formCode': doc.get('formCode', ''),
-                    })
-            if day_docs:
-                day_docs.sort(key=lambda x: EDINET_FORM_PRIORITY.get(x['formCode'], 99))
-                return day_docs[0]  # 同日内優先順位 1 位
-        except Exception:
-            pass
+                sec5 = doc.get('secCode')
+                # ordinanceCode='010'（企業内容等の開示に関する内閣府令＝有報/四半期/半期）に限定。
+                # formCode '030000' は ord='060' だと「大量保有報告書」等の非決算書類になるため
+                # ord でも絞る（2026-06-09 dry-run で 8306 が大量保有報告書を拾う事象を検出・根治）。
+                if (sec5 not in code5_to_4
+                        or doc.get('ordinanceCode') != '010'
+                        or doc.get('formCode') not in EDINET_MAIN_FORMS):
+                    continue
+                code4 = code5_to_4[sec5]
+                submit_full = doc.get('submitDateTime', '') or ''
+                submit_date = submit_full[:10]
+                if not submit_date:
+                    continue
+                cand = {
+                    'docID': doc.get('docID'),
+                    'filerName': doc.get('filerName', ''),
+                    'docDescription': doc.get('docDescription', ''),
+                    'submitDateTime': submit_full,
+                    'submit_date': submit_date,
+                    'ordinanceCode': doc.get('ordinanceCode', ''),
+                    'formCode': doc.get('formCode', ''),
+                }
+                prev = best_by_code.get(code4)
+                # 提出日が新しい方を採用。同日は formCode 優先（priority 小＝上位）。
+                if (prev is None
+                        or submit_date > prev['submit_date']
+                        or (submit_date == prev['submit_date']
+                            and EDINET_FORM_PRIORITY.get(cand['formCode'], 99)
+                            < EDINET_FORM_PRIORITY.get(prev['formCode'], 99))):
+                    best_by_code[code4] = cand
+        except Exception as e:
+            print(f'  [WARN] EDINET sweep {date_str}: {e}', file=sys.stderr)
         time.sleep(0.1)  # EDINET マナー
-    return None
+    print(f'  EDINET sweep: {scanned_days}/{lookback_days}日走査・対象該当 {len(best_by_code)}社',
+          file=sys.stderr)
+    return best_by_code
 
 
 def edinet_fetch_doc_text(doc_id, api_key):
@@ -464,8 +504,12 @@ def edinet_fetch_doc_text(doc_id, api_key):
 
 def main():
     print(f'=== fetch_tanshin start {datetime.now(JST):%Y-%m-%d %H:%M JST} ===')
+    if DRY_RUN:
+        print('=== DRY-RUN モード: Sheet 書込・Storage put をスキップ（取得と判定のみ） ===')
     ss = get_spreadsheet()
     sb = get_supabase_client()  # P-1: Supabase Storage クライアント
+    if DRY_RUN:
+        sb = None
     if sb:
         print(f'  Supabase Storage 連携: 有効 (bucket={PDF_BUCKET})')
     else:
@@ -535,69 +579,54 @@ def main():
             time.sleep(2)  # OpenAI/Sheets rate limiting + TDnet マナー
         time.sleep(1)
 
-    # ── CEO 通達 2026-06-04: EDINET 補完取得 ──
-    # TDnet 35 日制約により取れない過去分を EDINET（過去 90 日）で補完。
-    # 既存 TDnet 取得ロジック（上記）は不変。本ブロックは「追加」のみ。
-    # 賢者 GAS の fetchTanshinFromCache は同銘柄複数行から submitDate 最新を
-    # 自動選択するため、本処理で「[EDINET補完]」prefix の書類を追加しても
-    # 賢者の挙動は破壊されない（最新が選ばれるだけ）。
+    # ── System B（2026-06-09）: EDINET 最新書類の常時取込 ──
+    # CEO 指示: 決算短信の鮮度内に有報/半期が出たら最新書類で分析する。
+    # 旧実装（未取得 or 31日 stale 限定 + 銘柄ごと90日遡り＝268×90 API）を、
+    # 「全銘柄 + 日付インデックス走査（O(日数)＝約 lookback 回）」に置換。
+    # ライブ searchEdinet（賢者 GAS 側）は停止のまま＝顧客は高速。本処理が裏でキャッシュへ反映。
+    # 賢者 fetchTanshinFromCache は同銘柄から submitDate 最新を選ぶため、短信より新しい
+    # 有報/半期だけが採用される（新しい短信を古い有報で上書きしないガードを下に明示）。
     edinet_found = 0
     edinet_err = 0
-    edinet_skip_reason = None
+    edinet_doctype_counts = {}
     if not EDINET_API_KEY:
-        edinet_skip_reason = 'EDINET_API_KEY 未設定（GitHub Secrets に追加してください）'
-        print(f'::warning::EDINET 補完スキップ: {edinet_skip_reason}')
+        print('::warning::EDINET 取込スキップ: EDINET_API_KEY 未設定（GitHub Secrets に追加してください）')
     else:
-        # 対象: 未取得銘柄 OR 既存キャッシュが 31 日以上経過した銘柄
-        # （TDnet で更新できなかった銘柄を EDINET で補完）
-        edinet_targets = []
-        for code in sorted(all_targets):
-            if code not in existing:
-                edinet_targets.append(code)
-            else:
-                try:
-                    submit = datetime.strptime(existing[code], '%Y-%m-%d').date()
-                    # M-3 (2026-06-05): > → >= で 31 日ジャスト境界も補完対象に救済。
-                    if (today - submit).days >= EDINET_STALE_DAYS:
-                        edinet_targets.append(code)
-                except Exception:
-                    edinet_targets.append(code)
-        print(f'\n=== EDINET 補完取得開始: {len(edinet_targets)}社対象 ===')
-        for code in edinet_targets:
+        print(f'\n=== EDINET 最新書類 走査開始: 全{len(all_targets)}社・過去{EDINET_LOOKBACK_DAYS}日（日付インデックス走査）===')
+        best_by_code = edinet_sweep_latest_for_codes(
+            all_targets, EDINET_LOOKBACK_DAYS, EDINET_API_KEY, today)
+        print(f'  EDINET で該当書類が見つかった銘柄: {len(best_by_code)}社')
+        for code in sorted(best_by_code.keys()):
+            best_doc = best_by_code[code]
+            submit_date = best_doc['submit_date']
+            # 既存（短信含む）が同日 or より新しければ skip（新しい短信を古い有報で上書きしない・冪等）
+            if existing.get(code) and existing[code] >= submit_date:
+                continue
+            doc_type = _edinet_get_doc_type_name(
+                best_doc.get('ordinanceCode', ''), best_doc.get('formCode', ''))
+            full_title = (f'[EDINET補完] {doc_type} - '
+                          f'{best_doc.get("docDescription", "")[:80]}')
+            print(f'    [{code}] EDINET {submit_date} {doc_type}', flush=True)
             try:
-                best_doc = edinet_search_best_doc_for_code(
-                    code, EDINET_LOOKBACK_DAYS, EDINET_API_KEY, today)
-                if not best_doc:
-                    continue
-                submit_full = best_doc.get('submitDateTime', '')
-                submit_date = submit_full[:10] if submit_full else ''
-                if not submit_date:
-                    continue
-                # 既存が同日 or より新しければ skip（冪等）
-                if existing.get(code) and existing[code] >= submit_date:
-                    continue
-                doc_type = _edinet_get_doc_type_name(
-                    best_doc.get('ordinanceCode', ''), best_doc.get('formCode', ''))
-                full_title = (f'[EDINET補完] {doc_type} - '
-                              f'{best_doc.get("docDescription", "")[:80]}')
-                print(f'    [{code}] EDINET {submit_date} {doc_type}', flush=True)
                 text = edinet_fetch_doc_text(best_doc['docID'], EDINET_API_KEY)
-                if not text:
-                    edinet_err += 1
-                    continue
-                try:
-                    upsert(cache_ws, code, submit_date, full_title, text, '')
-                    existing[code] = submit_date
-                    edinet_found += 1
-                except Exception as e:
-                    print(f'    [ERR] EDINET sheet write {code}: {e}', file=sys.stderr)
-                    edinet_err += 1
-                time.sleep(2)  # EDINET + Sheets rate limit
             except Exception as e:
-                print(f'    [ERR] EDINET search {code}: {e}', file=sys.stderr)
+                print(f'    [ERR] EDINET doc fetch {code}: {e}', file=sys.stderr)
                 edinet_err += 1
-        print(f'\n=== EDINET 補完結果 ===')
-        print(f'  新規/更新 (EDINET) : {edinet_found}件')
+                continue
+            if not text:
+                edinet_err += 1
+                continue
+            try:
+                upsert(cache_ws, code, submit_date, full_title, text, '')
+                existing[code] = submit_date
+                edinet_found += 1
+                edinet_doctype_counts[doc_type] = edinet_doctype_counts.get(doc_type, 0) + 1
+            except Exception as e:
+                print(f'    [ERR] EDINET sheet write {code}: {e}', file=sys.stderr)
+                edinet_err += 1
+            time.sleep(2)  # EDINET + Sheets rate limit
+        print(f'\n=== EDINET 最新書類 取込結果 ===')
+        print(f'  新規/更新 (EDINET) : {edinet_found}件 {edinet_doctype_counts}')
         print(f'  エラー (EDINET)    : {edinet_err}件')
 
     # 3者協議採用（SPEC v1.0 §9/§10）: 被覆率の可視化＋下限ゲート。
@@ -626,8 +655,12 @@ def main():
     # H-1 (2026-06-05): 死活監視用の機械可読サマリ 1 行。
     # yml の監視はこの行のみを parse する（表示文言のドリフトで grep が空振りし
     # 「異常でも job 緑」になった run 26925050076 の再発防止）。
+    # System B (2026-06-09): CEO 報告用に edinet_new/doctype を末尾追記（yml の grep は
+    # new/err/coverage を個別抽出するため後方互換・追記は監視を壊さない）。
+    _doctype_str = ','.join(f'{k}:{v}' for k, v in sorted(edinet_doctype_counts.items())) or 'none'
     print(f'MONITOR_SUMMARY new={found_new + edinet_found} '
-          f'err={err_count + edinet_err} coverage={coverage:.1f}')
+          f'err={err_count + edinet_err} coverage={coverage:.1f} '
+          f'edinet_new={edinet_found} edinet_doctype={_doctype_str}')
     return 0
 
 
