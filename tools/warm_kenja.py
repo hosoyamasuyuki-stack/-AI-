@@ -117,9 +117,13 @@ def parse_targets(html):
     return targets
 
 
-def build_payload(t):
-    """顧客 payload（ai_dashboard_v13.html:3113）と同形。uid は絶対に載せない。"""
-    return {
+def build_payload(t, force=False):
+    """顧客 payload（ai_dashboard_v13.html:3113）と同形。uid は絶対に載せない。
+
+    force=True は forceRefresh を付ける（GAS 側で読込のみスキップ・書込は実施＝強制作り直し）。
+    隔週フル再ウォーム（保険・CEO 2026-06-11 採用）専用。顧客は送らないパラメータ。
+    """
+    p = {
         'secCode': t['code'],
         'name': t['name'],
         'scores': {
@@ -128,14 +132,17 @@ def build_payload(t):
             'shortScore': t['shortScore'], 'midScore': t['midScore'],
         },
     }
+    if force:
+        p['forceRefresh'] = True
+    return p
 
 
-def warm_one(gas_url, t):
+def warm_one(gas_url, t, force=False):
     """1銘柄をウォーム。返り値 (status, detail)。status: ok / skipped / fail。"""
     last_err = ''
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            r = requests.post(gas_url, json=build_payload(t),
+            r = requests.post(gas_url, json=build_payload(t, force),
                               timeout=REQUEST_TIMEOUT, allow_redirects=True)
             data = r.json()
             if data.get('ok') and not data.get('incomplete'):
@@ -159,6 +166,8 @@ def main():
     g.add_argument('--all', action='store_true', help='HTML 表示の全銘柄（保有+監視+Top75）')
     g.add_argument('--codes', help='対象コード（カンマ区切り・REWARM_SUMMARY の入力）')
     ap.add_argument('--limit', type=int, help='先頭N件のみ（スモーク用）')
+    ap.add_argument('--force', action='store_true',
+                    help='保存が新しくても作り直す（隔週フル再ウォーム=保険運転用・forceRefresh送信）')
     ap.add_argument('--dry-run', action='store_true', help='対象列挙のみ（GAS を叩かない）')
     ap.add_argument('--html-file', help='ダッシュボード HTML のパス（既定: リポジトリの committed HTML）')
     args = ap.parse_args()
@@ -191,10 +200,12 @@ def main():
         print('::error::requests 未インストール（pip install requests）')
         return 1
 
+    if args.force:
+        print('forceRefresh モード: 全対象を作り直す（隔週保険運転）')
     ok = skipped = 0
     fails = []
     for i, t in enumerate(targets, 1):
-        status, detail = warm_one(gas_url, t)
+        status, detail = warm_one(gas_url, t, args.force)
         print(f"  [{i}/{len(targets)}] {t['code']} {t['name']}: {status} ({detail})", flush=True)
         if status == 'ok':
             ok += 1

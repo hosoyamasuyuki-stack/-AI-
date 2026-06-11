@@ -16,10 +16,21 @@ on:
         description: '先頭N件のみ（スモーク用）。空=全件'
         required: false
         default: ''
+      force:
+        description: 'true=保存が新しくても全銘柄を作り直す（保険運転）'
+        required: false
+        default: 'false'
       dry_run:
         description: 'true=対象列挙のみ（GAS を叩かない・コスト0）'
         required: false
         default: 'false'
+  schedule:
+    # 毎日 17:17 JST: 差分ウォーム。案B自己失効により「新しい決算が出た銘柄」だけが
+    # MISS→再分析され、据置銘柄は cache_hit skip（コスト≈0）。fetch_tanshin(11:30 JST)の後刻。
+    - cron: '17 8 * * *'
+    # 毎月1日・15日 17:37 JST: 隔週フル作り直し（保険・CEO 2026-06-11 採用・約¥900/回）。
+    # スコア引用の化粧直し + 訂正短信/本文差替×日付据置（T-2/T-8）の取りこぼし吸収。
+    - cron: '37 8 1,15 * *'
 
 concurrency:
   group: warm-kenja   # T-7: setKenjaCache はロック無し→並列起動を直列化（多重ウォーム禁止）
@@ -41,17 +52,28 @@ jobs:
 
       - name: Warm kenja cache
         run: |
-          ARGS=""
-          if [ -n "${{ github.event.inputs.codes }}" ] && [ "${{ github.event.inputs.codes }}" != "none" ]; then
-            ARGS="--codes ${{ github.event.inputs.codes }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "${{ github.event.schedule }}" = "37 8 1,15 * *" ]; then
+              ARGS="--all --force"   # 隔週フル作り直し（保険）
+            else
+              ARGS="--all"           # 毎日の差分ウォーム（HITはskip）
+            fi
           else
-            ARGS="--all"
-          fi
-          if [ -n "${{ github.event.inputs.limit }}" ]; then
-            ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"
-          fi
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
+            ARGS=""
+            if [ -n "${{ github.event.inputs.codes }}" ] && [ "${{ github.event.inputs.codes }}" != "none" ]; then
+              ARGS="--codes ${{ github.event.inputs.codes }}"
+            else
+              ARGS="--all"
+            fi
+            if [ -n "${{ github.event.inputs.limit }}" ]; then
+              ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"
+            fi
+            if [ "${{ github.event.inputs.force }}" = "true" ]; then
+              ARGS="$ARGS --force"
+            fi
+            if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+              ARGS="$ARGS --dry-run"
+            fi
           fi
           echo "ARGS=$ARGS"
           python tools/warm_kenja.py $ARGS
