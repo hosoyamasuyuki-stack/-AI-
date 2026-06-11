@@ -196,6 +196,21 @@ def build_monitor_summary(new_count, err_count, coverage,
             f'uncovered_count={len(priority_uncovered)} uncovered_codes={codes_str}')
 
 
+def build_rewarm_summary(rewarmed_codes, dry_run):
+    """段階3 差分検知（2026-06-11）: 賢者キャッシュ再ウォーム対象の機械可読サマリ 1 行。
+
+    REWARM_SUMMARY は MONITOR_SUMMARY とは独立した行（H-1 死活監視の grep に一切触れない）。
+    一次ソースは「当 run で submit_date が実際に前進した銘柄集合」（found_new/edinet_found の
+    カウントではない＝バックフィル・Sheet 復旧での偽差分スパイクを再ウォーム入力に持ち込まない）。
+    DRY_RUN run では add 自体を `if not DRY_RUN:` で囲むため集合は必ず空。さらに出力にも
+    dry_run フラグを明示し、消費側（warm_kenja.yml）が dry run を誤って入力にしないようにする。
+    正本: 仕様書_賢者_事前ウォーム＋決算駆動差分更新_全体実装計画_2026-06-11.md §2-B。
+    """
+    codes_str = ','.join(sorted(rewarmed_codes)) if rewarmed_codes else 'none'
+    return (f'REWARM_SUMMARY rewarm_count={len(rewarmed_codes)} '
+            f'rewarm_codes={codes_str} dry_run={1 if dry_run else 0}')
+
+
 def fetch_tdnet_index(date):
     """TDnet 日次インデックス → 行リスト（全ページ走査）
 
@@ -564,6 +579,7 @@ def main():
         # 死活監視が検知できるよう coverage=0 のサマリを出力する。
         print('MONITOR_SUMMARY new=0 err=0 coverage=0.0 '
               'uncovered_count=0 uncovered_codes=none')
+        print(build_rewarm_summary(set(), DRY_RUN))
         return 0
 
     cache_ws = ensure_cache_sheet(ss)
@@ -574,6 +590,9 @@ def main():
     found_new = 0
     err_count = 0
     pdf_uploaded = 0  # P-1: Storage put 成功カウント
+    # 段階3 差分検知（2026-06-11）: 当 run で submit_date が実際に前進した銘柄
+    # （= upsert 成功 = 賢者キャッシュ側の再分析が要る）。カウントでなく集合が一次ソース。
+    rewarmed_codes = set()
 
     # 新しい日付から順に走査（より新しい決算短信を優先）
     for d in range(LOOKBACK_DAYS):
@@ -613,6 +632,8 @@ def main():
                 upsert(cache_ws, code, submit_date, row['title'], text, pdf_path)
                 existing[code] = submit_date
                 found_new += 1
+                if not DRY_RUN:  # DRY_RUN は upsert 早期 return＝未書込のため再ウォーム対象にしない
+                    rewarmed_codes.add(code)
                 target_codes.discard(code)
             except Exception as e:
                 print(f'    [ERR] sheet write {code}: {e}', file=sys.stderr)
@@ -661,6 +682,8 @@ def main():
                 upsert(cache_ws, code, submit_date, full_title, text, '')
                 existing[code] = submit_date
                 edinet_found += 1
+                if not DRY_RUN:  # 同上（段階3 差分検知）
+                    rewarmed_codes.add(code)
                 edinet_doctype_counts[doc_type] = edinet_doctype_counts.get(doc_type, 0) + 1
             except Exception as e:
                 print(f'    [ERR] EDINET sheet write {code}: {e}', file=sys.stderr)
@@ -712,6 +735,9 @@ def main():
         edinet_found=edinet_found,
         doctype_str=_doctype_str,
         priority_uncovered=priority_uncovered))
+    # 段階3 差分検知（2026-06-11）: 再ウォーム対象の機械可読 1 行（warm_kenja.yml の入力・
+    # MONITOR_SUMMARY とは独立＝H-1 死活監視 grep 無干渉）。
+    print(build_rewarm_summary(rewarmed_codes, DRY_RUN))
     return 0
 
 
