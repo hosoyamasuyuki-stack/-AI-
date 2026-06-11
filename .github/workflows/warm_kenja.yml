@@ -1,0 +1,57 @@
+# 賢者キャッシュ 事前ウォーム（段階1/3・2026-06-11）
+# - uid を送らない＝顧客カウント/ランキング/Supabase に一切触れない（中立）
+# - secrets 不要（scores も GAS URL も committed HTML が一次ソース）
+# - 共有 LIVE キャッシュへ書くため、実行は安全窓（大引け後 15:30 JST 以降）に限定すること
+# - 正本: にこにこ本舗/LISA販売/設計/仕様書_賢者_事前ウォーム＋決算駆動差分更新_全体実装計画_2026-06-11.md
+name: Warm Kenja Cache
+
+on:
+  workflow_dispatch:
+    inputs:
+      codes:
+        description: '対象コード（カンマ区切り）。空=全銘柄（ダッシュボード表示分）。REWARM_SUMMARY の rewarm_codes を渡す'
+        required: false
+        default: ''
+      limit:
+        description: '先頭N件のみ（スモーク用）。空=全件'
+        required: false
+        default: ''
+      dry_run:
+        description: 'true=対象列挙のみ（GAS を叩かない・コスト0）'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: warm-kenja   # T-7: setKenjaCache はロック無し→並列起動を直列化（多重ウォーム禁止）
+  cancel-in-progress: false
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300   # 120社 × 最大(分析70s+sleep3s+retry) ≈ 2.5-3h を許容
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Warm kenja cache
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.codes }}" ] && [ "${{ github.event.inputs.codes }}" != "none" ]; then
+            ARGS="--codes ${{ github.event.inputs.codes }}"
+          else
+            ARGS="--all"
+          fi
+          if [ -n "${{ github.event.inputs.limit }}" ]; then
+            ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          echo "ARGS=$ARGS"
+          python tools/warm_kenja.py $ARGS
