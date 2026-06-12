@@ -16,6 +16,11 @@ import urllib.request
 import urllib.error
 
 REPO = 'hosoyamasuyuki-stack/-AI-'
+# 監視対象は本番ブランチの run のみ。開発ブランチ上の workflow_dispatch 失敗を
+# 本番異常と誤検知した事案（2026-06-09 claude/systemb-edinet-sweep の fetch_tanshin
+# dispatch 失敗 → 06-10 朝の健診 NG）の再発防止。schedule run の head_branch は常に
+# main のため、main 限定でも NO_HISTORY 側の誤判定は起きない（全 10 workflow 実測済）。
+MONITOR_BRANCH = 'main'
 TOKEN = os.environ.get('GITHUB_TOKEN', '')
 NOW = datetime.now(timezone.utc)
 JST = timezone(timedelta(hours=9))
@@ -52,7 +57,7 @@ def api_get(path):
 
 
 def latest_run(wf_file):
-    data = api_get(f'/repos/{REPO}/actions/workflows/{wf_file}/runs?per_page=1')
+    data = api_get(f'/repos/{REPO}/actions/workflows/{wf_file}/runs?per_page=1&branch={MONITOR_BRANCH}')
     runs = data.get('workflow_runs', [])
     return runs[0] if runs else None
 
