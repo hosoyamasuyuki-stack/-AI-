@@ -1246,13 +1246,22 @@ _hdr = (
     f'height:20px;flex-shrink:0;white-space:nowrap;">'
     f'<span style="color:#f59e0b;font-weight:900;">SYSTEM STATUS</span></span>'
 )
-_all_items = _hdr + ''.join(ticker_items)
+# 投資助言免責（読める帯）— NOVA フッターと同一文言・CEO 指示 2026-06-18 で sys-ticker に追加。
+# 免責ラベル(amber)＋本文(明色)。他アイテムと同一構造(height:20px/flex-shrink:0/nowrap)で段を増やさない。
+_disclaimer_item = (
+    '<span style="display:inline-flex;align-items:center;gap:6px;padding:0 14px;'
+    'border-right:1px solid #1e2d40;font-size:var(--fs-sm);font-family:monospace;'
+    'height:20px;flex-shrink:0;white-space:nowrap;">'
+    '<span style="color:#fbbf24;font-weight:900;">免責</span>'
+    '<span style="color:#cbd5e1;">本表示は投資助言ではありません。情報提供のみ・最終判断はご自身の責任で。過去実績は将来を保証しません</span></span>'
+)
+_all_items = _hdr + _disclaimer_item + ''.join(ticker_items)
 # ループ再生のため2回繰り返す
 TICKER_DYN = (
     f'<div id="sys-ticker-wrap" style="background:#060810;border-bottom:1px solid #1e2d40;'
     f'height:20px;overflow:hidden;flex-shrink:0;">'
     f'<div id="sys-ticker" style="display:inline-flex;flex-wrap:nowrap;align-items:center;'
-    f'height:20px;width:max-content;animation:ticker_scroll 60s linear infinite;" '
+    f'height:20px;width:max-content;animation:ticker_scroll 100s linear infinite;" '
     f'onmouseover="this.style.animationPlayState=\'paused\'" '
     f'onmouseout="this.style.animationPlayState=\'running\'">'
     f'{_all_items}{_all_items}</div></div>'
