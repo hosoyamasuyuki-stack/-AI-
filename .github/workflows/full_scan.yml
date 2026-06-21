@@ -11,7 +11,7 @@ env:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 300  # 通常156-174分／180分上限ギリギリで時々タイムアウト中断していたため余裕を確保（2026-06-21・GitHub上限360分内）
     concurrency:
       group: full-scan
       cancel-in-progress: false
