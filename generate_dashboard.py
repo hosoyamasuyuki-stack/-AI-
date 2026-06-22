@@ -679,6 +679,23 @@ def load(name, stype):
 
 all_data = (load('保有銘柄_v4.3スコア', '保有') +
             load('監視銘柄_v4.3スコア', '監視'))
+# 保有優先の重複排除（CEO 2026-06-22）: 同じ銘柄が保有と監視の両方に在る時は、
+# 先頭に並ぶ保有を残して監視側を1件落とす。コード比較は大文字に正規化（130A/130a・全角差の取りこぼし防止）。
+# ここ1か所で落とせば、件数・パネル見出し・ティッカー・テーブル描画すべてが自動で重複排除後の値になる。
+_seen_codes = set()
+_deduped = []
+_dropped_dup = 0
+for _r, _st in all_data:
+    _c = str(_r.get('コード', '')).strip().upper()
+    if _c and _c in _seen_codes:
+        _dropped_dup += 1
+        continue
+    if _c:
+        _seen_codes.add(_c)
+    _deduped.append((_r, _st))
+all_data = _deduped
+if _dropped_dup:
+    print(f"  重複排除: 監視から {_dropped_dup} 件除外（保有優先）")
 screen_data = load('スクリーニング_Top50', 'スクリーニング')
 print(f"  合計: {len(all_data)}銘柄 + スクリーニング{len(screen_data)}銘柄")
 
