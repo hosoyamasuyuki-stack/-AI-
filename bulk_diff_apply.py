@@ -116,7 +116,7 @@ def print_diff_report(diff, latest, existing):
     print(f"差分計算結果")
     print(f"{'='*60}")
     print(f"継続保有: {len(diff['keep'])} 銘柄（操作なし）")
-    print(f"\n削除対象: {len(diff['remove'])} 銘柄")
+    print(f"\n保有解除（記録は保全）対象: {len(diff['remove'])} 銘柄")
     for c in diff['remove']:
         print(f"  - {c} {existing.get(c, '?')}")
     print(f"\n追加対象: {len(diff['add'])} 銘柄")

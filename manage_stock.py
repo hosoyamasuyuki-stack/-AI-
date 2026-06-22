@@ -297,8 +297,9 @@ def add_stock(code, target):
     return total, rank
 
 def remove_stock(code, target):
-    """銘柄を4シート横断で削除（破損データの残留を防ぐ・協議合意事項#1）
-    対象: 保有/監視銘柄_v4.3スコア、コアスキャン_v4.3、コアスキャン_日次、予測記録
+    """銘柄を保有/監視＋派生スキャン2シートから削除（破損データの残留を防ぐ・協議合意事項#1）。
+    対象: 保有/監視銘柄_v4.3スコア、コアスキャン_v4.3、コアスキャン_日次。
+    予測記録（AIの予測と勝敗＝学習データ）は物理削除せず、末尾で売却済みフラグを付けて残す（D1）。
     """
     sheet_name = SHEET_MAP[target]
     ws = ss.worksheet(sheet_name)
@@ -311,7 +312,8 @@ def remove_stock(code, target):
     print(f"  {sheet_name} から {code} {name} を削除（行{row_num}）")
 
     # 派生シートからも同銘柄を削除（バグ版データの残留・伝播を防止）
-    CASCADE_SHEETS = ['コアスキャン_v4.3', 'コアスキャン_日次', '予測記録']
+    # D1: 予測記録は CASCADE から外す（物理削除しない）。末尾で売却済みフラグを付けて学習データを保全する。
+    CASCADE_SHEETS = ['コアスキャン_v4.3', 'コアスキャン_日次']
     for sn in CASCADE_SHEETS:
         try:
             sws = ss.worksheet(sn)
@@ -330,6 +332,57 @@ def remove_stock(code, target):
                 print(f"  {sn} からも {code} を {deleted}行 削除")
         except Exception as e:
             print(f"  WARNING: {sn} の削除に失敗: {e}")
+
+    # D1: 予測記録（AIの予測と勝敗＝学習データ）は消さず、売却済みの印を付けて残す。
+    _mark_sold_in_predictions(code)
+
+
+def _mark_sold_in_predictions(code, sale_date=None):
+    """D1: 売却（保有/監視からの除外）時に、予測記録を物理削除せず
+    売却済フラグ(AO列)='SOLD'・売却日(AP列) を書き込んで残す（学習データ＝AIの予測と勝敗を保全）。
+    同コードの全行（売却→再購入で複数世代ありうる）に印を付ける。delete_rows は絶対に呼ばない。
+    既に印のある行は飛ばす（冪等）。AO/AP列は config.py '予測記録' の sold_start=40（=AO/AP）に対応。
+    """
+    if sale_date is None:
+        sale_date = datetime.now().strftime('%Y/%m/%d')
+    SOLD_FLAG_COL = 41  # AO（1-indexed・予測記録40列の右端2列の1つ目）
+    SOLD_DATE_COL = 42  # AP（1-indexed）
+    try:
+        pred_ws = ss.worksheet('予測記録')
+    except Exception as e:
+        print(f"  WARNING: 予測記録シートが見つからず売却印を付けられません（記録は保全）: {e}")
+        return
+    all_vals = pred_ws.get_all_values()
+    if len(all_vals) < 2:
+        return
+    header = all_vals[0]
+    # コード列検出は generate_dashboard._find_col と同じ「部分一致・既定1（=銘柄コード列）」に合わせる
+    code_col = None
+    for i, h in enumerate(header):
+        h_norm = str(h).strip()
+        if 'コード' in h_norm or 'code' in h_norm.lower():
+            code_col = i
+            break
+    if code_col is None:
+        code_col = 1
+    marked = 0
+    # 予測記録は行2(1-indexed)からデータ。同コードの全行に印を付ける（既に印付け済は飛ばす＝冪等）。
+    for i, row in enumerate(all_vals[2:], start=3):
+        if len(row) > code_col and str(row[code_col]).strip() == str(code).strip():
+            already = len(row) >= SOLD_FLAG_COL and str(row[SOLD_FLAG_COL - 1]).strip()
+            if already:
+                continue
+            try:
+                pred_ws.update_cell(i, SOLD_FLAG_COL, 'SOLD')
+                pred_ws.update_cell(i, SOLD_DATE_COL, sale_date)
+                marked += 1
+            except Exception as e:
+                print(f"  WARNING: 予測記録 行{i} への売却印書込みに失敗（AO/AP列が未追加かも・手順で追加要）: {e}")
+    if marked:
+        print(f"  予測記録 の {code} を {marked}行 売却済みに印付け（物理削除せず保全・D1）")
+    else:
+        print(f"  予測記録 に {code} の未印付け行は無し（既に印付け済 or 該当なし）")
+
 
 def move_stock(code, target):
     """銘柄を target に移動（もう一方から削除 → target に追加）"""

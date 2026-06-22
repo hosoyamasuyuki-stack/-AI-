@@ -735,12 +735,29 @@ try:
         _axis_dir_cols = {k: _dir_col_in_group(v) for k, v in _axis_starts.items()}
         print(f"  予測記録: 各軸の方向列 = {_axis_dir_cols}")
 
+        # D1: 売却済みの印（AO列）を検出。row0/row1 から「売却」を含む列を探し、無ければ config 既定 40(=AO)。
+        #     AO/AP列が未追加の本番では _sold_col=40 が各行に存在せず全行 active 扱い＝従来どおり（無害）。
+        _sold_col = None
+        for _i, _h in enumerate(_hdr):
+            if '売却' in str(_h):
+                _sold_col = _i; break
+        if _sold_col is None:
+            for _i, _h in enumerate(_sub):
+                if '売却' in str(_h):
+                    _sold_col = _i; break
+        if _sold_col is None:
+            _sold_col = 40  # config.py '予測記録' sold_start
+        print(f"  予測記録: 売却済フラグ列 = {_sold_col}")
+
         # 各時間軸グループ8列の内訳: 0=方向 1=目標 2=根拠 3=検証日 4=実績株価 5=騰落率 6=日経比 7=勝敗
         for r in _pred_data:
             if len(r) <= _c_code:
                 continue
             code = str(r[_c_code]).strip()
             if not code:
+                continue
+            # D1: 売却済み(AO列が空でない)行は現役候補 PREDICTIONS に入れない（的中率の集計には別途含める）。
+            if len(r) > _sold_col and str(r[_sold_col]).strip():
                 continue
             # 記録日(col0)を併取（_c_code は通常 1=コード列なので col0 は記録日）。日数の銘柄別化用。
             if _c_code != 0 and len(r) > 0 and str(r[0]).strip():
@@ -768,16 +785,24 @@ try:
         print(f"  予測記録: {len(PREDICTIONS)}銘柄の予測を取得")
 
         # 検証済み件数の集計（勝敗列が入っている = 検証済み）
+        # D1: PREDICTIONS（コード単位の辞書・売却済除外・再購入で同コードが上書きされ世代が消える）ではなく、
+        #     生データ _pred_data の全行（売却済を含む）から数える＝売却済も母数に残し、同コード複数世代も全て数える。
         _verified = {'目先': 0, '短期': 0, '中期': 0, '長期': 0}
         _wins     = {'目先': 0, '短期': 0, '中期': 0, '長期': 0}
-        for c, axes in PREDICTIONS.items():
-            for ax, info in axes.items():
-                wl = info.get('win_lose', '')
+        for r in _pred_data:
+            for axis_name, start_col in _axis_starts.items():
+                if len(r) <= start_col:
+                    continue
+                direction = str(r[start_col]).strip()
+                if not direction or direction in ('-', '—', ''):
+                    continue
+                wl_idx = start_col + 7
+                wl = str(r[wl_idx]).strip() if len(r) > wl_idx else ''
                 if wl and wl not in ('-', '', '未検証', 'pending'):
-                    _verified[ax] += 1
+                    _verified[axis_name] += 1
                     if '勝' in wl or 'win' in wl.lower() or '○' in wl or '✓' in wl:
-                        _wins[ax] += 1
-        print(f"  予測記録: 検証済み件数 = {_verified}")
+                        _wins[axis_name] += 1
+        print(f"  予測記録: 検証済み件数 = {_verified}（売却済含む・生データ集計）")
         print(f"  予測記録: 勝ち件数 = {_wins}")
         # グローバルに公開（ダッシュボード精度バッジ用）
         VERIFIED_COUNT = _verified
