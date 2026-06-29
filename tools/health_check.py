@@ -59,9 +59,13 @@ EXPECTATIONS = {
 # 無通知フォールバックで“中身が古いまま success”を取り逃す。実際に main へコミットされた
 # ダッシュボードHTMLの最終コミット時刻を見て、本当に更新されているかを確認する。
 # 朝の daily_price_update が土日祝も毎日 HTML を再生成＆コミットするため、コミット時刻は
-# 連休に非依存で毎日進む → 30h 超は「全価格更新（朝含む）が止まった」＝重大異常。
+# 連休に非依存で毎日進む → 36h 超は「全価格更新（朝含む）が止まった」＝重大異常。
+# 36h の根拠: health_check は 07:45 JST、朝コミットの実着地は ~08:40-09:20 JST のため、
+# 健全時に見えるのは「前日朝コミット」＝経過 約23h。GitHub schedule 遅延が常態の環境で
+# 前日朝の遅着＋当日 health_check 遅延が重なる最悪健全ケースでも 36h なら誤 STALE しない
+# （朝→朝 約24h に対し約1.5サイクル分の余裕）。検知の遅れは 30h 比で約6hのみ。
 DASHBOARD_FILE = 'ai_dashboard_v13.html'
-DASHBOARD_MAX_HOURS = 30
+DASHBOARD_MAX_HOURS = 36
 
 
 def api_get(path):
@@ -137,9 +141,15 @@ def check_dashboard_freshness():
         return {'wf': DASHBOARD_FILE, 'label': label, 'status': 'NO_HISTORY',
                 'ok': False, 'detail': 'コミット履歴なし'}
 
-    committed = datetime.fromisoformat(
-        data[0]['commit']['committer']['date'].replace('Z', '+00:00')
-    )
+    # commit.committer は稀に null になり得る（GitHub仕様）。Actions コミットでは常に
+    # セットされるが、念のため author.date にフォールバックし、監視自身の誤クラッシュ(誤NG)を防ぐ。
+    _c = data[0].get('commit', {})
+    _meta = _c.get('committer') or _c.get('author') or {}
+    _dt = _meta.get('date')
+    if not _dt:
+        return {'wf': DASHBOARD_FILE, 'label': label, 'status': 'CHECK_ERROR',
+                'ok': False, 'detail': 'コミット日時を取得できず'}
+    committed = datetime.fromisoformat(_dt.replace('Z', '+00:00'))
     hours_ago = (NOW - committed).total_seconds() / 3600
     too_old = hours_ago > DASHBOARD_MAX_HOURS
     return {
