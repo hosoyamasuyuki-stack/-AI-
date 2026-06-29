@@ -4,6 +4,8 @@ health_check.py
 毎日 7:45 JST に走り、全ワークフローの直近実行を点検する。
 - 失敗があれば exit 1 → workflow が失敗扱い → GitHub からメール通知が飛ぶ
 - 期待頻度を超えて古い場合も exit 1
+- ワークフローの起動成功だけでなく、ダッシュボードHTMLが実際に main へコミットされた
+  時刻（鮮度）も点検する（check_dashboard_freshness・2026-06-29 追加）
 - 結果を system_health.json と system_health.md に書き出してリポジトリにコミット
 """
 
@@ -28,7 +30,16 @@ JST = timezone(timedelta(hours=9))
 # 各ワークフローの「最終成功からの許容経過時間（時間）」
 # 余裕を持たせて schedule 遅延 + 連休を吸収
 EXPECTATIONS = {
-    'daily_price_update.yml':   {'max_hours': 30,   'label': '株価更新'},
+    'daily_price_update.yml':   {'max_hours': 30,   'label': '株価更新（朝7:30）'},
+    # 昼12:30 / 夕16:00 の株価更新（2026-06-29 追加）。両方とも「平日のみ」cron のため、
+    # 日本の祝日（月曜祝日で3連休→次の取引日まで約91h／年末年始は最長約150h）を吸収する
+    # 必要があり、誤 STALE を避けるため上限を 200h に（既存の平日系 fetch_tanshin 等と同思想）。
+    # ・FAILURE（失敗結論）は上限に関係なく即検知 → メール通知が飛ぶ。
+    # ・停止の早期検知は下の check_dashboard_freshness（コミット鮮度・約30h）が担う。
+    # ・GitHub cron 予備が取引日に（遅れても）発火するため、200h 超過は複数取引日にわたる
+    #   完全停止＝真の異常を意味する。
+    'midday_price_update.yml':  {'max_hours': 200,  'label': '株価更新（昼12:30）'},
+    'close_price_update.yml':   {'max_hours': 200,  'label': '株価更新（夕16:00）'},
     'daily_update.yml':         {'max_hours': 80,   'label': 'FRED指標'},
     'weekly_update.yml':        {'max_hours': 200,  'label': '週次フル再計算'},
     'dashboard_update.yml':     {'max_hours': 200,  'label': 'ダッシュボード生成'},
@@ -42,6 +53,19 @@ EXPECTATIONS = {
     # 追加日: 2026-05-07（PROCEDURE_SELF_LEARNING_IMPROVEMENT_2026-05-07.md A-1）
     # manage_stock.yml は workflow_dispatch ユーザー操作のみ・不正コード入力で失敗が正常 → 除外
 }
+
+# 顧客に見えるダッシュボード生成物の「鮮度」チェック（2026-06-29 追加・敵対検証A）
+# run の conclusion=success だけ見ると「差分なし＝成功・無コミット」や yfinance 障害時の
+# 無通知フォールバックで“中身が古いまま success”を取り逃す。実際に main へコミットされた
+# ダッシュボードHTMLの最終コミット時刻を見て、本当に更新されているかを確認する。
+# 朝の daily_price_update が土日祝も毎日 HTML を再生成＆コミットするため、コミット時刻は
+# 連休に非依存で毎日進む → 36h 超は「全価格更新（朝含む）が止まった」＝重大異常。
+# 36h の根拠: health_check は 07:45 JST、朝コミットの実着地は ~08:40-09:20 JST のため、
+# 健全時に見えるのは「前日朝コミット」＝経過 約23h。GitHub schedule 遅延が常態の環境で
+# 前日朝の遅着＋当日 health_check 遅延が重なる最悪健全ケースでも 36h なら誤 STALE しない
+# （朝→朝 約24h に対し約1.5サイクル分の余裕）。検知の遅れは 30h 比で約6hのみ。
+DASHBOARD_FILE = 'ai_dashboard_v13.html'
+DASHBOARD_MAX_HOURS = 36
 
 
 def api_get(path):
@@ -101,6 +125,46 @@ def check_one(wf_file, expect):
     }
 
 
+def check_dashboard_freshness():
+    """ダッシュボードHTMLが実際に main へコミットされた時刻で鮮度を判定する（敵対検証A）。
+    workflow の起動成功だけでなく、生成物が main に反映され続けているかを見る。"""
+    label = 'ダッシュボード鮮度'
+    try:
+        data = api_get(
+            f'/repos/{REPO}/commits?path={DASHBOARD_FILE}&sha={MONITOR_BRANCH}&per_page=1'
+        )
+    except Exception as e:
+        # API 一時障害等。ワークフロー本体の check_one も同 API 障害で失敗するため整合的。
+        return {'wf': DASHBOARD_FILE, 'label': label, 'status': 'CHECK_ERROR',
+                'ok': False, 'detail': str(e)}
+    if not data:
+        return {'wf': DASHBOARD_FILE, 'label': label, 'status': 'NO_HISTORY',
+                'ok': False, 'detail': 'コミット履歴なし'}
+
+    # commit.committer は稀に null になり得る（GitHub仕様）。Actions コミットでは常に
+    # セットされるが、念のため author.date にフォールバックし、監視自身の誤クラッシュ(誤NG)を防ぐ。
+    _c = data[0].get('commit', {})
+    _meta = _c.get('committer') or _c.get('author') or {}
+    _dt = _meta.get('date')
+    if not _dt:
+        return {'wf': DASHBOARD_FILE, 'label': label, 'status': 'CHECK_ERROR',
+                'ok': False, 'detail': 'コミット日時を取得できず'}
+    committed = datetime.fromisoformat(_dt.replace('Z', '+00:00'))
+    hours_ago = (NOW - committed).total_seconds() / 3600
+    too_old = hours_ago > DASHBOARD_MAX_HOURS
+    return {
+        'wf': DASHBOARD_FILE,
+        'label': label,
+        'status': 'STALE' if too_old else 'OK',
+        'ok': not too_old,
+        'last_run_jst': committed.astimezone(JST).strftime('%Y-%m-%d %H:%M JST'),
+        'hours_ago': round(hours_ago, 1),
+        'max_hours': DASHBOARD_MAX_HOURS,
+        'conclusion': 'committed',
+        'url': data[0].get('html_url', ''),
+    }
+
+
 def commit_file(path, content):
     """Contents API でファイルをコミット"""
     url = f'/repos/{REPO}/contents/{path}'
@@ -134,6 +198,8 @@ def commit_file(path, content):
 
 def main():
     results = [check_one(wf, exp) for wf, exp in EXPECTATIONS.items()]
+    # 生成物の鮮度チェックを末尾に追加（起動成功だけでは取り逃すサイレント停止対策・敵対検証A）
+    results.append(check_dashboard_freshness())
 
     all_ok = all(r['ok'] for r in results)
     failed = [r for r in results if not r['ok']]
