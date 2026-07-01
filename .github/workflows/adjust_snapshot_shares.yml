@@ -106,11 +106,10 @@ jobs:
               try:
                   old = float(old_raw)
               except ValueError:
-                  print(f'  行{ridx}: 株数が数値でない({row[s_col]!r}) → スキップ'); continue
+                  print(f'  行{ridx}: {code} の株数セルが数値でない → スキップ'); continue
               new_i = int(round(old * ratio))
-              owner = row[2] if len(row) > 2 else ''
-              broker = row[3] if len(row) > 3 else ''
-              print(f'  行{ridx}: {code} 株数 {old_raw} -> {new_i} (x{ratio})  [{owner}/{broker}]')
+              # PII保護(公開リポ): 株数・個人法人・証券会社を公開ログに出さない。コードと比率のみ表示。
+              print(f'  行{ridx}: {code} を x{ratio} で補正（旧→新の株数は公開ログに出さない）')
               updates.append((ridx, s_col + 1, new_i))
 
           if not updates:
