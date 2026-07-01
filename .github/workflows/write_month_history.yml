@@ -1,0 +1,106 @@
+name: Write Month History
+
+# 保有差分_履歴 シートに、指定月の「変化区分」行を PII フリーの入力から追記する。
+# 目的: 取引履歴ページ(顧客向け)の当月ブロックを、株数(PII)を一切 GitHub に渡さずに作る。
+#   - 入力は「証券コード・変化区分・銘柄名」のみ(＝顧客に見える3項目・PIIなし)。
+#   - 株数_前月/株数_当月 は「変化の向きだけ」を表すダミー値(0/1/2)を書く。
+#     generate_dashboard は net 差の符号だけで change_type を再判定し、株数は顧客に表示しない。
+#   - よって公開ログにも株数は一切出ない。
+# 安全:
+#   - dry_run=true(既定)は書き込みなし・追記予定の行を表示のみ。
+#   - 触るのは 保有差分_履歴 の追記のみ。既に同月がある場合は二重追加を避けて中止。
+#   - 他シート(保有スナップショット/master/保有差分)には触れない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: '対象月キー(例 2026-07-01)'
+        required: true
+      entries:
+        description: 'セミコロン区切り: 証券コード|変化区分|銘柄名 (変化区分=新規/増し玉/一部売却/全売却/初期保有)'
+        required: true
+      dry_run:
+        description: 'true=表示のみ / false=追記'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  TZ: Asia/Tokyo
+
+jobs:
+  write-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: write-month-history
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install gspread google-auth
+      - name: 履歴追記
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          MONTH: ${{ github.event.inputs.month }}
+          ENTRIES: ${{ github.event.inputs.entries }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          python <<'PY'
+          import os
+          from core.auth import get_spreadsheet
+
+          SHEET = '保有差分_履歴'
+          month = os.environ['MONTH'].strip()
+          raw   = os.environ['ENTRIES'].strip()
+          dry   = os.environ['DRY_RUN'].strip().lower() != 'false'
+
+          # 変化区分 → (株数_前月, 株数_当月) のダミー(向きだけ・株数は非表示)
+          DUMMY = {'新規': (0, 1), '増し玉': (1, 2), '一部売却': (2, 1), '全売却': (1, 0), '初期保有': (0, 1)}
+
+          ss = get_spreadsheet()
+          ws = ss.worksheet(SHEET)
+          vals = ws.get_all_values()
+          body = vals[1:] if len(vals) > 1 else []
+
+          rows = []
+          for e in raw.split(';'):
+              e = e.strip()
+              if not e:
+                  continue
+              parts = e.split('|')
+              if len(parts) < 2:
+                  print(f'  形式不正(スキップ): {e!r}'); continue
+              code = parts[0].strip().upper()
+              ct = parts[1].strip()
+              name = parts[2].strip() if len(parts) > 2 else ''
+              if ct not in DUMMY:
+                  print(f'  未知の変化区分(スキップ): {ct}'); continue
+              prev, curr = DUMMY[ct]
+              # DIFF_COLS = [month, change_type, 個人/法人, 証券会社, 口座区分, 市場, 種別, 証券コード, 銘柄名, 株数_前月, 株数_当月, 差分]
+              rows.append([month, ct, '', '', '', 'JP', '個別株', code, name, prev, curr, curr - prev])
+
+          print(f'=== Write Month History ({"DRY-RUN" if dry else "LIVE"}) month={month} 追記予定={len(rows)}行 ===')
+          for r in rows:
+              print(f'  {r[1]} | {r[7]} | {r[8]}')
+
+          existing_months = {r[0].strip() for r in body if r and len(r) > 0}
+          if month in existing_months:
+              print(f'  ⚠ {month} は既に 保有差分_履歴 に存在。二重追加を避けて中止（消してから再実行してください）。')
+              raise SystemExit(1)
+          if not rows:
+              print('  追記行なし。中止。'); raise SystemExit(1)
+
+          if dry:
+              print('  [DRY-RUN] 書き込みはしていません。dry_run=false で追記。')
+          else:
+              ws.append_rows(rows, value_input_option='USER_ENTERED')
+              print(f'  [LIVE] {SHEET} に {len(rows)} 行を追記しました。')
+          PY
