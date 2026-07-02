@@ -2,7 +2,7 @@
 # bulk_diff_apply.py
 # 統合 CSV と既存 Sheets `保有銘柄_v4.3スコア` の差分を計算し、
 # 既存 manage_stock.py の add_stock / remove_stock を for ループで呼出
-# 4 シート cascade（コアスキャン_v4.3 / コアスキャン_日次 / 予測記録）も自動連動
+# cascade 連動は コアスキャン_v4.3 / コアスキャン_日次 のみ（D1: 予測記録は物理削除せず売却済フラグで保全）
 #
 # 設計思想:
 #   - 新規ロジック追加なし（manage_stock.py を 100% 流用）
@@ -28,16 +28,18 @@ from core.config import SPREADSHEET_ID, GSHEETS_SCOPE
 from core.auth import get_spreadsheet
 
 # 既存 manage_stock.py の関数をそのまま import
-from manage_stock import add_stock, remove_stock, find_row_by_code, SHEET_MAP
+from manage_stock import add_stock, remove_stock, move_stock, find_row_by_code, SHEET_MAP
 
 warnings.filterwarnings('ignore')
 
 NOW = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 TIMESTAMP = datetime.now().strftime('%Y%m%d-%H%M%S')
 
-# バックアップ対象 4 シート（manage_stock の cascade 対象と一致）
+# バックアップ対象シート（manage_stock の cascade 対象 + 監視）。
+# 監視は『売却→監視へ移行』で破壊的更新を受けるためロールバック資産として必須（2026-06-22 追加）。
 BACKUP_SHEETS = [
     '保有銘柄_v4.3スコア',
+    '監視銘柄_v4.3スコア',
     'コアスキャン_v4.3',
     'コアスキャン_日次',
     '予測記録',
@@ -66,13 +68,15 @@ def backup_sheets(ss, out_dir):
 
 
 def parse_csv(path):
-    """v3 統合 CSV から LISA 表示=TRUE のユニーク銘柄コード集合を返す。"""
+    """統合 CSV から『どれか1行でも LISA表示=TRUE』の銘柄コード集合を返す。
+    複数口座（個人/法人・SBI/楽天）で同一コードが複数行になっても、1行でも TRUE なら保有とみなす（OR集約）。
+    コードは大文字に正規化（130A/130a・全角差の取りこぼし防止＝全経路で統一）。"""
     codes = {}
     with open(path, encoding='utf-8-sig') as f:
         for r in csv.DictReader(f):
-            if r.get('LISA表示') != 'TRUE':
+            if (r.get('LISA表示') or '').strip().upper() != 'TRUE':
                 continue
-            code = (r.get('証券コード') or '').strip()
+            code = (r.get('証券コード') or '').strip().upper()
             if code and code not in codes:
                 codes[code] = r.get('銘柄名', '')
     return codes
@@ -94,7 +98,7 @@ def get_existing_codes(ss):
     existing = {}
     for row in all_vals[1:]:
         if len(row) > code_col:
-            code = str(row[code_col]).strip()
+            code = str(row[code_col]).strip().upper()  # CSV側と同じ大文字正規化で集合比較の取りこぼしを防ぐ
             if code:
                 existing[code] = row[name_col] if len(row) > name_col else ''
     return existing
@@ -116,10 +120,11 @@ def print_diff_report(diff, latest, existing):
     print(f"差分計算結果")
     print(f"{'='*60}")
     print(f"継続保有: {len(diff['keep'])} 銘柄（操作なし）")
-    print(f"\n削除対象: {len(diff['remove'])} 銘柄")
+    print(f"\n監視へ移行（売却=保有ゼロ・記録は保全）対象: {len(diff['remove'])} 銘柄")
+    print(f"  ※ これらは保有から消すのではなく『監視』へ移ります（取引履歴にも残ります）。")
     for c in diff['remove']:
-        print(f"  - {c} {existing.get(c, '?')}")
-    print(f"\n追加対象: {len(diff['add'])} 銘柄")
+        print(f"  → {c} {existing.get(c, '?')}")
+    print(f"\n追加対象（新規 or 監視からの買い戻し）: {len(diff['add'])} 銘柄")
     for c in diff['add']:
         print(f"  + {c} {latest.get(c, '?')}")
     print(f"{'='*60}\n")
@@ -160,12 +165,13 @@ def main():
 
     # ── Step 4: 事前バックアップ（必須・自動）──────────────
     backup_dir = os.environ.get('BACKUP_DIR', f'/tmp/holdings_backup/{TIMESTAMP}')
+    need = len(BACKUP_SHEETS)
     print(f"\n{'='*60}")
-    print(f"事前バックアップ作成中（4 シート → {backup_dir}）")
+    print(f"事前バックアップ作成中（{need} シート → {backup_dir}）")
     print(f"{'='*60}")
     saved = backup_sheets(ss, backup_dir)
-    if len(saved) < 4:
-        print(f"\n⚠️ バックアップが不完全です（{len(saved)}/4 シート）。中止します。")
+    if len(saved) < need:
+        print(f"\n⚠️ バックアップが不完全です（{len(saved)}/{need} シート）。中止します。")
         sys.exit(1)
     print(f"\n✅ バックアップ完了: {len(saved)} シート保存")
 
@@ -176,33 +182,48 @@ def main():
 
     success_remove, fail_remove = [], []
     success_add, fail_add = [], []
+    watch_sheet = SHEET_MAP['監視']
 
-    # remove: manage_stock.remove_stock(code, target='保有')
+    # 売却（CSVから外れた＝保有ゼロ）銘柄は「消す」のではなく「監視へ移行」する（CEO 2026-06-22）。
+    #   ・監視に未在籍 → move_stock(code,'監視')（保有→監視へ移動・予測記録はそのまま＝観察継続・売却印なし）
+    #   ・既に監視にも在籍（二重在籍）→ 移動できないので保有側だけ削除（cascade/売却印なし＝監視で観察継続）
     for i, code in enumerate(diff['remove'], 1):
         n = len(diff['remove'])
         try:
-            print(f"\n[REMOVE {i}/{n}] {code} {existing.get(code, '?')} ...")
-            remove_stock(code, '保有')
+            print(f"\n[監視へ移行 {i}/{n}] {code} {existing.get(code, '?')} 保有→監視 ...")
+            watch_row, _ = find_row_by_code(ss.worksheet(watch_sheet), code)
+            if watch_row:
+                # 二重在籍: 監視の既存行は壊さず、保有側だけ削除（売却印を付けない＝監視で観察継続）
+                remove_stock(code, '保有', cascade=False, mark_sold=False)
+                print(f"  ✓ 保有側のみ削除（監視に既存・観察継続）")
+            else:
+                move_stock(code, '監視')
+                print(f"  ✓ 監視へ移行完了")
             success_remove.append(code)
-            print(f"  ✓ 削除完了")
         except SystemExit:
-            # manage_stock.remove_stock は失敗時 sys.exit(1) するので例外で捕捉
+            # manage_stock 側は失敗時 sys.exit(1) するので例外で捕捉
             fail_remove.append(code)
-            print(f"  ✗ 削除失敗（manage_stock 内部エラー）")
+            print(f"  ✗ 監視へ移行 失敗（manage_stock 内部エラー）")
         except Exception as e:
             fail_remove.append(code)
-            print(f"  ✗ 削除失敗: {e}")
+            print(f"  ✗ 監視へ移行 失敗: {e}")
         if i < n + len(diff['add']):
             time.sleep(args.sleep_sec)
 
-    # add: manage_stock.add_stock(code, target='保有')
+    # add: CSVに新たに載った銘柄。監視に在れば「買い戻し」として監視→保有へ戻す。無ければ新規追加。
     for i, code in enumerate(diff['add'], 1):
         n = len(diff['add'])
         try:
             print(f"\n[ADD {i}/{n}] {code} {latest.get(code, '?')} ...")
-            add_stock(code, '保有')
+            watch_row, _ = find_row_by_code(ss.worksheet(watch_sheet), code)
+            if watch_row:
+                # 買い戻し: 監視に在る銘柄を保有へ戻す（add_stock は二重在籍で sys.exit するため move を使う）
+                move_stock(code, '保有')
+                print(f"  ✓ 監視→保有へ復帰（買い戻し）")
+            else:
+                add_stock(code, '保有')
+                print(f"  ✓ 追加完了")
             success_add.append(code)
-            print(f"  ✓ 追加完了")
         except SystemExit:
             fail_add.append(code)
             print(f"  ✗ 追加失敗（manage_stock 内部エラー・財務データ不足等）")
@@ -216,10 +237,10 @@ def main():
     print(f"\n{'='*60}")
     print(f"完了レポート")
     print(f"{'='*60}")
-    print(f"削除  成功: {len(success_remove)} / 失敗: {len(fail_remove)}")
-    print(f"追加  成功: {len(success_add)} / 失敗: {len(fail_add)}")
+    print(f"監視へ移行  成功: {len(success_remove)} / 失敗: {len(fail_remove)}")
+    print(f"追加/買戻し  成功: {len(success_add)} / 失敗: {len(fail_add)}")
     if fail_remove:
-        print(f"\n削除失敗銘柄:")
+        print(f"\n監視へ移行 失敗銘柄:")
         for c in fail_remove:
             print(f"  - {c}")
     if fail_add:
@@ -229,7 +250,7 @@ def main():
 
     print(f"\n{'='*60}")
     print(f"次のステップ:")
-    print(f"  1. 4 シート整合性確認（保有銘柄_v4.3スコア / コアスキャン_v4.3 / 予測記録）")
+    print(f"  1. シート整合性確認（保有銘柄_v4.3スコア / 監視銘柄_v4.3スコア / コアスキャン / 予測記録=売却は物理削除せず保全）")
     print(f"  2. python generate_dashboard.py で HTML 再生成")
     print(f"  3. git commit + push で GitHub Pages デプロイ")
     print(f"{'='*60}")

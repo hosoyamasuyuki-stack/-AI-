@@ -140,8 +140,10 @@ def find_row_by_code(ws, code):
     # 予測記録は行1がサブヘッダー・行2からデータ
     sheet_title = getattr(ws, 'title', '') or ''
     data_start = 2 if '予測記録' in sheet_title else 1
+    # コード比較は大文字小文字を無視（130A/130a・全角差の取りこぼし防止＝正規化を全経路で統一）
+    target_code = str(code).strip().upper()
     for i, row in enumerate(all_vals[data_start:], start=data_start + 1):
-        if len(row) > code_col and str(row[code_col]).strip() == str(code).strip():
+        if len(row) > code_col and str(row[code_col]).strip().upper() == target_code:
             return i, all_vals
     return None, all_vals
 
@@ -246,8 +248,28 @@ def add_stock(code, target):
     try:
         pred_ws = ss.worksheet('予測記録')
         pred_all = pred_ws.get_all_values()
-        pred_row, _ = find_row_by_code(pred_ws, code)
-        if not pred_row and len(pred_all) >= 2:
+        # 予測記録に『現役の(売却済み印が無い)』予測行が既に在るかを判定する。
+        # D1: 売却→監視移行や手動売却で SOLD 印が付いた行は generate_dashboard で現役予測から除外されるため、
+        #     SOLD 行しか無い銘柄(=過去に手放して再購入)には新世代の初期予測を追記する必要がある。
+        # （単純な find_row_by_code だと SOLD 行を拾って『既存あり』とみなし、現役予測が永久に作られない不具合になる）
+        _phdr = pred_all[0] if pred_all else []
+        _pcode_col = None
+        for _ci, _h in enumerate(_phdr):
+            if 'コード' in str(_h) or 'code' in str(_h).lower():
+                _pcode_col = _ci
+                break
+        if _pcode_col is None:
+            _pcode_col = 1
+        _SOLD_IDX = 40  # AO（0-indexed）= config.py 予測記録 sold_start（売却済みフラグ列）
+        _tcode = str(code).strip().upper()
+        active_pred_exists = False
+        for _prow in pred_all[2:]:
+            if len(_prow) > _pcode_col and str(_prow[_pcode_col]).strip().upper() == _tcode:
+                _is_sold = len(_prow) > _SOLD_IDX and str(_prow[_SOLD_IDX]).strip()
+                if not _is_sold:
+                    active_pred_exists = True
+                    break
+        if not active_pred_exists and len(pred_all) >= 2:
             # ランクベース初期予測（STEP0スタイル）
             dir_map = {
                 'S': '強気↑↑', 'A': '強気↑',
@@ -296,9 +318,12 @@ def add_stock(code, target):
 
     return total, rank
 
-def remove_stock(code, target):
-    """銘柄を4シート横断で削除（破損データの残留を防ぐ・協議合意事項#1）
-    対象: 保有/監視銘柄_v4.3スコア、コアスキャン_v4.3、コアスキャン_日次、予測記録
+def remove_stock(code, target, cascade=True, mark_sold=True):
+    """銘柄を保有/監視＋派生スキャン2シートから削除（破損データの残留を防ぐ・協議合意事項#1）。
+    対象: 保有/監視銘柄_v4.3スコア、コアスキャン_v4.3、コアスキャン_日次。
+    予測記録（AIの予測と勝敗＝学習データ）は物理削除せず、末尾で売却済みフラグを付けて残す（D1）。
+    cascade=False: コアスキャン2シートを掃除しない（銘柄が監視に残り観察継続する二重在籍解消で使用）。
+    mark_sold=False: 予測記録に売却済み印を付けない（監視で観察を続ける＝現役のままにする時に使用）。
     """
     sheet_name = SHEET_MAP[target]
     ws = ss.worksheet(sheet_name)
@@ -311,25 +336,80 @@ def remove_stock(code, target):
     print(f"  {sheet_name} から {code} {name} を削除（行{row_num}）")
 
     # 派生シートからも同銘柄を削除（バグ版データの残留・伝播を防止）
-    CASCADE_SHEETS = ['コアスキャン_v4.3', 'コアスキャン_日次', '予測記録']
-    for sn in CASCADE_SHEETS:
-        try:
-            sws = ss.worksheet(sn)
-            deleted = 0
-            # 予測記録はコード列が 1 列目、それ以外は 0 列目
-            # find_row_by_code は自動検出するので安心
-            while True:
-                r, _ = find_row_by_code(sws, code)
-                if not r:
-                    break
-                sws.delete_rows(r)
-                deleted += 1
-                if deleted > 5:  # セーフガード: 無限ループ防止
-                    break
-            if deleted:
-                print(f"  {sn} からも {code} を {deleted}行 削除")
-        except Exception as e:
-            print(f"  WARNING: {sn} の削除に失敗: {e}")
+    # D1: 予測記録は CASCADE から外す（物理削除しない）。末尾で売却済みフラグを付けて学習データを保全する。
+    CASCADE_SHEETS = ['コアスキャン_v4.3', 'コアスキャン_日次']
+    if cascade:
+        for sn in CASCADE_SHEETS:
+            try:
+                sws = ss.worksheet(sn)
+                deleted = 0
+                # 予測記録はコード列が 1 列目、それ以外は 0 列目
+                # find_row_by_code は自動検出するので安心
+                while True:
+                    r, _ = find_row_by_code(sws, code)
+                    if not r:
+                        break
+                    sws.delete_rows(r)
+                    deleted += 1
+                    if deleted > 5:  # セーフガード: 無限ループ防止
+                        break
+                if deleted:
+                    print(f"  {sn} からも {code} を {deleted}行 削除")
+            except Exception as e:
+                print(f"  WARNING: {sn} の削除に失敗: {e}")
+
+    # D1: 予測記録（AIの予測と勝敗＝学習データ）は消さず、売却済みの印を付けて残す。
+    if mark_sold:
+        _mark_sold_in_predictions(code)
+
+
+def _mark_sold_in_predictions(code, sale_date=None):
+    """D1: 売却（保有/監視からの除外）時に、予測記録を物理削除せず
+    売却済フラグ(AO列)='SOLD'・売却日(AP列) を書き込んで残す（学習データ＝AIの予測と勝敗を保全）。
+    同コードの全行（売却→再購入で複数世代ありうる）に印を付ける。delete_rows は絶対に呼ばない。
+    既に印のある行は飛ばす（冪等）。AO/AP列は config.py '予測記録' の sold_start=40（=AO/AP）に対応。
+    """
+    if sale_date is None:
+        sale_date = datetime.now().strftime('%Y/%m/%d')
+    SOLD_FLAG_COL = 41  # AO（1-indexed・予測記録40列の右端2列の1つ目）
+    SOLD_DATE_COL = 42  # AP（1-indexed）
+    try:
+        pred_ws = ss.worksheet('予測記録')
+    except Exception as e:
+        print(f"  WARNING: 予測記録シートが見つからず売却印を付けられません（記録は保全）: {e}")
+        return
+    all_vals = pred_ws.get_all_values()
+    if len(all_vals) < 2:
+        return
+    header = all_vals[0]
+    # コード列検出は generate_dashboard._find_col と同じ「部分一致・既定1（=銘柄コード列）」に合わせる
+    code_col = None
+    for i, h in enumerate(header):
+        h_norm = str(h).strip()
+        if 'コード' in h_norm or 'code' in h_norm.lower():
+            code_col = i
+            break
+    if code_col is None:
+        code_col = 1
+    marked = 0
+    target_code = str(code).strip().upper()  # コード比較は大文字小文字無視で統一
+    # 予測記録は行2(1-indexed)からデータ。同コードの全行に印を付ける（既に印付け済は飛ばす＝冪等）。
+    for i, row in enumerate(all_vals[2:], start=3):
+        if len(row) > code_col and str(row[code_col]).strip().upper() == target_code:
+            already = len(row) >= SOLD_FLAG_COL and str(row[SOLD_FLAG_COL - 1]).strip()
+            if already:
+                continue
+            try:
+                pred_ws.update_cell(i, SOLD_FLAG_COL, 'SOLD')
+                pred_ws.update_cell(i, SOLD_DATE_COL, sale_date)
+                marked += 1
+            except Exception as e:
+                print(f"  WARNING: 予測記録 行{i} への売却印書込みに失敗（AO/AP列が未追加かも・手順で追加要）: {e}")
+    if marked:
+        print(f"  予測記録 の {code} を {marked}行 売却済みに印付け（物理削除せず保全・D1）")
+    else:
+        print(f"  予測記録 に {code} の未印付け行は無し（既に印付け済 or 該当なし）")
+
 
 def move_stock(code, target):
     """銘柄を target に移動（もう一方から削除 → target に追加）"""
@@ -353,16 +433,23 @@ def move_stock(code, target):
     row_data = all_vals[row_num - 1]
     name = row_data[1] if len(row_data) > 1 else code
 
-    # 移動元から削除
-    other_ws.delete_rows(row_num)
-    print(f"  {other_sheet} から {code} {name} を削除")
-
-    # 移動先に追加（既存スコアをそのまま使う）
+    # ★原子性（消失防止）: 先に移動先へ追加 → 着地を確認 → 最後に移動元を削除。
+    #   追加が失敗しても移動元（元データ）が残るので、銘柄がどこにも無い状態にならない。
     target_all = target_ws.get_all_values()
     next_row = len(target_all) + 1
     _ensure_grid_rows(target_ws, next_row)
     target_ws.update(f'A{next_row}', [row_data])
     print(f"  {SHEET_MAP[target]} の行{next_row}に追加")
+
+    # 追加が実際に着地したか確認（できなければ移動元を削除せず中止＝消失防止）
+    landed, _ = find_row_by_code(target_ws, code)
+    if not landed:
+        print(f"ERROR: {code} の {SHEET_MAP[target]} への追加が確認できません。移動元は削除せず中止します。")
+        sys.exit(1)
+
+    # 着地確認後に移動元から削除
+    other_ws.delete_rows(row_num)
+    print(f"  {other_sheet} から {code} {name} を削除")
 
 # ── エントリーポイント ───────────────────────────────────────
 def main():

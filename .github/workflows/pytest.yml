@@ -29,7 +29,8 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - run: pip install pytest pandas numpy pyflakes
+      # 2026-07-02: 保有移行テスト(core.auth→gspread / manage_stock→requests)の collection に本番依存が必要
+      - run: pip install pytest pandas numpy pyflakes gspread google-auth requests
       # 再発防止: generate_dashboard.py の構文/未定義名(NameError級)を merge 前に機械検知
       # （2026-05-19 _next_verify_str 未定義で日次更新が4日停止した事案の構造的対策）
       # NameError級(undefined name / referenced before assignment)のみで fail。
