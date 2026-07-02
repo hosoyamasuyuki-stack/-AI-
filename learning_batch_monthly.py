@@ -117,9 +117,14 @@ def get_data(code):
         if 'ni'  in d.columns and 'eq'  in d.columns: d['roe']=d['ni']/d['eq'].replace(0,np.nan)*100
         if 'fcf' in d.columns and 'ni'  in d.columns: d['fcr']=d['fcf']/d['ni'].replace(0,np.nan)*100
         return d.replace([np.inf,-np.inf],np.nan).dropna(how='all'),{
-            'per':info.get('trailingPE'),'market_cap':info.get('marketCap'),
-            'eps_growth':info.get('earningsGrowth'),
-            'price':info.get('currentPrice') or info.get('regularMarketPrice'),
+            # 2026-07-02 修正: yfinance info が稀に数値でなく文字列/None を返す（7/1 UACJ の
+            # trailingPE が str → L138 peg=per/(eg*100) が 'str'/'float' で TypeError・
+            # 月次バッチ初失敗 run 28511726877）。出どころで safe() により float 化し、
+            # str/float 混在クラッシュを根本封鎖する（market_cap は L141 の同型2段目地雷も同時に解消）。
+            # eps_growth は L138 の eg>0.01 判定と ×100 に使うため丸め桁6を確保（既定1桁は精度崩壊で厳禁）。
+            'per':safe(info.get('trailingPE'),2),'market_cap':safe(info.get('marketCap'),0),
+            'eps_growth':safe(info.get('earningsGrowth'),6),
+            'price':safe(info.get('currentPrice') or info.get('regularMarketPrice'),1),
         }
     except: return None,{}
 
