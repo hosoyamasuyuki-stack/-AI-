@@ -2,7 +2,7 @@
 # bulk_diff_apply.py
 # 統合 CSV と既存 Sheets `保有銘柄_v4.3スコア` の差分を計算し、
 # 既存 manage_stock.py の add_stock / remove_stock を for ループで呼出
-# 4 シート cascade（コアスキャン_v4.3 / コアスキャン_日次 / 予測記録）も自動連動
+# cascade 連動は コアスキャン_v4.3 / コアスキャン_日次 のみ（D1: 予測記録は物理削除せず売却済フラグで保全）
 #
 # 設計思想:
 #   - 新規ロジック追加なし（manage_stock.py を 100% 流用）
@@ -250,7 +250,7 @@ def main():
 
     print(f"\n{'='*60}")
     print(f"次のステップ:")
-    print(f"  1. 4 シート整合性確認（保有銘柄_v4.3スコア / コアスキャン_v4.3 / 予測記録）")
+    print(f"  1. シート整合性確認（保有銘柄_v4.3スコア / 監視銘柄_v4.3スコア / コアスキャン / 予測記録=売却は物理削除せず保全）")
     print(f"  2. python generate_dashboard.py で HTML 再生成")
     print(f"  3. git commit + push で GitHub Pages デプロイ")
     print(f"{'='*60}")
